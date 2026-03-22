@@ -254,8 +254,15 @@ hyl-media/                      # Orchestration repo (this)
 - Null items in query results — added filterNulls()
 - Auth guard — prevent rendering before user authenticated
 
+**Deployment Fixes (continued same session)**:
+- Added `__typename: 'KnowledgeGraphItem'` to all import scripts — AppSync requires it
+- Added `createdAt` timestamp to all items — Amplify client returns null without it
+- Fixed SPA rewrite rules: regex `</^[^.]+$/>` for extensionless paths, `404-200` fallback
+- Fixed CloudFront caching: `no-cache, no-store, must-revalidate` on index.html
+- Removed aggressive regex rewrite that was serving index.html for JS/CSS files
+- All verified via curl before telling user
+
 **Next Session**:
-- Verify frontend works at https://main.d2r70lavusnzlx.amplifyapp.com
 - Phase 5: edit forms, cast/performer management, UI polish
 - Use MCP tool `mcp__aws-vsb-299__call_aws` for ALL AWS operations
 

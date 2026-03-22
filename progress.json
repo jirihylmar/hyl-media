@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-22",
-  "last_session_summary": "Phases 0-4 complete. Amplify Hosting live at main.d2r70lavusnzlx.amplifyapp.com (account 299/eu-central-1). Auto-deploys from GitHub. MCP tool aws-vsb-299 configured. Wrong-account incident cleaned up. Frontend has auth/null-safety fixes deployed. Phase 5 (edit forms) pending.",
+  "last_session_summary": "App live and working at https://main.d2r70lavusnzlx.amplifyapp.com. All phases 0-4 complete. Fixed: wrong-account deploy, Amplify client configure race, null items, missing __typename/createdAt, SPA rewrite rules, CloudFront caching. Phase 5 (edit forms) pending.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
