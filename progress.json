@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-22",
-  "last_session_summary": "Phase 1 complete. Amplify sandbox deployed: DynamoDB + Cognito + S3 + AppSync in eu-west-1.",
+  "last_session_summary": "Phase 2 complete. All data imported: 905 knowledge graph + 306 books + 112 sheet music + 21 cross-refs in DynamoDB. 419 files in S3.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -185,9 +185,9 @@
     },
     "phase_2_data_import": {
       "name": "Data Import",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-03-22",
-      "completed_at": null,
+      "completed_at": "2026-03-22",
       "description": "Import knowledge graph, books, and sheet music into DynamoDB and S3",
       "tasks": [
         {
@@ -212,44 +212,48 @@
         {
           "id": "2.3",
           "name": "Create book metadata extraction and import script",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "scripts/import-books.ts parses all 307 filenames"
+          "verify": "scripts/import-books.ts parses all 307 filenames",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "2.4",
           "name": "Run book import (307 files to S3 + DynamoDB)",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "307 files in S3, 307 book entries in DynamoDB",
           "depends_on": [
             "2.3"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "2.5",
           "name": "Create sheet music import script with cross-references",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "scripts/import-sheet-music.ts parses all 112 filenames, identifies cross-refs"
+          "verify": "scripts/import-sheet-music.ts parses all 112 filenames, identifies cross-refs",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "2.6",
           "name": "Run sheet music import (112 files to S3 + DynamoDB)",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "112 files in S3, 112 sheet_music entries + cross-references in DynamoDB",
           "depends_on": [
             "2.5"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         }
       ],
       "artifacts": []
     },
     "phase_3_knowledge_graph_frontend": {
       "name": "Knowledge Graph Frontend",
-      "status": "pending",
-      "started_at": null,
+      "status": "in_progress",
+      "started_at": "2026-03-22",
       "completed_at": null,
       "description": "List and detail views for movies, persons, bands, artists, collaborations, recordings",
       "tasks": [
@@ -366,7 +370,7 @@
       "artifacts": []
     }
   },
-  "current_task": "2.3",
+  "current_task": "3.1",
   "git_repos": {
     "orchestration": {
       "local": ".",
