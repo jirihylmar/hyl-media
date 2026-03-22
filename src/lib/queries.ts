@@ -1,9 +1,14 @@
 import { getClient } from './client';
+import type { KnowledgeGraphItem } from './client';
+
+function filterNulls(data: (KnowledgeGraphItem | null)[]): KnowledgeGraphItem[] {
+  return data.filter((item): item is KnowledgeGraphItem => item !== null);
+}
 
 export async function listByType(entityType: string) {
   const result = await getClient().models.KnowledgeGraphItem
     .listKnowledgeGraphItemByEntityTypeAndName({ entityType });
-  return result.data;
+  return filterNulls(result.data);
 }
 
 export async function getItem(id: string, entityType: string) {
@@ -15,23 +20,23 @@ export async function getItem(id: string, entityType: string) {
 export async function listByCastMovie(movieId: string) {
   const result = await getClient().models.KnowledgeGraphItem
     .listKnowledgeGraphItemByMovieIdAndRole({ movieId });
-  return result.data;
+  return filterNulls(result.data);
 }
 
 export async function listByPersonFilm(personId: string) {
   const result = await getClient().models.KnowledgeGraphItem
     .listKnowledgeGraphItemByPersonIdAndMovieName({ personId });
-  return result.data;
+  return filterNulls(result.data);
 }
 
 export async function listByRecording(recordingId: string) {
   const result = await getClient().models.KnowledgeGraphItem
     .listKnowledgeGraphItemByRecordingIdAndPerformerName({ recordingId });
-  return result.data;
+  return filterNulls(result.data);
 }
 
 export async function listByPerformer(performerId: string) {
   const result = await getClient().models.KnowledgeGraphItem
     .listKnowledgeGraphItemByPerformerIdAndRecordingName({ performerId });
-  return result.data;
+  return filterNulls(result.data);
 }

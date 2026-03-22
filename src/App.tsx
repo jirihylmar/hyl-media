@@ -21,7 +21,9 @@ import '@aws-amplify/ui-react/styles.css';
 function AuthenticatedApp() {
   return (
     <Authenticator>
-      {({ signOut, user }) => (
+      {({ signOut, user }) => {
+        if (!user) return <></>;
+        return (
         <BrowserRouter>
           <Routes>
             <Route element={<Layout signOut={signOut} user={user} />}>
@@ -45,7 +47,7 @@ function AuthenticatedApp() {
             </Route>
           </Routes>
         </BrowserRouter>
-      )}
+      );}}
     </Authenticator>
   );
 }
