@@ -129,39 +129,43 @@
         {
           "id": "1.1",
           "name": "Initialize Amplify Gen 2 project",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
-          "verify": "amplify/ directory exists, npm run dev starts without errors"
+          "verify": "amplify/ directory exists, npm run dev starts without errors",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "1.2",
           "name": "Define data model (KnowledgeGraphItem + 6 GSIs)",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "amplify/data/resource.ts contains complete schema with all fields and GSIs",
           "depends_on": [
             "1.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "1.3",
           "name": "Configure Cognito auth",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "amplify/auth/resource.ts exists, referenced in backend.ts",
           "depends_on": [
             "1.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "1.4",
           "name": "Configure S3 storage",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "amplify/storage/resource.ts exists with library/ and sheet-music/ paths",
           "depends_on": [
             "1.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "1.5",
@@ -359,7 +363,7 @@
       "artifacts": []
     }
   },
-  "current_task": "1.1",
+  "current_task": "1.5",
   "git_repos": {
     "orchestration": {
       "local": ".",

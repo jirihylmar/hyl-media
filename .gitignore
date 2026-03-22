@@ -4,6 +4,10 @@ input/
 # Dependencies
 node_modules/
 
+# Amplify generated
+amplify_outputs.json
+.amplify/
+
 # Build outputs
 dist/
 build/
@@ -31,3 +35,7 @@ __pycache__/
 
 # Logs
 *.log
+
+# Amplify generated
+amplify_outputs.json
+.amplify/
