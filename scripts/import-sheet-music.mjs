@@ -88,6 +88,7 @@ async function run() {
 
     items.push({
       __typename: 'KnowledgeGraphItem',
+      createdAt: new Date().toISOString(),
       id,
       entityType: 'sheet_music',
       name: title,
@@ -117,6 +118,7 @@ async function run() {
         for (const item of items.filter(i => i._artist === name)) {
           crossRefs.push({
             __typename: 'KnowledgeGraphItem',
+            createdAt: new Date().toISOString(),
             id: `${item.id}___performer___${performer.id}`,
             entityType: 'sheet_music_performer',
             sheetMusicId: item.id,

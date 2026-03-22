@@ -71,6 +71,7 @@ async function run() {
 
     items.push({
       __typename: 'KnowledgeGraphItem',
+      createdAt: new Date().toISOString(),
       id,
       entityType: 'book',
       name: title,

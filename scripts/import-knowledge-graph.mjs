@@ -22,6 +22,7 @@ function mapItem(item) {
     __typename: 'KnowledgeGraphItem',
     id: item.id,
     entityType: item.entity_type,
+    createdAt: new Date().toISOString(),
   };
   if (item.name != null) mapped.name = item.name;
   if (item.language != null) mapped.language = item.language;
