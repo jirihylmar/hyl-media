@@ -230,16 +230,34 @@ hyl-media/                      # Orchestration repo (this)
 - Had to fix broken CDKToolkit stack (UPDATE_ROLLBACK_FAILED) before first deploy
 - Book import had duplicate ID issue — fixed with author+format in hash
 
-**Artifacts**:
-- DynamoDB table: KnowledgeGraphItem-zw7vswr6vjhwdfo2kvafx6433m-NONE
-- S3 bucket: amplify-hylmediainit-hylm-hylmediastoragebucketefb-42igexn5weic
-- AppSync: l7kwmc74tjemhapjsufanp46ga.appsync-api.eu-west-1.amazonaws.com
-- Cognito: eu-west-1_liKTsuaaa
-- Stack: amplify-hylmediainit-hylmarj-sandbox-3722643844
+**Artifacts (WRONG ACCOUNT — DELETED)**:
+- ~~DynamoDB table: KnowledgeGraphItem-zw7vswr6vjhwdfo2kvafx6433m-NONE~~ (182059100462/eu-west-1 — deleted)
+- ~~S3 bucket: amplify-hylmediainit-hylm-hylmediastoragebucketefb-42igexn5weic~~ (deleted)
+- ~~Stack: amplify-hylmediainit-hylmarj-sandbox-3722643844~~ (deleted)
+
+**Artifacts (CORRECT ACCOUNT 299)**:
+- DynamoDB table: KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE
+- S3 bucket: amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m7stthq
+- AppSync: 366ya64s65cqjhilw34nx5r2vu.appsync-api.eu-central-1.amazonaws.com
+- Cognito: eu-central-1_GJhwO2ww5
+- Amplify App: d2r70lavusnzlx
+- URL: https://main.d2r70lavusnzlx.amplifyapp.com
+
+**INCIDENT: Wrong Account Deployment**:
+- Root cause: Used default AWS CLI profile (account 182059100462) instead of JiHy__vsb__299 (account 299025166536)
+- Impact: All Phase 1-2 resources created in wrong account/region
+- Resolution: Deleted sandbox stack, re-imported all data to correct account
+- Prevention: MCP tool `mcp__aws-vsb-299__call_aws` installed, CLAUDE.md updated with strict rules
+
+**Bug Fixes**:
+- Amplify client `generateClient()` race condition — moved to lazy init
+- Null items in query results — added filterNulls()
+- Auth guard — prevent rendering before user authenticated
 
 **Next Session**:
-- User wants deployment pipeline before Phase 5 (edit forms)
-- Phase 5 remaining: edit forms, cast/performer management, UI polish
+- Verify frontend works at https://main.d2r70lavusnzlx.amplifyapp.com
+- Phase 5: edit forms, cast/performer management, UI polish
+- Use MCP tool `mcp__aws-vsb-299__call_aws` for ALL AWS operations
 
 ---
 

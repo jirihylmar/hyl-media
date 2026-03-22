@@ -8,11 +8,44 @@ Personal media catalog — movies, music, books, sheet music. DynamoDB single-ta
 
 | Item | Value |
 |------|-------|
-| AWS Account | `299` |
+| AWS Account | `299025166536` (alias: 299) |
 | AWS Region | `eu-central-1` |
-| Naming | `hyl-media-{component}-{env}` |
+| AWS Profile | `JiHy__vsb__299` |
+| MCP Tool | `mcp__aws-vsb-299__call_aws` |
+| Amplify App ID | `d2r70lavusnzlx` |
+| Amplify URL | `https://main.d2r70lavusnzlx.amplifyapp.com` |
+| GitHub Repo | `jirihylmar/hyl-media` |
 | Stack | Amplify Gen 2 (React + TypeScript + AppSync + DynamoDB + S3 + Cognito) |
 | Repo | Mono-repo (orchestration + app in one) |
+
+## CRITICAL: AWS Access Rules
+
+**USE MCP TOOL FOR ALL AWS OPERATIONS:**
+```
+mcp__aws-vsb-299__call_aws
+```
+
+This MCP tool is pre-configured with profile `JiHy__vsb__299` and region `eu-central-1`.
+
+**NEVER use:**
+- `aws` CLI without `--profile JiHy__vsb__299 --region eu-central-1`
+- Default AWS profile (goes to WRONG account)
+- `export AWS_PROFILE=...`
+- Any hardcoded region other than `eu-central-1`
+
+**ALWAYS verify before any AWS operation:**
+```bash
+# Via MCP (preferred)
+mcp__aws-vsb-299__call_aws sts get-caller-identity
+# Must return account 299025166536
+
+# Via CLI (if MCP unavailable)
+aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
+```
+
+**INCIDENT HISTORY:** First session deployed to wrong account (182059100462/eu-west-1) using default profile. Required full cleanup and reimport. This rule exists to prevent recurrence.
+
+---
 
 ## Commands
 ```
@@ -50,13 +83,19 @@ hyl-media/
 └── session_notes.md
 ```
 
+## Deployment
+- **Auto-deploy**: Push to `main` triggers Amplify Hosting build
+- **Build**: `npx ampx pipeline-deploy` (backend) + `npm run build` (frontend)
+- **URL**: https://main.d2r70lavusnzlx.amplifyapp.com
+- **Test account**: jiri.hylmar@gmail.com / HylMedia123!
+
 ---
 
 ## Session Workflow
 
 ### Before Starting
 1. Run `/start-session`
-2. Verify AWS account matches
+2. **Verify AWS account via MCP** — must be 299025166536
 3. Check last completed task still works
 4. Review context budget
 
@@ -93,8 +132,7 @@ Check with `/context`:
 ## Git Discipline
 
 **Commits**: After completing each task.
-
-**Pushes**: At meaningful boundaries, not after every commit.
+**Pushes**: At meaningful boundaries (triggers auto-deploy).
 
 ---
 
@@ -112,9 +150,10 @@ Before adding task to progress.json:
 
 ## Critical Rules
 
-### 1. AWS Account Verification
-**ALWAYS verify before any AWS operation.**
-Must match account `299` / region `eu-central-1`
+### 1. AWS Account — USE MCP TOOL
+**ALL AWS operations via `mcp__aws-vsb-299__call_aws`.**
+Never use default profile. Never hardcode regions in scripts.
+Account: 299025166536, Region: eu-central-1.
 
 ### 2. Pre-Work Verification
 Before starting NEW work:
@@ -147,3 +186,4 @@ All infrastructure managed by Amplify Gen 2 (`amplify/` definitions). No direct 
 | Read files | `Read` | `cat` |
 | Edit files | `Edit` | `sed` |
 | Search files | `Glob`/`Grep` | `find`/`grep` |
+| AWS operations | `mcp__aws-vsb-299__call_aws` | `aws` CLI without profile |
