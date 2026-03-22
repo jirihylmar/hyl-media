@@ -18,7 +18,7 @@ import { SheetMusicList } from './pages/SheetMusicList';
 import { SheetMusicDetail } from './pages/SheetMusicDetail';
 import '@aws-amplify/ui-react/styles.css';
 
-function App() {
+function AuthenticatedApp() {
   return (
     <Authenticator>
       {({ signOut, user }) => (
@@ -48,6 +48,10 @@ function App() {
       )}
     </Authenticator>
   );
+}
+
+function App() {
+  return <AuthenticatedApp />;
 }
 
 export default App;

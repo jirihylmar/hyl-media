@@ -5,7 +5,7 @@ import './index.css';
 import App from './App.tsx';
 import outputs from '../amplify_outputs.json';
 
-Amplify.configure(outputs);
+Amplify.configure(outputs as Parameters<typeof Amplify.configure>[0]);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
