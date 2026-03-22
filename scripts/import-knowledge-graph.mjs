@@ -19,6 +19,7 @@ const ddb = DynamoDBDocumentClient.from(client);
 // Map snake_case fields from JSON to camelCase for DynamoDB/Amplify
 function mapItem(item) {
   const mapped = {
+    __typename: 'KnowledgeGraphItem',
     id: item.id,
     entityType: item.entity_type,
   };

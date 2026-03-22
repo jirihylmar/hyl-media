@@ -7,7 +7,13 @@ function filterNulls(data: (KnowledgeGraphItem | null)[]): KnowledgeGraphItem[] 
 
 export async function listByType(entityType: string) {
   const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByEntityTypeAndName({ entityType });
+    .listKnowledgeGraphItemByEntityTypeAndName(
+      { entityType },
+      { limit: 1000 },
+    );
+  if (result.errors?.length) {
+    console.error('listByType errors:', result.errors);
+  }
   return filterNulls(result.data);
 }
 

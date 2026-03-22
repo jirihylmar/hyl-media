@@ -87,6 +87,7 @@ async function run() {
     const id = makeId(fullTitle);
 
     items.push({
+      __typename: 'KnowledgeGraphItem',
       id,
       entityType: 'sheet_music',
       name: title,
@@ -115,6 +116,7 @@ async function run() {
         // Create cross-ref entries for all sheet music by this artist
         for (const item of items.filter(i => i._artist === name)) {
           crossRefs.push({
+            __typename: 'KnowledgeGraphItem',
             id: `${item.id}___performer___${performer.id}`,
             entityType: 'sheet_music_performer',
             sheetMusicId: item.id,

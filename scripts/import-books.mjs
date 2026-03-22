@@ -70,6 +70,7 @@ async function run() {
     const id = makeId(title, (author || '') + format);
 
     items.push({
+      __typename: 'KnowledgeGraphItem',
       id,
       entityType: 'book',
       name: title,
