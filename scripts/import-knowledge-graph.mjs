@@ -2,7 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { readFileSync } from 'fs';
 
-const REGION = 'eu-west-1';
+const REGION = process.env.AWS_REGION || 'eu-central-1';
 const DRY_RUN = process.argv.includes('--dry-run');
 const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
 const TABLE = args[0];

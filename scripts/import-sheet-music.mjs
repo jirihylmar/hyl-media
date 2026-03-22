@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
 
-const REGION = 'eu-west-1';
+const REGION = process.env.AWS_REGION || 'eu-central-1';
 const DRY_RUN = process.argv.includes('--dry-run');
 const SKIP_S3 = process.argv.includes('--skip-s3');
 const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
