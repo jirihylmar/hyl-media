@@ -193,19 +193,21 @@
         {
           "id": "2.1",
           "name": "Create knowledge graph import script",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "scripts/import-knowledge-graph.ts exists and compiles"
+          "verify": "scripts/import-knowledge-graph.ts exists and compiles",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "2.2",
           "name": "Run knowledge graph import (905 items)",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "DynamoDB item count = 905, entity type counts match expected",
           "depends_on": [
             "2.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "2.3",
@@ -364,7 +366,7 @@
       "artifacts": []
     }
   },
-  "current_task": "2.1",
+  "current_task": "2.3",
   "git_repos": {
     "orchestration": {
       "local": ".",
