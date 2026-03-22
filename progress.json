@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-22",
-  "last_session_summary": "Phase 2 complete. All data imported: 905 knowledge graph + 306 books + 112 sheet music + 21 cross-refs in DynamoDB. 419 files in S3.",
+  "last_session_summary": "Phases 3-4 complete. Full frontend with 14 routes: movies, persons, bands, artists, collaborations, recordings (with relationship navigation), library with S3 download, sheet music with cross-refs.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -252,89 +252,96 @@
     },
     "phase_3_knowledge_graph_frontend": {
       "name": "Knowledge Graph Frontend",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-03-22",
-      "completed_at": null,
+      "completed_at": "2026-03-22",
       "description": "List and detail views for movies, persons, bands, artists, collaborations, recordings",
       "tasks": [
         {
           "id": "3.1",
           "name": "App layout, routing, and navigation",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "All routes defined, nav renders, auth gate works"
+          "verify": "All routes defined, nav renders, auth gate works",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "3.2",
           "name": "Movie list and detail views",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Movie list shows 94 items, detail shows cast/director/soundtrack",
           "depends_on": [
             "3.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "3.3",
           "name": "Person list and detail views",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Person list shows 231 items with role filter, detail shows filmography",
           "depends_on": [
             "3.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "3.4",
           "name": "Music entity views (bands, artists, collaborations)",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "33 bands, 3 artists, 8 collaborations with discography links",
           "depends_on": [
             "3.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         },
         {
           "id": "3.5",
           "name": "Recording list and detail views",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "94 recordings with performer and movie links",
           "depends_on": [
             "3.1"
-          ]
+          ],
+          "completed_at": "2026-03-22"
         }
       ],
       "artifacts": []
     },
     "phase_4_library_frontend": {
       "name": "Library & Sheet Music Frontend",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
+      "status": "complete",
+      "started_at": "2026-03-22",
+      "completed_at": "2026-03-22",
       "description": "Book and sheet music browsing with S3 file access",
       "tasks": [
         {
           "id": "4.1",
           "name": "Book list and detail views with S3 download",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "307 books listed, filtering works, download link works"
+          "verify": "307 books listed, filtering works, download link works",
+          "completed_at": "2026-03-22"
         },
         {
           "id": "4.2",
           "name": "Sheet music list and detail views with PDF viewer",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "112 items listed, PDF view/download works, cross-links to artists work"
+          "verify": "112 items listed, PDF view/download works, cross-links to artists work",
+          "completed_at": "2026-03-22"
         }
       ],
       "artifacts": []
     },
     "phase_5_edit_forms_polish": {
       "name": "Edit Forms & Polish",
-      "status": "pending",
-      "started_at": null,
+      "status": "in_progress",
+      "started_at": "2026-03-22",
       "completed_at": null,
       "description": "Editing capability and UI refinement",
       "tasks": [
@@ -370,7 +377,7 @@
       "artifacts": []
     }
   },
-  "current_task": "3.1",
+  "current_task": "5.1",
   "git_repos": {
     "orchestration": {
       "local": ".",
