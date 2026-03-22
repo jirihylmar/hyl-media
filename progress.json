@@ -1,0 +1,379 @@
+{
+  "version": "2.0",
+  "project": "hyl-media",
+  "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
+  "created_at": "2026-03-22",
+  "last_updated": "2026-03-22",
+  "last_session_summary": "Phase 0 complete. Spec approved. All 5 phases with 22 tasks generated. Examples repo removed. Ready for Phase 1: Amplify Foundation.",
+  "phases": {
+    "phase_0_planning": {
+      "name": "Planning & Setup",
+      "status": "complete",
+      "started_at": "2026-03-22",
+      "completed_at": "2026-03-22",
+      "description": "Create implementation spec, get approval, generate tasks",
+      "tasks": [
+        {
+          "id": "0.1",
+          "name": "Read input materials and explore examples",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "medium",
+          "verify": "session_notes.md contains per-file summary of EVERY document in input/ with extracted requirements, constraints, and decisions",
+          "notes": "CRITICAL: Read EVERY file in input/ folder thoroughly. For each document: (1) identify its type and purpose, (2) extract ALL requirements, constraints, decisions, and domain terms, (3) note any external URLs that need fetching via WebFetch. Write a per-file breakdown in session_notes.md showing what each file contains and how it will inform the spec. requirements.md (or equivalent) is the PRIMARY document - every requirement in it must be addressed. Do NOT skim or summarize loosely - extract specifics. Then explore playbook examples to find best match."
+        },
+        {
+          "id": "0.2",
+          "name": "Select playbook template and document rationale",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "small",
+          "verify": "Template selection documented with reasons",
+          "depends_on": [
+            "0.1"
+          ]
+        },
+        {
+          "id": "0.3",
+          "name": "Draft IMPLEMENTATION_PLAN.md sections 1-3",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "medium",
+          "verify": "IMPLEMENTATION_PLAN.md exists with Overview, Architecture, Technical Specs",
+          "depends_on": [
+            "0.2"
+          ],
+          "notes": "Project Overview, Architecture, Technical Specifications. CRITICAL: Only include CONFIRMED items. Speculative content (candidate instances, unverified schemas) belongs in tasks, not spec. 100 lines confirmed > 600 lines speculative. TRACEABILITY: Every section must be grounded in input materials from task 0.1. Reference which input documents informed each decision. If input/ contains requirements.md, it is the PRIMARY source - the spec must address every requirement in it. Do not write from general knowledge when input materials provide specifics."
+        },
+        {
+          "id": "0.4",
+          "name": "Draft IMPLEMENTATION_PLAN.md sections 4-7",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "medium",
+          "verify": "IMPLEMENTATION_PLAN.md complete with all sections",
+          "depends_on": [
+            "0.3"
+          ],
+          "notes": "Phases, AWS Resources, Repository Structure, Success Criteria. For unknown domains, use exploration-first: Phase 1 = 'Setup & Exploration' to discover actual structure before defining detailed phases. TRACEABILITY: Each phase must trace back to requirements from input materials. Add a References section listing ALL input documents and how each influenced the spec. Every file in input/ must be accounted for."
+        },
+        {
+          "id": "0.5",
+          "name": "Present spec to user and get approval",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "small",
+          "verify": "User explicitly approved the spec",
+          "depends_on": [
+            "0.4"
+          ],
+          "notes": "BLOCKING: Do not proceed until user says 'approved' or equivalent"
+        },
+        {
+          "id": "0.6",
+          "name": "Create project CLAUDE.md",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "small",
+          "verify": "CLAUDE.md exists with filled placeholders",
+          "depends_on": [
+            "0.5"
+          ],
+          "notes": "Create CLAUDE.md from template, fill in project-specific values"
+        },
+        {
+          "id": "0.7",
+          "name": "Generate Phase 1 tasks",
+          "status": "complete",
+          "completed_at": "2026-03-22",
+          "size": "medium",
+          "verify": "tasks/phase_1_*.md exists, progress.json has Phase 1 tasks",
+          "depends_on": [
+            "0.6"
+          ]
+        },
+        {
+          "id": "0.8",
+          "name": "Generate remaining phase tasks",
+          "status": "complete",
+          "size": "medium",
+          "verify": "All phase task files exist, progress.json complete",
+          "depends_on": [
+            "0.7"
+          ],
+          "notes": "May span multiple sessions if many phases",
+          "completed_at": "2026-03-22"
+        },
+        {
+          "id": "0.9",
+          "name": "Remove examples repo and commit Phase 0 completion",
+          "status": "complete",
+          "size": "small",
+          "verify": "syndicate-playbooks-examples/ removed, git log shows Phase 0 complete commit",
+          "depends_on": [
+            "0.8"
+          ],
+          "notes": "Examples no longer needed. Remove dir, update .gitignore, commit.",
+          "completed_at": "2026-03-22"
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_1_amplify_foundation": {
+      "name": "Amplify Foundation",
+      "status": "in_progress",
+      "started_at": "2026-03-22",
+      "completed_at": null,
+      "description": "Initialize Amplify Gen 2 project with data model, auth, storage, and first deploy",
+      "tasks": [
+        {
+          "id": "1.1",
+          "name": "Initialize Amplify Gen 2 project",
+          "status": "pending",
+          "size": "small",
+          "verify": "amplify/ directory exists, npm run dev starts without errors"
+        },
+        {
+          "id": "1.2",
+          "name": "Define data model (KnowledgeGraphItem + 6 GSIs)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "amplify/data/resource.ts contains complete schema with all fields and GSIs",
+          "depends_on": [
+            "1.1"
+          ]
+        },
+        {
+          "id": "1.3",
+          "name": "Configure Cognito auth",
+          "status": "pending",
+          "size": "small",
+          "verify": "amplify/auth/resource.ts exists, referenced in backend.ts",
+          "depends_on": [
+            "1.1"
+          ]
+        },
+        {
+          "id": "1.4",
+          "name": "Configure S3 storage",
+          "status": "pending",
+          "size": "small",
+          "verify": "amplify/storage/resource.ts exists with library/ and sheet-music/ paths",
+          "depends_on": [
+            "1.1"
+          ]
+        },
+        {
+          "id": "1.5",
+          "name": "First deployment to AWS",
+          "status": "pending",
+          "size": "medium",
+          "verify": "DynamoDB table + Cognito + S3 + AppSync all exist in account 299",
+          "depends_on": [
+            "1.2",
+            "1.3",
+            "1.4"
+          ]
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_2_data_import": {
+      "name": "Data Import",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "description": "Import knowledge graph, books, and sheet music into DynamoDB and S3",
+      "tasks": [
+        {
+          "id": "2.1",
+          "name": "Create knowledge graph import script",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/import-knowledge-graph.ts exists and compiles"
+        },
+        {
+          "id": "2.2",
+          "name": "Run knowledge graph import (905 items)",
+          "status": "pending",
+          "size": "small",
+          "verify": "DynamoDB item count = 905, entity type counts match expected",
+          "depends_on": [
+            "2.1"
+          ]
+        },
+        {
+          "id": "2.3",
+          "name": "Create book metadata extraction and import script",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/import-books.ts parses all 307 filenames"
+        },
+        {
+          "id": "2.4",
+          "name": "Run book import (307 files to S3 + DynamoDB)",
+          "status": "pending",
+          "size": "small",
+          "verify": "307 files in S3, 307 book entries in DynamoDB",
+          "depends_on": [
+            "2.3"
+          ]
+        },
+        {
+          "id": "2.5",
+          "name": "Create sheet music import script with cross-references",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/import-sheet-music.ts parses all 112 filenames, identifies cross-refs"
+        },
+        {
+          "id": "2.6",
+          "name": "Run sheet music import (112 files to S3 + DynamoDB)",
+          "status": "pending",
+          "size": "small",
+          "verify": "112 files in S3, 112 sheet_music entries + cross-references in DynamoDB",
+          "depends_on": [
+            "2.5"
+          ]
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_3_knowledge_graph_frontend": {
+      "name": "Knowledge Graph Frontend",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "description": "List and detail views for movies, persons, bands, artists, collaborations, recordings",
+      "tasks": [
+        {
+          "id": "3.1",
+          "name": "App layout, routing, and navigation",
+          "status": "pending",
+          "size": "medium",
+          "verify": "All routes defined, nav renders, auth gate works"
+        },
+        {
+          "id": "3.2",
+          "name": "Movie list and detail views",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Movie list shows 94 items, detail shows cast/director/soundtrack",
+          "depends_on": [
+            "3.1"
+          ]
+        },
+        {
+          "id": "3.3",
+          "name": "Person list and detail views",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Person list shows 231 items with role filter, detail shows filmography",
+          "depends_on": [
+            "3.1"
+          ]
+        },
+        {
+          "id": "3.4",
+          "name": "Music entity views (bands, artists, collaborations)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "33 bands, 3 artists, 8 collaborations with discography links",
+          "depends_on": [
+            "3.1"
+          ]
+        },
+        {
+          "id": "3.5",
+          "name": "Recording list and detail views",
+          "status": "pending",
+          "size": "medium",
+          "verify": "94 recordings with performer and movie links",
+          "depends_on": [
+            "3.1"
+          ]
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_4_library_frontend": {
+      "name": "Library & Sheet Music Frontend",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "description": "Book and sheet music browsing with S3 file access",
+      "tasks": [
+        {
+          "id": "4.1",
+          "name": "Book list and detail views with S3 download",
+          "status": "pending",
+          "size": "medium",
+          "verify": "307 books listed, filtering works, download link works"
+        },
+        {
+          "id": "4.2",
+          "name": "Sheet music list and detail views with PDF viewer",
+          "status": "pending",
+          "size": "medium",
+          "verify": "112 items listed, PDF view/download works, cross-links to artists work"
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_5_edit_forms_polish": {
+      "name": "Edit Forms & Polish",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "description": "Editing capability and UI refinement",
+      "tasks": [
+        {
+          "id": "5.1",
+          "name": "Entity edit forms (name, language)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can edit movie name, updated_at/updated_by set, persists on reload"
+        },
+        {
+          "id": "5.2",
+          "name": "Cast management on movie detail",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can add/remove cast members, changes reflected immediately"
+        },
+        {
+          "id": "5.3",
+          "name": "Performer management on recording detail",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can add/remove performers, changes reflected immediately"
+        },
+        {
+          "id": "5.4",
+          "name": "UI polish and responsive design",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Responsive on mobile, consistent styling, no broken states"
+        }
+      ],
+      "artifacts": []
+    }
+  },
+  "current_task": "1.1",
+  "git_repos": {
+    "orchestration": {
+      "local": ".",
+      "remote": null,
+      "status": "local_only",
+      "notes": "Must be git repo from start. Commit after each task."
+    }
+  },
+  "context_hints": {
+    "aws_account": "299",
+    "aws_region": "eu-central-1",
+    "mcp_tool": "TBD",
+    "naming_pattern": "hyl-media-{component}-{env}",
+    "playbook_template": "playbook-aws-serverless-multirepo (adapted to Amplify Gen 2 mono-repo)"
+  },
+  "blockers": []
+}
