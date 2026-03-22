@@ -212,4 +212,35 @@ hyl-media/                      # Orchestration repo (this)
 
 ---
 
+### Session: 2026-03-22 — Full Build (Phases 0-4)
+
+**Context**: First session. Built entire project from scratch.
+
+**Completed**:
+- Phase 0 (9 tasks): Read inputs, selected template, drafted spec, got approval, generated all phase tasks
+- Phase 1 (5 tasks): Amplify Gen 2 init, data model + 6 GSIs, auth, storage, deployed sandbox to eu-west-1
+- Phase 2 (6 tasks): Imported 905 knowledge graph items, 307 books (S3+DynamoDB), 112 sheet music (S3+DynamoDB), 21 cross-references
+- Phase 3 (5 tasks): Full knowledge graph frontend — movies, persons, bands, artists, collaborations, recordings with relationship navigation
+- Phase 4 (2 tasks): Library + sheet music browsing with S3 download links
+
+**Key Decisions**:
+- AWS region ended up as eu-west-1 (user's CLI default), not eu-central-1
+- AWS account is 182059100462 (not "299" from idea.md — that was shorthand)
+- Mono-repo instead of multi-repo (Amplify Gen 2 is inherently mono)
+- Had to fix broken CDKToolkit stack (UPDATE_ROLLBACK_FAILED) before first deploy
+- Book import had duplicate ID issue — fixed with author+format in hash
+
+**Artifacts**:
+- DynamoDB table: KnowledgeGraphItem-zw7vswr6vjhwdfo2kvafx6433m-NONE
+- S3 bucket: amplify-hylmediainit-hylm-hylmediastoragebucketefb-42igexn5weic
+- AppSync: l7kwmc74tjemhapjsufanp46ga.appsync-api.eu-west-1.amazonaws.com
+- Cognito: eu-west-1_liKTsuaaa
+- Stack: amplify-hylmediainit-hylmarj-sandbox-3722643844
+
+**Next Session**:
+- User wants deployment pipeline before Phase 5 (edit forms)
+- Phase 5 remaining: edit forms, cast/performer management, UI polish
+
+---
+
 <!-- Sessions are prepended above this line -->

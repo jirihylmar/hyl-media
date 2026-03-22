@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-22",
-  "last_session_summary": "Phases 3-4 complete. Full frontend with 14 routes: movies, persons, bands, artists, collaborations, recordings (with relationship navigation), library with S3 download, sheet music with cross-refs.",
+  "last_session_summary": "Phases 0-4 complete in one session. Full frontend deployed with 14 routes. User wants deployment pipeline next, then Phase 5 (edit forms). Stack in eu-west-1, account 182059100462.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
