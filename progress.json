@@ -379,6 +379,69 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_6_enrichment": {
+      "name": "Enrichment, Tagging & New Content",
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null,
+      "description": "External links, artist→person merge, create forms, asset upload, resource tagging with controlled dictionary",
+      "tasks": [
+        {
+          "id": "6.1",
+          "name": "Schema extension — add link fields (wikiUrl, imdbUrl, spotifyUrl) + tags array, deploy",
+          "status": "pending",
+          "size": "medium",
+          "verify": "amplify/data/resource.ts has new fields, deployed to AWS"
+        },
+        {
+          "id": "6.2",
+          "name": "Artist→person migration — merge 3 artists into persons, update recording_performer refs",
+          "status": "pending",
+          "size": "medium",
+          "verify": "No artist entity_type items remain in DynamoDB, persons have artist role",
+          "depends_on": ["6.1"]
+        },
+        {
+          "id": "6.3",
+          "name": "Frontend cleanup — remove artist standalone routes/nav, show artists under persons",
+          "status": "pending",
+          "size": "small",
+          "verify": "/artists route removed from nav, artist-role persons visible in persons list",
+          "depends_on": ["6.2"]
+        },
+        {
+          "id": "6.4",
+          "name": "External links display/edit on all detail pages",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can add/edit wiki/imdb/spotify URLs on movie and person detail pages",
+          "depends_on": ["6.1"]
+        },
+        {
+          "id": "6.5",
+          "name": "Create new entity forms (movie, person, band, recording)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can create a new movie from UI, appears in movie list"
+        },
+        {
+          "id": "6.6",
+          "name": "Asset upload — new book/sheet music with S3 upload + DynamoDB metadata",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can upload PDF via UI, appears in library/sheet music list with download link"
+        },
+        {
+          "id": "6.7",
+          "name": "Tag dictionary + tag management UI (genre, content type taxonomies)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Can assign tags from controlled list (rock, pop, prose, etc.), filter entities by tag",
+          "depends_on": ["6.1"]
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": "5.4",
