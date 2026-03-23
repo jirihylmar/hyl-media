@@ -357,16 +357,18 @@
         {
           "id": "5.2",
           "name": "Cast management on movie detail",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "Can add/remove cast members, changes reflected immediately"
+          "verify": "Can add/remove cast members, changes reflected immediately",
+          "completed_at": "2026-03-23"
         },
         {
           "id": "5.3",
           "name": "Performer management on recording detail",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "Can add/remove performers, changes reflected immediately"
+          "verify": "Can add/remove performers, changes reflected immediately",
+          "completed_at": "2026-03-23"
         },
         {
           "id": "5.4",
@@ -379,7 +381,7 @@
       "artifacts": []
     }
   },
-  "current_task": "5.2",
+  "current_task": "5.4",
   "git_repos": {
     "orchestration": {
       "local": ".",

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getItem, listByCastMovie, listByType, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
+import { CastManager } from '../components/CastManager';
 import { useUserId } from '../lib/UserContext';
 
 export function MovieDetail() {
@@ -12,14 +13,19 @@ export function MovieDetail() {
   const [cast, setCast] = useState<KnowledgeGraphItem[]>([]);
   const [soundtracks, setSoundtracks] = useState<KnowledgeGraphItem[]>([]);
 
+  const refreshCast = useCallback(() => {
+    if (!id) return;
+    listByCastMovie(id).then(setCast);
+  }, [id]);
+
   useEffect(() => {
     if (!id) return;
     getItem(id, 'movie').then(setMovie);
-    listByCastMovie(id).then(setCast);
+    refreshCast();
     listByType('recording_movie').then(items => {
       setSoundtracks(items.filter(i => i.movieId === id));
     });
-  }, [id]);
+  }, [id, refreshCast]);
 
   if (!movie) return <p>Loading...</p>;
 
@@ -27,9 +33,6 @@ export function MovieDetail() {
     const updated = await updateItem(id!, 'movie', { [field]: value }, userId);
     if (updated) setMovie({ ...movie, ...updated });
   };
-
-  const directors = cast.filter(c => c.role === 'director');
-  const actors = cast.filter(c => c.role === 'actor');
 
   return (
     <div>
@@ -41,27 +44,12 @@ export function MovieDetail() {
         </p>
       )}
 
-      {directors.length > 0 && (
-        <>
-          <h2>Director{directors.length > 1 ? 's' : ''}</h2>
-          <ul>
-            {directors.map(d => (
-              <li key={d.id}>
-                <Link to={`/persons/${d.personId}`}>{d.personName}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      <h2>Cast ({actors.length})</h2>
-      <ul>
-        {actors.map(c => (
-          <li key={c.id}>
-            <Link to={`/persons/${c.personId}`}>{c.personName}</Link>
-          </li>
-        ))}
-      </ul>
+      <CastManager
+        movieId={id!}
+        movieName={movie.name || ''}
+        cast={cast}
+        onUpdate={refreshCast}
+      />
 
       {soundtracks.length > 0 && (
         <>
