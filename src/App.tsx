@@ -1,6 +1,7 @@
 import { Authenticator } from '@aws-amplify/ui-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { UserContext } from './lib/UserContext';
 import { Home } from './pages/Home';
 import { MovieList } from './pages/MovieList';
 import { MovieDetail } from './pages/MovieDetail';
@@ -24,6 +25,7 @@ function AuthenticatedApp() {
       {({ signOut, user }) => {
         if (!user) return <></>;
         return (
+        <UserContext.Provider value={user.signInDetails?.loginId || user.userId}>
         <BrowserRouter>
           <Routes>
             <Route element={<Layout signOut={signOut} user={user} />}>
@@ -47,6 +49,7 @@ function AuthenticatedApp() {
             </Route>
           </Routes>
         </BrowserRouter>
+        </UserContext.Provider>
       );}}
     </Authenticator>
   );

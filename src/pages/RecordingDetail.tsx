@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getItem, listByRecording } from '../lib/queries';
+import { getItem, listByRecording, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
+import { InlineEdit } from '../components/InlineEdit';
+import { useUserId } from '../lib/UserContext';
 
 export function RecordingDetail() {
   const { id } = useParams<{ id: string }>();
+  const userId = useUserId();
   const [recording, setRecording] = useState<KnowledgeGraphItem | null>(null);
   const [performers, setPerformers] = useState<KnowledgeGraphItem[]>([]);
 
@@ -16,13 +19,23 @@ export function RecordingDetail() {
 
   if (!recording) return <p>Loading...</p>;
 
+  const handleSave = async (field: string, value: string) => {
+    const updated = await updateItem(id!, 'recording', { [field]: value }, userId);
+    if (updated) setRecording({ ...recording, ...updated });
+  };
+
   const performerLinks = performers.filter(p => p.performerType !== 'tag');
   const movieLinks = performers.filter(p => p.entityType === 'recording_movie');
 
   return (
     <div>
-      <h1>{recording.name}</h1>
-      <p>Language: {recording.language}</p>
+      <InlineEdit value={recording.name || ''} onSave={v => handleSave('name', v)} as="h1" />
+      <p><InlineEdit value={recording.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
+      {recording.updatedAt && (
+        <p style={{ fontSize: '0.8em', color: '#888' }}>
+          Last updated: {new Date(recording.updatedAt).toLocaleString()} by {recording.updatedBy}
+        </p>
+      )}
 
       {performerLinks.length > 0 && (
         <>

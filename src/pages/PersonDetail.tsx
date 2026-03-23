@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getItem, listByPersonFilm, listByPerformer } from '../lib/queries';
+import { getItem, listByPersonFilm, listByPerformer, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
+import { InlineEdit } from '../components/InlineEdit';
+import { useUserId } from '../lib/UserContext';
 
 export function PersonDetail() {
   const { id } = useParams<{ id: string }>();
+  const userId = useUserId();
   const [person, setPerson] = useState<KnowledgeGraphItem | null>(null);
   const [films, setFilms] = useState<KnowledgeGraphItem[]>([]);
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
@@ -18,14 +21,24 @@ export function PersonDetail() {
 
   if (!person) return <p>Loading...</p>;
 
+  const handleSave = async (field: string, value: string) => {
+    const updated = await updateItem(id!, 'person', { [field]: value }, userId);
+    if (updated) setPerson({ ...person, ...updated });
+  };
+
   return (
     <div>
-      <h1>{person.name}</h1>
+      <InlineEdit value={person.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p>
         {person.givenName} {person.familyName}
         {person.roles?.length ? ` — ${person.roles.join(', ')}` : ''}
       </p>
-      <p>Language: {person.language}</p>
+      <p><InlineEdit value={person.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
+      {person.updatedAt && (
+        <p style={{ fontSize: '0.8em', color: '#888' }}>
+          Last updated: {new Date(person.updatedAt).toLocaleString()} by {person.updatedBy}
+        </p>
+      )}
 
       {films.length > 0 && (
         <>

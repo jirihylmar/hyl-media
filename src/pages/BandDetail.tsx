@@ -1,25 +1,47 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getItem, listByPerformer } from '../lib/queries';
+import { useParams, useLocation, Link } from 'react-router-dom';
+import { getItem, listByPerformer, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
+import { InlineEdit } from '../components/InlineEdit';
+import { useUserId } from '../lib/UserContext';
 
+// Used for bands, artists, and collaborations
 export function BandDetail() {
   const { id } = useParams<{ id: string }>();
-  const [band, setBand] = useState<KnowledgeGraphItem | null>(null);
+  const location = useLocation();
+  const userId = useUserId();
+  const [entity, setEntity] = useState<KnowledgeGraphItem | null>(null);
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
+
+  // Determine entity type from URL path
+  const entityType = location.pathname.startsWith('/artists')
+    ? 'artist'
+    : location.pathname.startsWith('/collaborations')
+      ? 'collaboration'
+      : 'band';
 
   useEffect(() => {
     if (!id) return;
-    getItem(id, 'band').then(setBand);
+    getItem(id, entityType).then(setEntity);
     listByPerformer(id).then(setRecordings);
-  }, [id]);
+  }, [id, entityType]);
 
-  if (!band) return <p>Loading...</p>;
+  if (!entity) return <p>Loading...</p>;
+
+  const handleSave = async (field: string, value: string) => {
+    const updated = await updateItem(id!, entityType, { [field]: value }, userId);
+    if (updated) setEntity({ ...entity, ...updated });
+  };
 
   return (
     <div>
-      <h1>{band.name}</h1>
-      <p>Language: {band.language}</p>
+      <InlineEdit value={entity.name || ''} onSave={v => handleSave('name', v)} as="h1" />
+      <p><InlineEdit value={entity.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
+      {entity.updatedAt && (
+        <p style={{ fontSize: '0.8em', color: '#888' }}>
+          Last updated: {new Date(entity.updatedAt).toLocaleString()} by {entity.updatedBy}
+        </p>
+      )}
 
       {recordings.length > 0 && (
         <>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getItem, listByCastMovie, listByType } from '../lib/queries';
+import { getItem, listByCastMovie, listByType, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
+import { InlineEdit } from '../components/InlineEdit';
+import { useUserId } from '../lib/UserContext';
 
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>();
+  const userId = useUserId();
   const [movie, setMovie] = useState<KnowledgeGraphItem | null>(null);
   const [cast, setCast] = useState<KnowledgeGraphItem[]>([]);
   const [soundtracks, setSoundtracks] = useState<KnowledgeGraphItem[]>([]);
@@ -13,7 +16,6 @@ export function MovieDetail() {
     if (!id) return;
     getItem(id, 'movie').then(setMovie);
     listByCastMovie(id).then(setCast);
-    // Find soundtrack links (recording_movie where movie_id = this movie)
     listByType('recording_movie').then(items => {
       setSoundtracks(items.filter(i => i.movieId === id));
     });
@@ -21,13 +23,23 @@ export function MovieDetail() {
 
   if (!movie) return <p>Loading...</p>;
 
+  const handleSave = async (field: string, value: string) => {
+    const updated = await updateItem(id!, 'movie', { [field]: value }, userId);
+    if (updated) setMovie({ ...movie, ...updated });
+  };
+
   const directors = cast.filter(c => c.role === 'director');
   const actors = cast.filter(c => c.role === 'actor');
 
   return (
     <div>
-      <h1>{movie.name}</h1>
-      <p>Language: {movie.language}</p>
+      <InlineEdit value={movie.name || ''} onSave={v => handleSave('name', v)} as="h1" />
+      <p><InlineEdit value={movie.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
+      {movie.updatedAt && (
+        <p style={{ fontSize: '0.8em', color: '#888' }}>
+          Last updated: {new Date(movie.updatedAt).toLocaleString()} by {movie.updatedBy}
+        </p>
+      )}
 
       {directors.length > 0 && (
         <>

@@ -46,3 +46,23 @@ export async function listByPerformer(performerId: string) {
     .listKnowledgeGraphItemByPerformerIdAndRecordingName({ performerId });
   return filterNulls(result.data);
 }
+
+export async function updateItem(
+  id: string,
+  entityType: string,
+  fields: Record<string, string | null>,
+  userId: string,
+) {
+  const result = await getClient().models.KnowledgeGraphItem.update({
+    id,
+    entityType,
+    ...fields,
+    updatedAt: new Date().toISOString(),
+    updatedBy: userId,
+  });
+  if (result.errors?.length) {
+    console.error('updateItem errors:', result.errors);
+    throw new Error(result.errors[0].message);
+  }
+  return result.data;
+}
