@@ -5,7 +5,7 @@ import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { useUserId } from '../lib/UserContext';
 
-// Used for bands, artists, and collaborations
+// Used for bands and collaborations
 export function BandDetail() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -14,11 +14,9 @@ export function BandDetail() {
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
 
   // Determine entity type from URL path
-  const entityType = location.pathname.startsWith('/artists')
-    ? 'artist'
-    : location.pathname.startsWith('/collaborations')
-      ? 'collaboration'
-      : 'band';
+  const entityType = location.pathname.startsWith('/collaborations')
+    ? 'collaboration'
+    : 'band';
 
   useEffect(() => {
     if (!id) return;

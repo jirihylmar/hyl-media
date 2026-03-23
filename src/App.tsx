@@ -9,7 +9,6 @@ import { PersonList } from './pages/PersonList';
 import { PersonDetail } from './pages/PersonDetail';
 import { BandList } from './pages/BandList';
 import { BandDetail } from './pages/BandDetail';
-import { ArtistList } from './pages/ArtistList';
 import { CollaborationList } from './pages/CollaborationList';
 import { RecordingList } from './pages/RecordingList';
 import { RecordingDetail } from './pages/RecordingDetail';
@@ -36,8 +35,6 @@ function AuthenticatedApp() {
               <Route path="/persons/:id" element={<PersonDetail />} />
               <Route path="/bands" element={<BandList />} />
               <Route path="/bands/:id" element={<BandDetail />} />
-              <Route path="/artists" element={<ArtistList />} />
-              <Route path="/artists/:id" element={<BandDetail />} />
               <Route path="/collaborations" element={<CollaborationList />} />
               <Route path="/collaborations/:id" element={<BandDetail />} />
               <Route path="/recordings" element={<RecordingList />} />

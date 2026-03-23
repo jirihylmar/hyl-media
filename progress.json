@@ -398,22 +398,24 @@
         {
           "id": "6.2",
           "name": "Artist\u2192person migration \u2014 merge 3 artists into persons, update recording_performer refs",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "No artist entity_type items remain in DynamoDB, persons have artist role",
           "depends_on": [
             "6.1"
-          ]
+          ],
+          "completed_at": "2026-03-23"
         },
         {
           "id": "6.3",
           "name": "Frontend cleanup \u2014 remove artist standalone routes/nav, show artists under persons",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "/artists route removed from nav, artist-role persons visible in persons list",
           "depends_on": [
             "6.2"
-          ]
+          ],
+          "completed_at": "2026-03-23"
         },
         {
           "id": "6.4",
@@ -453,7 +455,7 @@
       "artifacts": []
     }
   },
-  "current_task": "6.2",
+  "current_task": "6.4",
   "git_repos": {
     "orchestration": {
       "local": ".",

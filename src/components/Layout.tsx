@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { label: 'Movies', path: '/movies' },
   { label: 'Persons', path: '/persons' },
   { label: 'Bands', path: '/bands' },
-  { label: 'Artists', path: '/artists' },
   { label: 'Collaborations', path: '/collaborations' },
   { label: 'Recordings', path: '/recordings' },
   { label: 'Library', path: '/library' },
