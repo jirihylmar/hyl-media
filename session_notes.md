@@ -268,4 +268,18 @@ hyl-media/                      # Orchestration repo (this)
 
 ---
 
+### Session: 2026-03-23 — Architecture Diagram + Phase 5
+
+**Context**:
+- Phase: 5 - Edit Forms & Polish (starting)
+- Reviewed S3 buckets — confirmed all 3 `amplify-*` buckets are needed (managed by Amplify stack)
+
+**Completed**:
+- Architecture diagram: `docs/architecture/generate.py` + `hyl_media_architecture.png`
+- Diagram includes actual resource names, all 3 S3 buckets with roles, 6 GSIs
+- Updated README.md with architecture image
+- Created `docs/architecture/README.md` with component reference
+
+---
+
 <!-- Sessions are prepended above this line -->

@@ -10,6 +10,10 @@ Personal media catalog — movies, music, books, sheet music.
 - Email: `jiri.hylmar@gmail.com`
 - Password: `HylMedia123!`
 
+## Architecture
+
+![HYL Media Architecture](docs/architecture/hyl_media_architecture.png)
+
 ## Stack
 
 - **Frontend**: React + TypeScript + Vite + Amplify UI
