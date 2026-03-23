@@ -72,7 +72,7 @@ export async function deleteItem(id: string, entityType: string) {
 export async function updateItem(
   id: string,
   entityType: string,
-  fields: Record<string, string | null>,
+  fields: Record<string, unknown>,
   userId: string,
 ) {
   const result = await getClient().models.KnowledgeGraphItem.update({

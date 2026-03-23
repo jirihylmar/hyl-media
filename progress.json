@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-23",
-  "last_session_summary": "Task 5.1 complete: inline edit forms for name/language on all detail pages (movie, person, band, artist, collaboration, recording). Architecture diagram added. Next: 5.2 cast management.",
+  "last_session_summary": "Phase 6 complete. Schema extended with link fields + tags. Artists merged into persons. External links, create forms, asset upload, and tag management all working. All phases 0-6 complete.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -382,9 +382,9 @@
     },
     "phase_6_enrichment": {
       "name": "Enrichment, Tagging & New Content",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-03-23",
-      "completed_at": null,
+      "completed_at": "2026-03-23",
       "description": "External links, artist\u2192person merge, create forms, asset upload, resource tagging with controlled dictionary",
       "tasks": [
         {
@@ -447,18 +447,19 @@
         {
           "id": "6.7",
           "name": "Tag dictionary + tag management UI (genre, content type taxonomies)",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Can assign tags from controlled list (rock, pop, prose, etc.), filter entities by tag",
           "depends_on": [
             "6.1"
-          ]
+          ],
+          "completed_at": "2026-03-23"
         }
       ],
       "artifacts": []
     }
   },
-  "current_task": "6.7",
+  "current_task": null,
   "git_repos": {
     "orchestration": {
       "local": ".",

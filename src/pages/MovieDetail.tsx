@@ -5,6 +5,7 @@ import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { CastManager } from '../components/CastManager';
 import { ExternalLinks } from '../components/ExternalLinks';
+import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
 export function MovieDetail() {
@@ -50,6 +51,12 @@ export function MovieDetail() {
         wikiUrl={movie.wikiUrl} imdbUrl={movie.imdbUrl}
         spotifyUrl={movie.spotifyUrl} youtubeUrl={movie.youtubeUrl}
         onUpdate={fields => setMovie({ ...movie, ...fields } as typeof movie)}
+      />
+
+      <TagManager
+        id={id!} entityType="movie"
+        tags={(movie.tags as string[] | null) || []}
+        onUpdate={tags => setMovie({ ...movie, tags } as typeof movie)}
       />
 
       <CastManager

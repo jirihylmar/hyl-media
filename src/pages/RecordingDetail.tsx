@@ -4,6 +4,7 @@ import { getItem, listByRecording, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
+import { TagManager } from '../components/TagManager';
 import { PerformerManager } from '../components/PerformerManager';
 import { useUserId } from '../lib/UserContext';
 
@@ -48,6 +49,12 @@ export function RecordingDetail() {
         wikiUrl={recording.wikiUrl} imdbUrl={recording.imdbUrl}
         spotifyUrl={recording.spotifyUrl} youtubeUrl={recording.youtubeUrl}
         onUpdate={fields => setRecording({ ...recording, ...fields } as typeof recording)}
+      />
+
+      <TagManager
+        id={id!} entityType="recording"
+        tags={(recording.tags as string[] | null) || []}
+        onUpdate={tags => setRecording({ ...recording, tags } as typeof recording)}
       />
 
       <PerformerManager

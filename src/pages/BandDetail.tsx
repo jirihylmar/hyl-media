@@ -4,6 +4,7 @@ import { getItem, listByPerformer, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
+import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
 // Used for bands and collaborations
@@ -47,6 +48,12 @@ export function BandDetail() {
         wikiUrl={entity.wikiUrl} imdbUrl={entity.imdbUrl}
         spotifyUrl={entity.spotifyUrl} youtubeUrl={entity.youtubeUrl}
         onUpdate={fields => setEntity({ ...entity, ...fields } as typeof entity)}
+      />
+
+      <TagManager
+        id={id!} entityType={entityType}
+        tags={(entity.tags as string[] | null) || []}
+        onUpdate={tags => setEntity({ ...entity, tags } as typeof entity)}
       />
 
       {recordings.length > 0 && (

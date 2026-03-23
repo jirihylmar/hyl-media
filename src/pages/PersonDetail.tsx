@@ -4,6 +4,7 @@ import { getItem, listByPersonFilm, listByPerformer, updateItem } from '../lib/q
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
+import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
 export function PersonDetail() {
@@ -46,6 +47,12 @@ export function PersonDetail() {
         wikiUrl={person.wikiUrl} imdbUrl={person.imdbUrl}
         spotifyUrl={person.spotifyUrl} youtubeUrl={person.youtubeUrl}
         onUpdate={fields => setPerson({ ...person, ...fields } as typeof person)}
+      />
+
+      <TagManager
+        id={id!} entityType="person"
+        tags={(person.tags as string[] | null) || []}
+        onUpdate={tags => setPerson({ ...person, tags } as typeof person)}
       />
 
       {films.length > 0 && (
