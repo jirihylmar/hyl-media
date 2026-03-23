@@ -268,17 +268,47 @@ hyl-media/                      # Orchestration repo (this)
 
 ---
 
-### Session: 2026-03-23 — Architecture Diagram + Phase 5
-
-**Context**:
-- Phase: 5 - Edit Forms & Polish (starting)
-- Reviewed S3 buckets — confirmed all 3 `amplify-*` buckets are needed (managed by Amplify stack)
+### Session: 2026-03-23 — Phase 5 + Phase 6 (12 tasks)
 
 **Completed**:
-- Architecture diagram: `docs/architecture/generate.py` + `hyl_media_architecture.png`
-- Diagram includes actual resource names, all 3 S3 buckets with roles, 6 GSIs
-- Updated README.md with architecture image
-- Created `docs/architecture/README.md` with component reference
+- Architecture diagram with actual resource names, all 3 S3 buckets, 6 GSIs
+- **Task 5.1**: InlineEdit component + updateItem mutation on all detail pages (name, language)
+- **Task 5.2**: CastManager — add/remove actors/directors on movie detail with person search
+- **Task 5.3**: PerformerManager — add/remove performers on recording detail with type filter
+- **Task 6.1**: Schema extension — wikiUrl, imdbUrl, spotifyUrl, youtubeUrl, tags[] fields
+- **Task 6.2**: Artist→person migration — 3 artists merged, 3 recording_performer links updated
+- **Task 6.3**: Removed /artists route and nav, BandDetail no longer handles artist type
+- **Task 6.4**: ExternalLinks component on all detail pages (colored badges, alt+click to edit)
+- **Task 6.5**: CreateEntityForm on Movies, Persons, Bands, Recordings lists (+ New button)
+- **Task 6.6**: AssetUpload component — S3 upload with progress bar for books/sheet music
+- **Task 6.7**: Tag dictionary (genre/library_type/content) + TagManager UI on all detail pages
+
+**Key Decisions**:
+- Artist entity type merged into person with roles=['artist'] — no more standalone artist
+- External links as fixed fields (wikiUrl, imdbUrl, etc.) not flexible JSON — simpler for "cowork" use
+- Tag dictionary with 3 categories: Genre (17 tags), Library Type (9), Content (12)
+- PersonList now has "Artist" role filter post-merge
+
+**New Components Created**:
+- `src/components/InlineEdit.tsx` — click-to-edit with Enter/Escape
+- `src/components/CastManager.tsx` — movie cast CRUD
+- `src/components/PerformerManager.tsx` — recording performer CRUD
+- `src/components/ExternalLinks.tsx` — link badges with edit
+- `src/components/CreateEntityForm.tsx` — generic entity creation
+- `src/components/AssetUpload.tsx` — S3 file upload with metadata
+- `src/components/TagManager.tsx` — tag picker from controlled vocabulary
+- `src/lib/UserContext.tsx` — auth user ID context
+- `src/lib/tagDictionary.ts` — controlled tag vocabularies
+
+**Data Migration**:
+- `scripts/migrate-artist-to-person.mjs` — run successfully against production
+
+**Task 5.4 (UI polish) skipped** — user chose to jump to Phase 6
+
+**Next Session**:
+- All phases 0-6 complete
+- App ready for "cowork claude" to enrich data (add links, tags, new entities)
+- Could add: tag filtering on list pages, search, Kindle integration
 
 ---
 
