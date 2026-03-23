@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from 'react-router-dom';
 import { getItem, listByPerformer, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
+import { ExternalLinks } from '../components/ExternalLinks';
 import { useUserId } from '../lib/UserContext';
 
 // Used for bands and collaborations
@@ -40,6 +41,13 @@ export function BandDetail() {
           Last updated: {new Date(entity.updatedAt).toLocaleString()} by {entity.updatedBy}
         </p>
       )}
+
+      <ExternalLinks
+        id={id!} entityType={entityType}
+        wikiUrl={entity.wikiUrl} imdbUrl={entity.imdbUrl}
+        spotifyUrl={entity.spotifyUrl} youtubeUrl={entity.youtubeUrl}
+        onUpdate={fields => setEntity({ ...entity, ...fields } as typeof entity)}
+      />
 
       {recordings.length > 0 && (
         <>

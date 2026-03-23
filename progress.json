@@ -420,12 +420,13 @@
         {
           "id": "6.4",
           "name": "External links display/edit on all detail pages",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Can add/edit wiki/imdb/spotify URLs on movie and person detail pages",
           "depends_on": [
             "6.1"
-          ]
+          ],
+          "completed_at": "2026-03-23"
         },
         {
           "id": "6.5",
@@ -455,7 +456,7 @@
       "artifacts": []
     }
   },
-  "current_task": "6.4",
+  "current_task": "6.5",
   "git_repos": {
     "orchestration": {
       "local": ".",

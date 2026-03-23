@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getItem, listByPersonFilm, listByPerformer, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
+import { ExternalLinks } from '../components/ExternalLinks';
 import { useUserId } from '../lib/UserContext';
 
 export function PersonDetail() {
@@ -39,6 +40,13 @@ export function PersonDetail() {
           Last updated: {new Date(person.updatedAt).toLocaleString()} by {person.updatedBy}
         </p>
       )}
+
+      <ExternalLinks
+        id={id!} entityType="person"
+        wikiUrl={person.wikiUrl} imdbUrl={person.imdbUrl}
+        spotifyUrl={person.spotifyUrl} youtubeUrl={person.youtubeUrl}
+        onUpdate={fields => setPerson({ ...person, ...fields } as typeof person)}
+      />
 
       {films.length > 0 && (
         <>

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getItem, listByRecording, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
+import { ExternalLinks } from '../components/ExternalLinks';
 import { PerformerManager } from '../components/PerformerManager';
 import { useUserId } from '../lib/UserContext';
 
@@ -41,6 +42,13 @@ export function RecordingDetail() {
           Last updated: {new Date(recording.updatedAt).toLocaleString()} by {recording.updatedBy}
         </p>
       )}
+
+      <ExternalLinks
+        id={id!} entityType="recording"
+        wikiUrl={recording.wikiUrl} imdbUrl={recording.imdbUrl}
+        spotifyUrl={recording.spotifyUrl} youtubeUrl={recording.youtubeUrl}
+        onUpdate={fields => setRecording({ ...recording, ...fields } as typeof recording)}
+      />
 
       <PerformerManager
         recordingId={id!}

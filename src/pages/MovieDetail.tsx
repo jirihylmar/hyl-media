@@ -4,6 +4,7 @@ import { getItem, listByCastMovie, listByType, updateItem } from '../lib/queries
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { CastManager } from '../components/CastManager';
+import { ExternalLinks } from '../components/ExternalLinks';
 import { useUserId } from '../lib/UserContext';
 
 export function MovieDetail() {
@@ -43,6 +44,13 @@ export function MovieDetail() {
           Last updated: {new Date(movie.updatedAt).toLocaleString()} by {movie.updatedBy}
         </p>
       )}
+
+      <ExternalLinks
+        id={id!} entityType="movie"
+        wikiUrl={movie.wikiUrl} imdbUrl={movie.imdbUrl}
+        spotifyUrl={movie.spotifyUrl} youtubeUrl={movie.youtubeUrl}
+        onUpdate={fields => setMovie({ ...movie, ...fields } as typeof movie)}
+      />
 
       <CastManager
         movieId={id!}
