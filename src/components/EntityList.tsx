@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listByType } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
+import { CreateEntityForm } from './CreateEntityForm';
+
+type FieldDef = {
+  name: string;
+  label: string;
+  required?: boolean;
+  placeholder?: string;
+};
 
 type Props = {
   entityType: string;
@@ -10,25 +18,46 @@ type Props = {
   filterFn?: (item: KnowledgeGraphItem) => boolean;
   extraColumns?: { label: string; render: (item: KnowledgeGraphItem) => React.ReactNode }[];
   filters?: React.ReactNode;
+  createFields?: FieldDef[];
 };
 
-export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters }: Props) {
+export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters, createFields }: Props) {
   const [items, setItems] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => {
+  const refresh = () => {
     listByType(entityType).then(data => {
       setItems(data);
       setLoading(false);
     });
-  }, [entityType]);
+  };
+
+  useEffect(() => { refresh(); }, [entityType]);
 
   const filtered = filterFn ? items.filter(filterFn) : items;
 
   return (
     <div>
-      <h1>{title} ({loading ? '...' : filtered.length})</h1>
+      <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {title} ({loading ? '...' : filtered.length})
+        {createFields && !showCreate && (
+          <button onClick={() => setShowCreate(true)} style={{
+            background: '#4a90d9', color: '#fff', border: 'none', borderRadius: 4,
+            padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer',
+          }}>+ New</button>
+        )}
+      </h1>
       {filters}
+      {showCreate && createFields && (
+        <CreateEntityForm
+          entityType={entityType}
+          title={title.replace(/s$/, '')}
+          fields={createFields}
+          detailPath={detailPath}
+          onCancel={() => setShowCreate(false)}
+        />
+      )}
       {loading ? (
         <p>Loading...</p>
       ) : (

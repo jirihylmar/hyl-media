@@ -431,9 +431,10 @@
         {
           "id": "6.5",
           "name": "Create new entity forms (movie, person, band, recording)",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "Can create a new movie from UI, appears in movie list"
+          "verify": "Can create a new movie from UI, appears in movie list",
+          "completed_at": "2026-03-23"
         },
         {
           "id": "6.6",
@@ -456,7 +457,7 @@
       "artifacts": []
     }
   },
-  "current_task": "6.5",
+  "current_task": "6.6",
   "git_repos": {
     "orchestration": {
       "local": ".",

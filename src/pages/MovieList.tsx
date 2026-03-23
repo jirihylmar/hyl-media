@@ -15,6 +15,10 @@ export function MovieList() {
       title="Movies"
       detailPath="/movies"
       filterFn={filterFn}
+      createFields={[
+        { name: 'name', label: 'Movie Name', required: true },
+        { name: 'language', label: 'Language', placeholder: 'en or cs' },
+      ]}
       filters={
         <div style={{ marginBottom: '1rem' }}>
           <label>Language: </label>

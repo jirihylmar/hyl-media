@@ -15,6 +15,12 @@ export function PersonList() {
       title="Persons"
       detailPath="/persons"
       filterFn={filterFn}
+      createFields={[
+        { name: 'name', label: 'Display Name', required: true },
+        { name: 'givenName', label: 'Given Name' },
+        { name: 'familyName', label: 'Family Name' },
+        { name: 'language', label: 'Language', placeholder: 'en or cs' },
+      ]}
       extraColumns={[
         { label: 'Roles', render: item => item.roles?.join(', ') || '' },
       ]}
@@ -26,6 +32,7 @@ export function PersonList() {
             <option value="actor">Actor</option>
             <option value="director">Director</option>
             <option value="musician">Musician</option>
+            <option value="artist">Artist</option>
           </select>
         </div>
       }
