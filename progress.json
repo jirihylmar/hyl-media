@@ -439,9 +439,10 @@
         {
           "id": "6.6",
           "name": "Asset upload \u2014 new book/sheet music with S3 upload + DynamoDB metadata",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "Can upload PDF via UI, appears in library/sheet music list with download link"
+          "verify": "Can upload PDF via UI, appears in library/sheet music list with download link",
+          "completed_at": "2026-03-23"
         },
         {
           "id": "6.7",
@@ -457,7 +458,7 @@
       "artifacts": []
     }
   },
-  "current_task": "6.6",
+  "current_task": "6.7",
   "git_repos": {
     "orchestration": {
       "local": ".",
