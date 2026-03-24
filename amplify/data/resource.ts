@@ -31,6 +31,11 @@ const schema = a.schema({
     sheetMusicId: a.string(),
     // External links — JSON-serialized Array<{url: string, type: string}>
     externalLinks: a.string(),
+    // Legacy link fields (kept for schema compatibility, frontend uses externalLinks)
+    wikiUrl: a.string(),
+    imdbUrl: a.string(),
+    spotifyUrl: a.string(),
+    youtubeUrl: a.string(),
     // Tags (controlled vocabulary)
     tags: a.string().array(),
     // Audit fields
