@@ -256,44 +256,38 @@ export function DataManagement() {
 
       {tab === 'books' && (
         <div>
-          <h2>Unlinked Books ({unlinkedBooks.length})</h2>
-          <p style={{ color: '#888', fontSize: '0.85em' }}>Books whose author does not match any person entity</p>
+          <h2>Books ({books.length})</h2>
+          <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
+            Author linked: {linkedBooks.length}/{books.length} &nbsp;|&nbsp;
+            External links: {books.filter(b => parseLinks(b.item.externalLinks as string | null).length > 0).length}/{books.length} &nbsp;|&nbsp;
+            Tagged: {books.filter(b => b.item.tags && (b.item.tags as string[]).length > 0).length}/{books.length}
+          </p>
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead>
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
                 <th style={cellStyle}>Book</th>
                 <th style={cellStyle}>Author</th>
                 <th style={cellStyle}>Tags</th>
+                <th style={cellStyle}>External Links</th>
               </tr>
             </thead>
             <tbody>
-              {unlinkedBooks.map(b => (
-                <tr key={b.item.id}>
-                  <td style={cellStyle}><Link to={`/library/${b.item.id}`}>{b.item.name}</Link></td>
-                  <td style={cellStyle}>{b.item.author || '—'}</td>
-                  <td style={cellStyle}>{renderTags(b.item.tags as string[] | null)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <h2 style={{ marginTop: 24 }}>Linked Books ({linkedBooks.length})</h2>
-          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
-                <th style={cellStyle}>Book</th>
-                <th style={cellStyle}>Author (linked)</th>
-                <th style={cellStyle}>Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linkedBooks.map(b => (
-                <tr key={b.item.id}>
-                  <td style={cellStyle}><Link to={`/library/${b.item.id}`}>{b.item.name}</Link></td>
-                  <td style={cellStyle}>{b.linkedTo}</td>
-                  <td style={cellStyle}>{renderTags(b.item.tags as string[] | null)}</td>
-                </tr>
-              ))}
+              {books.map(b => {
+                const links = parseLinks(b.item.externalLinks as string | null);
+                return (
+                  <tr key={b.item.id}>
+                    <td style={cellStyle}><Link to={`/library/${b.item.id}`}>{b.item.name}</Link></td>
+                    <td style={cellStyle}>
+                      {b.linked
+                        ? <span style={{ color: '#059669' }}>{b.linkedTo}</span>
+                        : <span style={{ color: '#888' }}>{b.item.author || '—'}</span>
+                      }
+                    </td>
+                    <td style={cellStyle}>{renderTags(b.item.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(links)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -301,44 +295,38 @@ export function DataManagement() {
 
       {tab === 'sheets' && (
         <div>
-          <h2>Unlinked Sheet Music ({unlinkedSheets.length})</h2>
-          <p style={{ color: '#888', fontSize: '0.85em' }}>Sheet music with no performer cross-reference</p>
+          <h2>Sheet Music ({sheets.length})</h2>
+          <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
+            Performer linked: {linkedSheets.length}/{sheets.length} &nbsp;|&nbsp;
+            External links: {sheets.filter(s => parseLinks(s.item.externalLinks as string | null).length > 0).length}/{sheets.length} &nbsp;|&nbsp;
+            Tagged: {sheets.filter(s => s.item.tags && (s.item.tags as string[]).length > 0).length}/{sheets.length}
+          </p>
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead>
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
                 <th style={cellStyle}>Title</th>
                 <th style={cellStyle}>Artist</th>
                 <th style={cellStyle}>Tags</th>
+                <th style={cellStyle}>External Links</th>
               </tr>
             </thead>
             <tbody>
-              {unlinkedSheets.map(s => (
-                <tr key={s.item.id}>
-                  <td style={cellStyle}><Link to={`/sheet-music/${s.item.id}`}>{s.item.name}</Link></td>
-                  <td style={cellStyle}>{s.item.artistName || '—'}</td>
-                  <td style={cellStyle}>{renderTags(s.item.tags as string[] | null)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <h2 style={{ marginTop: 24 }}>Linked Sheet Music ({linkedSheets.length})</h2>
-          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
-                <th style={cellStyle}>Title</th>
-                <th style={cellStyle}>Performer (linked)</th>
-                <th style={cellStyle}>Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linkedSheets.map(s => (
-                <tr key={s.item.id}>
-                  <td style={cellStyle}><Link to={`/sheet-music/${s.item.id}`}>{s.item.name}</Link></td>
-                  <td style={cellStyle}>{s.linkedTo}</td>
-                  <td style={cellStyle}>{renderTags(s.item.tags as string[] | null)}</td>
-                </tr>
-              ))}
+              {sheets.map(s => {
+                const links = parseLinks(s.item.externalLinks as string | null);
+                return (
+                  <tr key={s.item.id}>
+                    <td style={cellStyle}><Link to={`/sheet-music/${s.item.id}`}>{s.item.name}</Link></td>
+                    <td style={cellStyle}>
+                      {s.linked
+                        ? <span style={{ color: '#059669' }}>{s.linkedTo}</span>
+                        : <span style={{ color: '#888' }}>{s.item.artistName || '—'}</span>
+                      }
+                    </td>
+                    <td style={cellStyle}>{renderTags(s.item.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(links)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -462,6 +450,27 @@ const cellStyle: React.CSSProperties = {
 function pct(a: number, b: number) {
   if (b === 0) return '0%';
   return `${Math.round((a / b) * 100)}%`;
+}
+
+const LINK_COLORS: Record<string, string> = {
+  wikipedia: '#636466', imdb: '#f5c518', spotify: '#1db954', youtube: '#ff0000',
+  nkp: '#1a3a6b', openlibrary: '#0b6623', musicbrainz: '#ba478f', supermusic: '#e63946',
+  discogs: '#333', goodreads: '#553b08',
+};
+
+function renderLinkBadges(links: { url: string; type: string }[]) {
+  if (links.length === 0) return <span style={{ color: '#ccc' }}>none</span>;
+  return (
+    <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+      {links.map((l, i) => (
+        <a key={i} href={l.url} target="_blank" rel="noopener noreferrer" style={{
+          padding: '1px 6px', background: `${LINK_COLORS[l.type] || '#666'}20`,
+          color: LINK_COLORS[l.type] || '#666', borderRadius: 10, fontSize: '0.7rem',
+          textDecoration: 'none', border: `1px solid ${LINK_COLORS[l.type] || '#666'}40`,
+        }}>{l.type}</a>
+      ))}
+    </span>
+  );
 }
 
 function renderTags(tags: string[] | null) {
