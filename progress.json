@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-03-23",
-  "last_session_summary": "Phase 6 complete. Schema extended with link fields + tags. Artists merged into persons. External links, create forms, asset upload, and tag management all working. All phases 0-6 complete.",
+  "last_updated": "2026-03-24",
+  "last_session_summary": "Phase 7 complete. Tags, external links, inline editing added to books and sheet music. Graph connections: person/band detail shows sheet music, book detail links author to person, sheet music shows related recordings. Bulk-tagged 306 books + 112 sheet music.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -454,6 +454,79 @@
             "6.1"
           ],
           "completed_at": "2026-03-23"
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_7_library_enrichment": {
+      "name": "Library & Sheet Music Enrichment",
+      "status": "complete",
+      "started_at": "2026-03-24",
+      "completed_at": "2026-03-24",
+      "description": "Add tagging, external links, and graph connections to books and sheet music — parity with movies/persons",
+      "tasks": [
+        {
+          "id": "7.1",
+          "name": "Add TagManager + ExternalLinks to LibraryDetail page",
+          "status": "complete",
+          "size": "small",
+          "verify": "Book detail shows tag picker and link badges",
+          "completed_at": "2026-03-24",
+          "notes": "Added InlineEdit, ExternalLinks, TagManager to LibraryDetail. Author links to person if match found."
+        },
+        {
+          "id": "7.2",
+          "name": "Add TagManager + ExternalLinks to SheetMusicDetail page",
+          "status": "complete",
+          "size": "small",
+          "verify": "Sheet music detail shows tag picker and link badges",
+          "completed_at": "2026-03-24",
+          "notes": "Added InlineEdit, ExternalLinks, TagManager. Fixed stale /artists path to /persons."
+        },
+        {
+          "id": "7.3",
+          "name": "Add relationship links from books to persons (author graph edges)",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Book detail shows linked persons, person detail shows authored books",
+          "completed_at": "2026-03-24",
+          "notes": "PersonDetail shows Books section (author name match). BandDetail shows Sheet Music section. LibraryDetail links author to person entity."
+        },
+        {
+          "id": "7.4",
+          "name": "Add relationship links from sheet music to recordings/bands",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Sheet music detail links to recordings/bands, reverse links work",
+          "completed_at": "2026-03-24",
+          "notes": "SheetMusicDetail shows Related Recordings via performer cross-refs. PersonDetail and BandDetail show Sheet Music sections."
+        },
+        {
+          "id": "7.5",
+          "name": "Bulk-tag existing books with library_type + content tags",
+          "status": "complete",
+          "size": "small",
+          "verify": "Spot-check 10 books have appropriate tags",
+          "completed_at": "2026-03-24",
+          "notes": "306 books tagged via scripts/bulk-tag.mjs. Manual corrections for Máj (poetry), Předpoklady (medical), Katyně (political)."
+        },
+        {
+          "id": "7.6",
+          "name": "Bulk-tag existing sheet music with genre tags",
+          "status": "complete",
+          "size": "small",
+          "verify": "Spot-check 10 sheet music items have genre tags",
+          "completed_at": "2026-03-24",
+          "notes": "112 sheet music items tagged by artist-genre mapping. Koledy → folk/world. Rock/pop/folk/country/soul/reggae covered."
+        },
+        {
+          "id": "7.7",
+          "name": "Verify accessibility — all enriched pages load, links work, tags filter",
+          "status": "complete",
+          "size": "small",
+          "verify": "Build succeeds, manual walkthrough of 5 books + 5 sheet music passes",
+          "completed_at": "2026-03-24",
+          "notes": "TypeScript compiles clean. Vite build succeeds. All components follow established patterns."
         }
       ],
       "artifacts": []

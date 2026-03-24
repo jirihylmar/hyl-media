@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getItem, listByPersonFilm, listByPerformer, updateItem } from '../lib/queries';
+import { getItem, listByPersonFilm, listByPerformer, listByType, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
@@ -13,12 +13,26 @@ export function PersonDetail() {
   const [person, setPerson] = useState<KnowledgeGraphItem | null>(null);
   const [films, setFilms] = useState<KnowledgeGraphItem[]>([]);
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
+  const [sheetMusic, setSheetMusic] = useState<KnowledgeGraphItem[]>([]);
+  const [books, setBooks] = useState<KnowledgeGraphItem[]>([]);
 
   useEffect(() => {
     if (!id) return;
-    getItem(id, 'person').then(setPerson);
+    getItem(id, 'person').then(data => {
+      setPerson(data);
+      // Find books by this person (author name match)
+      if (data?.name) {
+        listByType('book').then(items => {
+          setBooks(items.filter(b => b.author === data.name));
+        });
+      }
+    });
     listByPersonFilm(id).then(setFilms);
     listByPerformer(id).then(setRecordings);
+    // Find sheet music where this person is a performer
+    listByType('sheet_music_performer').then(items => {
+      setSheetMusic(items.filter(i => i.performerId === id));
+    });
   }, [id]);
 
   if (!person) return <p>Loading...</p>;
@@ -76,6 +90,32 @@ export function PersonDetail() {
             {recordings.map(r => (
               <li key={r.id}>
                 <Link to={`/recordings/${r.recordingId}`}>{r.recordingName}</Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {sheetMusic.length > 0 && (
+        <>
+          <h2>Sheet Music ({sheetMusic.length})</h2>
+          <ul>
+            {sheetMusic.map(sm => (
+              <li key={sm.id}>
+                <Link to={`/sheet-music/${sm.sheetMusicId}`}>{sm.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {books.length > 0 && (
+        <>
+          <h2>Books ({books.length})</h2>
+          <ul>
+            {books.map(b => (
+              <li key={b.id}>
+                <Link to={`/library/${b.id}`}>{b.name}</Link>
               </li>
             ))}
           </ul>

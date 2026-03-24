@@ -312,4 +312,37 @@ hyl-media/                      # Orchestration repo (this)
 
 ---
 
+### Session: 2026-03-24 — Phase 7: Library & Sheet Music Enrichment (7 tasks)
+
+**Completed**:
+- **Task 7.1**: TagManager + ExternalLinks + InlineEdit on LibraryDetail (books)
+- **Task 7.2**: TagManager + ExternalLinks + InlineEdit on SheetMusicDetail + fixed stale /artists path
+- **Task 7.3**: PersonDetail shows "Books" section (author name match), LibraryDetail links author to person entity
+- **Task 7.4**: SheetMusicDetail shows "Related Recordings" via performer cross-refs. PersonDetail and BandDetail show "Sheet Music" sections (reverse links from sheet_music_performer)
+- **Task 7.5**: Bulk-tagged 306 books with library_type + content tags (yoga, spiritual, medical, technical, etc.)
+- **Task 7.6**: Bulk-tagged 112 sheet music with genre tags (rock, pop, folk, country, soul, reggae, world)
+- **Task 7.7**: Build verified clean. All pages follow established component patterns.
+
+**Key Changes**:
+- LibraryDetail now has full parity with MovieDetail: InlineEdit, ExternalLinks, TagManager, author-to-person link
+- SheetMusicDetail now has full parity: InlineEdit, ExternalLinks, TagManager, cross-refs to persons/bands, related recordings
+- PersonDetail shows Sheet Music + Books sections (reverse graph edges)
+- BandDetail shows Sheet Music section (reverse graph edges)
+- Fixed stale /artists route in SheetMusicDetail cross-refs (now routes to /persons after artist merge)
+
+**Scripts Created**:
+- `scripts/bulk-tag.mjs` — rule-based tagging for books (library_type + content) and sheet music (genre by artist)
+
+**Manual Tag Corrections**:
+- Máj → poetry, creative (Czech romantic poem, not non-fiction)
+- Předpoklady vzpřímeného držení těla → manual, medical
+- Staré pověsti české → prose, historical
+- Katyně → prose, historical, political
+
+**Next Session**:
+- All phases 0-7 complete
+- Could add: tag filtering on list pages, search, Kindle integration
+
+---
+
 <!-- Sessions are prepended above this line -->
