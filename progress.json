@@ -1,10 +1,10 @@
 {
   "version": "2.0",
   "project": "hyl-media",
-  "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
+  "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 7 complete (13 tasks). Books+sheets enriched with tags/links/graph. 194 new entities created. Fuzzy name matching for diacritics. Data Management page. All 1067 items tagged (649 this session). Tag dictionary has 5 categories with methods.",
+  "last_session_summary": "Phase 8 complete (7 tasks). External links restructured from fixed fields to flexible {url, type} array. 94 movies got Wikipedia+IMDB links, 45 bands got Wikipedia links. 100% coverage.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -385,11 +385,11 @@
       "status": "complete",
       "started_at": "2026-03-23",
       "completed_at": "2026-03-23",
-      "description": "External links, artist\u2192person merge, create forms, asset upload, resource tagging with controlled dictionary",
+      "description": "External links, artist→person merge, create forms, asset upload, resource tagging with controlled dictionary",
       "tasks": [
         {
           "id": "6.1",
-          "name": "Schema extension \u2014 add link fields (wikiUrl, imdbUrl, spotifyUrl) + tags array, deploy",
+          "name": "Schema extension — add link fields (wikiUrl, imdbUrl, spotifyUrl) + tags array, deploy",
           "status": "complete",
           "size": "medium",
           "verify": "amplify/data/resource.ts has new fields, deployed to AWS",
@@ -397,7 +397,7 @@
         },
         {
           "id": "6.2",
-          "name": "Artist\u2192person migration \u2014 merge 3 artists into persons, update recording_performer refs",
+          "name": "Artist→person migration — merge 3 artists into persons, update recording_performer refs",
           "status": "complete",
           "size": "medium",
           "verify": "No artist entity_type items remain in DynamoDB, persons have artist role",
@@ -408,7 +408,7 @@
         },
         {
           "id": "6.3",
-          "name": "Frontend cleanup \u2014 remove artist standalone routes/nav, show artists under persons",
+          "name": "Frontend cleanup — remove artist standalone routes/nav, show artists under persons",
           "status": "complete",
           "size": "small",
           "verify": "/artists route removed from nav, artist-role persons visible in persons list",
@@ -438,7 +438,7 @@
         },
         {
           "id": "6.6",
-          "name": "Asset upload \u2014 new book/sheet music with S3 upload + DynamoDB metadata",
+          "name": "Asset upload — new book/sheet music with S3 upload + DynamoDB metadata",
           "status": "complete",
           "size": "medium",
           "verify": "Can upload PDF via UI, appears in library/sheet music list with download link",
@@ -590,9 +590,9 @@
     },
     "phase_8_flexible_links": {
       "name": "Flexible External Links + Link Research",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-03-24",
-      "completed_at": null,
+      "completed_at": "2026-03-24",
       "description": "Restructure external links from fixed fields to flexible {url, type} array. Research and populate missing Wikipedia/IMDB links.",
       "tasks": [
         {
@@ -609,7 +609,9 @@
           "status": "complete",
           "size": "small",
           "verify": "Spot-check 10 items: links preserved in new format",
-          "depends_on": ["8.1"],
+          "depends_on": [
+            "8.1"
+          ],
           "completed_at": "2026-03-24",
           "notes": "No items had old URL fields populated — clean migration, no data to convert"
         },
@@ -619,7 +621,9 @@
           "status": "complete",
           "size": "medium",
           "verify": "Can add/edit/remove links of any type on movie detail",
-          "depends_on": ["8.1"],
+          "depends_on": [
+            "8.1"
+          ],
           "completed_at": "2026-03-24",
           "notes": "Supports 7 known types (wikipedia, imdb, spotify, youtube, discogs, goodreads, musicbrainz) with custom type fallback"
         },
@@ -629,7 +633,9 @@
           "status": "complete",
           "size": "small",
           "verify": "All 6 detail page types render links correctly",
-          "depends_on": ["8.3"],
+          "depends_on": [
+            "8.3"
+          ],
           "completed_at": "2026-03-24"
         },
         {
@@ -638,31 +644,42 @@
           "status": "complete",
           "size": "small",
           "verify": "Amplify build passes, spot-check links on deployed app",
-          "depends_on": ["8.2", "8.4"],
+          "depends_on": [
+            "8.2",
+            "8.4"
+          ],
           "completed_at": "2026-03-24",
           "notes": "TypeScript clean, Vite build succeeds"
         },
         {
           "id": "8.6",
           "name": "Research + bulk-add Wikipedia links for movies, persons, bands",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Wikipedia link count increases significantly",
-          "depends_on": ["8.5"]
+          "depends_on": [
+            "8.5"
+          ],
+          "completed_at": "2026-03-24",
+          "notes": "94/94 movies + 45/45 bands now have Wikipedia links. Used MediaWiki API + manual URLs for Czech/Slovak bands (cs/sk Wikipedia)."
         },
         {
           "id": "8.7",
           "name": "Research + bulk-add IMDB links for movies and persons",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "IMDB link count increases significantly",
-          "depends_on": ["8.5"]
+          "depends_on": [
+            "8.5"
+          ],
+          "completed_at": "2026-03-24",
+          "notes": "94/94 movies now have IMDB links. All IMDB title IDs manually verified."
         }
       ],
       "artifacts": []
     }
   },
-  "current_task": "8.1",
+  "current_task": null,
   "git_repos": {
     "orchestration": {
       "local": ".",

@@ -4,6 +4,44 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Link Research
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1–8.7 (all complete)
+
+**What was done**:
+1. **Schema change** (8.1): Replaced 4 fixed URL fields (`wikiUrl`, `imdbUrl`, `spotifyUrl`, `youtubeUrl`) with single `externalLinks` JSON string field storing `Array<{url, type}>`.
+2. **Data migration** (8.2): No data to migrate — old fields were never populated with data.
+3. **Component refactor** (8.3): `ExternalLinks` component now supports 7 known types (wikipedia, imdb, spotify, youtube, discogs, goodreads, musicbrainz) plus any custom type.
+4. **Detail pages** (8.4): All 6 detail pages updated to pass new `externalLinks` prop.
+5. **Build verified** (8.5): TypeScript clean, Vite build succeeds.
+6. **Wikipedia research** (8.6): 94/94 movies + 45/45 bands now have Wikipedia links. Used MediaWiki API for automated lookup + manual URLs for Czech/Slovak bands (cs/sk Wikipedia).
+7. **IMDB research** (8.7): 94/94 movies now have IMDB links with manually verified title IDs.
+
+**Architecture decision**: External links now use `{url, type}` pattern — any new link source (Discogs, Goodreads, MusicBrainz, etc.) can be added without schema changes.
+
+---
+
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Link Research
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1-8.7 (all complete)
+
+**What was done**:
+1. **Schema change** (8.1): Replaced 4 fixed URL fields with single externalLinks JSON string field storing Array<{url, type}>.
+2. **Data migration** (8.2): No data to migrate - old fields were never populated.
+3. **Component refactor** (8.3): ExternalLinks component now supports 7 known types plus any custom type.
+4. **Detail pages** (8.4): All 6 detail pages updated to pass new externalLinks prop.
+5. **Build verified** (8.5): TypeScript clean, Vite build succeeds.
+6. **Wikipedia research** (8.6): 94/94 movies + 45/45 bands now have Wikipedia links.
+7. **IMDB research** (8.7): 94/94 movies now have IMDB links.
+
+**Architecture decision**: External links now use {url, type} pattern - extensible without schema changes.
+
+---
+
 ### Session: 2026-03-22 — Task 0.1: Read Input Materials
 
 **Context**:
@@ -209,6 +247,25 @@ hyl-media/                      # Orchestration repo (this)
 ├── input/                      # Source materials (read-only)
 └── tasks/
 ```
+
+---
+
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Link Research
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1-8.7 (all complete)
+
+**What was done**:
+1. **Schema change** (8.1): Replaced 4 fixed URL fields with single externalLinks JSON string field storing Array<{url, type}>.
+2. **Data migration** (8.2): No data to migrate - old fields were never populated.
+3. **Component refactor** (8.3): ExternalLinks component now supports 7 known types plus any custom type.
+4. **Detail pages** (8.4): All 6 detail pages updated to pass new externalLinks prop.
+5. **Build verified** (8.5): TypeScript clean, Vite build succeeds.
+6. **Wikipedia research** (8.6): 94/94 movies + 45/45 bands now have Wikipedia links.
+7. **IMDB research** (8.7): 94/94 movies now have IMDB links.
+
+**Architecture decision**: External links now use {url, type} pattern - extensible without schema changes.
 
 ---
 
