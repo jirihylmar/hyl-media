@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 8 complete (7 tasks). External links restructured from fixed fields to flexible {url, type} array. 94 movies got Wikipedia+IMDB links, 45 bands got Wikipedia links. 100% coverage.",
+  "last_session_summary": "Phase 8 complete. External links restructured to flexible {url, type} array. Link research: movies 100%, bands 100%, persons 63%, recordings 73%, sheet music 59%, books 2%. Total 539 items linked.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -661,7 +661,7 @@
             "8.5"
           ],
           "completed_at": "2026-03-24",
-          "notes": "94/94 movies + 45/45 bands now have Wikipedia links. Used MediaWiki API + manual URLs for Czech/Slovak bands (cs/sk Wikipedia)."
+          "notes": "Movies: 94/94 Wikipedia. Bands: 45/45 Wikipedia. Persons: 260/416 Wikipedia (63%). Recordings: 69/94 Wikipedia (73%). Sheet music: 66/112 Wikipedia (59%). Books: 5/306 Wikipedia (2%). Remaining are obscure Czech authors, Czech-only songs, specialized books."
         },
         {
           "id": "8.7",
@@ -673,7 +673,7 @@
             "8.5"
           ],
           "completed_at": "2026-03-24",
-          "notes": "94/94 movies now have IMDB links. All IMDB title IDs manually verified."
+          "notes": "Movies: 94/94 IMDB. Persons: 196/416 IMDB (all actors/directors covered). Bands/recordings/books/sheets not applicable for IMDB."
         }
       ],
       "artifacts": []
