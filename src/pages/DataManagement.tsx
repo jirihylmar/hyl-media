@@ -15,6 +15,8 @@ export function DataManagement() {
   const [sheets, setSheets] = useState<LinkStatus[]>([]);
   const [persons, setPersons] = useState<KnowledgeGraphItem[]>([]);
   const [bands, setBands] = useState<KnowledgeGraphItem[]>([]);
+  const [movies, setMovies] = useState<KnowledgeGraphItem[]>([]);
+  const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
   const [crossRefs, setCrossRefs] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'overview' | 'books' | 'sheets' | 'tags' | 'persons'>('overview');
@@ -25,10 +27,14 @@ export function DataManagement() {
       listByType('sheet_music'),
       listByType('person'),
       listByType('band'),
+      listByType('movie'),
+      listByType('recording'),
       listByType('sheet_music_performer'),
-    ]).then(([bookItems, sheetItems, personItems, bandItems, crossRefItems]) => {
+    ]).then(([bookItems, sheetItems, personItems, bandItems, movieItems, recordingItems, crossRefItems]) => {
       setPersons(personItems);
       setBands(bandItems);
+      setMovies(movieItems);
+      setRecordings(recordingItems);
       setCrossRefs(crossRefItems);
 
       // Check book author → person links
@@ -58,8 +64,11 @@ export function DataManagement() {
   const linkedSheets = sheets.filter(s => s.linked);
   const unlinkedSheets = sheets.filter(s => !s.linked);
 
-  // Tag stats
-  const allItems = [...books.map(b => b.item), ...sheets.map(s => s.item)];
+  // Tag stats — all entity types
+  const allItems = [
+    ...books.map(b => b.item), ...sheets.map(s => s.item),
+    ...persons, ...bands, ...movies, ...recordings,
+  ];
   const taggedItems = allItems.filter(i => i.tags && (i.tags as string[]).length > 0);
   const tagCounts: Record<string, number> = {};
   for (const item of allItems) {
@@ -273,8 +282,11 @@ export function DataManagement() {
         <div>
           <h2>Tag Dictionary</h2>
           {Object.entries(TAG_DICTIONARY).map(([catKey, cat]) => (
-            <div key={catKey} style={{ marginBottom: 16 }}>
-              <h3 style={{ color: TAG_COLORS[catKey] }}>{cat.label}</h3>
+            <div key={catKey} style={{ marginBottom: 20 }}>
+              <h3 style={{ color: TAG_COLORS[catKey], marginBottom: 4 }}>{cat.label}</h3>
+              <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 8px', fontStyle: 'italic' }}>
+                Method: {cat.method}
+              </p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {cat.tags.map(tag => (
                   <span key={tag} style={{
@@ -291,8 +303,47 @@ export function DataManagement() {
             </div>
           ))}
 
-          <h2 style={{ marginTop: 24 }}>Untagged Items</h2>
-          <p>{allItems.length - taggedItems.length} of {allItems.length} items have no tags</p>
+          <h2 style={{ marginTop: 24 }}>Tag Coverage</h2>
+          <table style={{ borderCollapse: 'collapse', marginBottom: 16 }}>
+            <thead>
+              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
+                <th style={cellStyle}>Entity Type</th>
+                <th style={cellStyle}>Total</th>
+                <th style={cellStyle}>Tagged</th>
+                <th style={cellStyle}>Untagged</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: 'Books', items: books.map(b => b.item) },
+                { label: 'Sheet Music', items: sheets.map(s => s.item) },
+                { label: 'People', items: persons },
+                { label: 'Bands', items: bands },
+                { label: 'Movies', items: movies },
+                { label: 'Recordings', items: recordings },
+              ].map(({ label, items }) => {
+                const tagged = items.filter(i => i.tags && (i.tags as string[]).length > 0).length;
+                return (
+                  <tr key={label}>
+                    <td style={cellStyle}>{label}</td>
+                    <td style={cellStyle}>{items.length}</td>
+                    <td style={cellStyle}>{tagged}</td>
+                    <td style={{ ...cellStyle, color: items.length - tagged > 0 ? '#dc2626' : '#059669', fontWeight: 'bold' }}>
+                      {items.length - tagged}
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr style={{ fontWeight: 'bold' }}>
+                <td style={cellStyle}>Total</td>
+                <td style={cellStyle}>{allItems.length}</td>
+                <td style={cellStyle}>{taggedItems.length}</td>
+                <td style={{ ...cellStyle, color: allItems.length - taggedItems.length > 0 ? '#dc2626' : '#059669' }}>
+                  {allItems.length - taggedItems.length}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
     </div>

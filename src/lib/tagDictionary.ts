@@ -1,6 +1,7 @@
 export type TagCategory = {
   label: string;
   tags: string[];
+  method: string;
 };
 
 export const TAG_DICTIONARY: Record<string, TagCategory> = {
@@ -11,6 +12,7 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'blues', 'country', 'punk', 'metal', 'reggae', 'soul',
       'hip-hop', 'soundtrack', 'world', 'ambient', 'r&b',
     ],
+    method: 'Sheet music: artist-to-genre mapping. Bands/recordings: inherited from performer cross-refs and known genre associations. Movies: derived from soundtrack recordings.',
   },
   instrument: {
     label: 'Instrument',
@@ -18,6 +20,7 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'guitar', 'piano', 'vocals', 'bass', 'drums', 'violin',
       'harmonica', 'accordion', 'flute', 'saxophone', 'trumpet',
     ],
+    method: 'Manual assignment. Sheet music tagged by primary instrument in the arrangement.',
   },
   library_type: {
     label: 'Library Type',
@@ -25,6 +28,7 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'prose', 'poetry', 'fiction', 'non-fiction', 'textbook',
       'reference', 'manual', 'biography', 'essay',
     ],
+    method: 'Rule-based: book title and author keywords matched against category patterns (e.g., sutra/gita/vedanta → reference, machine learning → textbook).',
   },
   content: {
     label: 'Content',
@@ -33,12 +37,14 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'entertainment', 'philosophical', 'scientific', 'political',
       'historical', 'medical', 'programming', 'yoga',
     ],
+    method: 'Rule-based: book title/author keywords (e.g., yoga/meditation/pranayama → yoga, sivananda/vivekananda → spiritual, machine learning → technical). Movies: theme-based.',
   },
   role: {
     label: 'Role',
     tags: [
       'actor', 'director', 'artist', 'author', 'composer', 'producer',
     ],
+    method: 'Persons: copied from existing roles[] field in DynamoDB. Bands: not applicable.',
   },
 };
 
