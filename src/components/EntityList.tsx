@@ -56,28 +56,28 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
         />
       )}
       {loading ? (
-        <p>Loading...</p>
+        <p className="loading">Loading</p>
       ) : (
         <div className="table-wrap">
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
-              <th style={{ padding: '0.5rem' }}>Name</th>
-              <th style={{ padding: '0.5rem' }}>Language</th>
+            <tr style={{ borderBottom: '1px solid var(--border-bright)', textAlign: 'left' }}>
+              <th style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>Name</th>
+              <th style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>Lang</th>
               {extraColumns?.map(col => (
-                <th key={col.label} style={{ padding: '0.5rem' }}>{col.label}</th>
+                <th key={col.label} style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>{col.label}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '0.5rem' }}>
+              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '0.3rem 0.5rem' }}>
                   <Link to={`${detailPath}/${item.id}`}>{item.name}</Link>
                 </td>
-                <td style={{ padding: '0.5rem' }}>{item.language}</td>
+                <td style={{ padding: '0.3rem 0.5rem', color: 'var(--text-dim)' }}>{item.language}</td>
                 {extraColumns?.map(col => (
-                  <td key={col.label} style={{ padding: '0.5rem' }}>{col.render(item)}</td>
+                  <td key={col.label} style={{ padding: '0.3rem 0.5rem' }}>{col.render(item)}</td>
                 ))}
               </tr>
             ))}

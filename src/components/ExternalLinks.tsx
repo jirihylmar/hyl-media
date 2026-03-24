@@ -12,16 +12,16 @@ type Props = {
 };
 
 const KNOWN_TYPES: Record<string, { label: string; icon: string; color: string }> = {
-  wikipedia: { label: 'Wikipedia', icon: 'W', color: '#636466' },
-  imdb: { label: 'IMDb', icon: 'i', color: '#f5c518' },
+  wikipedia: { label: 'Wikipedia', icon: 'W', color: '#7a8a7a' },
+  imdb: { label: 'IMDb', icon: 'i', color: '#d4a520' },
   spotify: { label: 'Spotify', icon: 'S', color: '#1db954' },
-  youtube: { label: 'YouTube', icon: 'Y', color: '#ff0000' },
-  discogs: { label: 'Discogs', icon: 'D', color: '#333' },
-  goodreads: { label: 'Goodreads', icon: 'G', color: '#553b08' },
-  musicbrainz: { label: 'MusicBrainz', icon: 'MB', color: '#ba478f' },
-  openlibrary: { label: 'Open Library', icon: 'OL', color: '#0b6623' },
-  nkp: { label: 'NKP', icon: 'NK', color: '#1a3a6b' },
-  supermusic: { label: 'Supermusic', icon: 'SM', color: '#e63946' },
+  youtube: { label: 'YouTube', icon: 'Y', color: '#cc3333' },
+  discogs: { label: 'Discogs', icon: 'D', color: '#6a6a6a' },
+  goodreads: { label: 'Goodreads', icon: 'G', color: '#8a7a3a' },
+  musicbrainz: { label: 'MusicBrainz', icon: 'MB', color: '#9a5a8a' },
+  openlibrary: { label: 'Open Library', icon: 'OL', color: '#2a8a4a' },
+  nkp: { label: 'NKP', icon: 'NK', color: '#4a7a9a' },
+  supermusic: { label: 'Supermusic', icon: 'SM', color: '#cc4a5a' },
 };
 
 export function parseLinks(raw?: string | null): ExternalLink[] {
@@ -89,7 +89,7 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
 
   return (
     <div style={{ margin: '12px 0' }}>
-      <h3 style={{ fontSize: '0.95rem', color: '#555', marginBottom: 6 }}>External Links</h3>
+      <h3 style={{ marginBottom: 6 }}>External Links</h3>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {links.map((link, i) => {
           const info = getTypeInfo(link.type);
@@ -99,7 +99,7 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
                 <select
                   value={editing.type}
                   onChange={e => setEditing({ ...editing, type: e.target.value })}
-                  style={{ padding: '3px 4px', fontSize: '0.85rem', border: '1px solid #4a90d9', borderRadius: 3 }}
+                  style={{ padding: '3px 4px', fontSize: '0.85rem', border: '1px solid var(--border)' }}
                 >
                   {Object.entries(KNOWN_TYPES).map(([k, v]) => (
                     <option key={k} value={k}>{v.label}</option>
@@ -114,7 +114,7 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
                   placeholder="URL (empty to remove)"
                   autoFocus
                   disabled={saving}
-                  style={{ padding: '3px 6px', fontSize: '0.85rem', border: '1px solid #4a90d9', borderRadius: 3, width: 250 }}
+                  style={{ padding: '3px 6px', fontSize: '0.85rem', border: '1px solid var(--border)', width: 250 }}
                 />
               </span>
             );
@@ -131,8 +131,8 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
               title={`${info.label} (Alt+click to edit)`}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '3px 8px', background: info.color, color: '#fff',
-                borderRadius: 4, fontSize: '0.8rem', fontWeight: 'bold',
+                padding: '2px 6px', background: `${info.color}20`, color: info.color,
+                border: `1px solid ${info.color}50`, fontSize: '0.78rem', fontWeight: 'bold',
                 textDecoration: 'none',
               }}
             >
@@ -146,7 +146,7 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
             <select
               value={newType}
               onChange={e => setNewType(e.target.value)}
-              style={{ padding: '3px 4px', fontSize: '0.85rem', border: '1px solid #4a90d9', borderRadius: 3 }}
+              style={{ padding: '3px 4px', fontSize: '0.85rem', border: '1px solid var(--border)' }}
             >
               {Object.entries(KNOWN_TYPES).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
@@ -159,19 +159,15 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
               placeholder="URL"
               autoFocus
               disabled={saving}
-              style={{ padding: '3px 6px', fontSize: '0.85rem', border: '1px solid #4a90d9', borderRadius: 3, width: 250 }}
+              style={{ padding: '3px 6px', fontSize: '0.85rem', border: '1px solid var(--border)', width: 250 }}
             />
           </span>
         ) : (
           <button
             onClick={() => setAdding(true)}
             title="Add link"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '3px 8px', background: '#eee', color: '#888',
-              border: '1px dashed #ccc', borderRadius: 4, fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
+            className="btn btn-sm"
+            style={{ borderStyle: 'dashed' }}
           >
             + Add Link
           </button>

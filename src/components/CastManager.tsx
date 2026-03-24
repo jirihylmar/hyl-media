@@ -113,15 +113,14 @@ export function CastManager({ movieId, movieName, cast, onUpdate }: Props) {
         <div style={{
           margin: '12px 0',
           padding: 12,
-          background: '#fff',
-          border: '2px solid #4a90d9',
-          borderRadius: 6,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-bright)',
           maxWidth: 400,
         }}>
           <div style={{ marginBottom: 8, fontWeight: 'bold' }}>
             Add {adding}
             <button onClick={() => { setAdding(null); setSearch(''); setResults([]); }}
-              style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1em' }}>
+              style={{ float: 'right', background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '1.1em', fontFamily: 'var(--font-mono)' }}>
               {'\u00d7'}
             </button>
           </div>
@@ -130,9 +129,9 @@ export function CastManager({ movieId, movieName, cast, onUpdate }: Props) {
             onChange={e => handleSearch(e.target.value)}
             placeholder="Search persons..."
             autoFocus
-            style={{ width: '100%', padding: '6px 8px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: 4 }}
+            style={{ width: '100%' }}
           />
-          {searching && <p style={{ color: '#888', fontSize: '0.9em' }}>Searching...</p>}
+          {searching && <p className="meta">Searching...</p>}
           {results.length > 0 && (
             <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
               {results.map(p => (
@@ -141,19 +140,20 @@ export function CastManager({ movieId, movieName, cast, onUpdate }: Props) {
                     onClick={() => handleAdd(p)}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      padding: '6px 8px', margin: '2px 0', background: '#f8f8f8',
-                      border: '1px solid #eee', borderRadius: 3, cursor: 'pointer',
+                      padding: '5px 8px', margin: '2px 0', background: 'var(--bg-input)',
+                      border: '1px solid var(--border)', cursor: 'pointer',
+                      color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
                     }}
                   >
                     {p.name}
-                    {p.roles?.length ? <span style={{ color: '#888', marginLeft: 8 }}>({p.roles.join(', ')})</span> : ''}
+                    {p.roles?.length ? <span style={{ color: 'var(--text-dim)', marginLeft: 8 }}>({p.roles.join(', ')})</span> : ''}
                   </button>
                 </li>
               ))}
             </ul>
           )}
           {search.length >= 2 && !searching && results.length === 0 && (
-            <p style={{ color: '#888', fontSize: '0.9em', margin: '8px 0 0' }}>No matching persons found</p>
+            <p className="meta" style={{ margin: '8px 0 0' }}>No matching persons found</p>
           )}
         </div>
       )}
@@ -162,25 +162,26 @@ export function CastManager({ movieId, movieName, cast, onUpdate }: Props) {
 }
 
 const addBtnStyle: React.CSSProperties = {
-  background: '#4a90d9',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '50%',
-  width: 24,
-  height: 24,
-  fontSize: '1.1rem',
+  background: 'rgba(0, 255, 65, 0.1)',
+  color: 'var(--green)',
+  border: '1px solid var(--green-dim)',
+  width: 22,
+  height: 22,
+  fontSize: '1rem',
   cursor: 'pointer',
   lineHeight: '1',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  fontFamily: 'var(--font-mono)',
 };
 
 const removeBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#c00',
+  color: 'var(--red)',
   cursor: 'pointer',
   fontSize: '1.1em',
   padding: '0 4px',
+  fontFamily: 'var(--font-mono)',
 };

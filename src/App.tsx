@@ -45,7 +45,7 @@ function AuthenticatedApp() {
               <Route path="/library/:id" element={<LibraryDetail />} />
               <Route path="/sheet-music" element={<SheetMusicList />} />
               <Route path="/sheet-music/:id" element={<SheetMusicDetail />} />
-              <Route path="/data" element={<DataManagement />} />
+              <Route path="/dossier" element={<DataManagement />} />
             </Route>
           </Routes>
         </BrowserRouter>

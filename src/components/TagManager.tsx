@@ -45,19 +45,17 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
 
   return (
     <div style={{ margin: '12px 0' }}>
-      <h3 style={{ fontSize: '0.95rem', color: '#555', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <h3 style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
         Tags
-        <button onClick={() => setShowPicker(!showPicker)} style={{
-          background: '#4a90d9', color: '#fff', border: 'none', borderRadius: '50%',
-          width: 20, height: 20, fontSize: '0.9rem', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>{showPicker ? '\u2212' : '+'}</button>
+        <button onClick={() => setShowPicker(!showPicker)} className="btn btn-primary btn-sm">
+          {showPicker ? '\u2212' : '+'}
+        </button>
       </h3>
 
       {/* Current tags */}
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
         {tags.length === 0 && !showPicker && (
-          <span style={{ color: '#999', fontSize: '0.85em' }}>No tags assigned</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>No tags assigned</span>
         )}
         {tags.map(tag => {
           const cat = getTagCategory(tag);
@@ -65,9 +63,9 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
           return (
             <span key={tag} style={{
               display: 'inline-flex', alignItems: 'center', gap: 3,
-              padding: '2px 8px', background: `${color}20`, color,
-              borderRadius: 12, fontSize: '0.8rem', fontWeight: 500,
-              border: `1px solid ${color}40`,
+              padding: '2px 6px', background: `${color}15`, color,
+              fontSize: '0.78rem', fontWeight: 500,
+              border: `1px solid ${color}30`,
             }}>
               {tag}
               <button
@@ -86,8 +84,8 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
       {/* Tag picker */}
       {showPicker && (
         <div style={{
-          padding: 12, background: '#fff', border: '1px solid #ddd',
-          borderRadius: 6, maxWidth: 500,
+          padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border)',
+          maxWidth: 500,
         }}>
           {Object.entries(TAG_DICTIONARY).map(([catKey, cat]) => (
             <div key={catKey} style={{ marginBottom: 10 }}>
@@ -104,11 +102,11 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
                       onClick={() => handleToggle(tag)}
                       disabled={saving}
                       style={{
-                        padding: '2px 8px', fontSize: '0.78rem',
-                        borderRadius: 12, cursor: 'pointer',
-                        background: active ? TAG_COLORS[catKey] : '#f5f5f5',
-                        color: active ? '#fff' : '#555',
-                        border: active ? 'none' : '1px solid #ddd',
+                        padding: '2px 6px', fontSize: '0.73rem',
+                        cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                        background: active ? `${TAG_COLORS[catKey]}30` : 'transparent',
+                        color: active ? TAG_COLORS[catKey] : 'var(--text-muted)',
+                        border: `1px solid ${active ? TAG_COLORS[catKey] : 'var(--border)'}`,
                       }}
                     >{tag}</button>
                   );

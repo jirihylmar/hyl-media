@@ -1,14 +1,17 @@
-/* Layout — responsive sidebar */
+/* === LAYOUT — FBI TERMINAL === */
+
 .app-layout {
   display: flex;
   min-height: 100vh;
+  background: var(--bg-black);
 }
 
+/* --- Sidebar --- */
 .sidebar {
   width: 220px;
-  background: #1a1a2e;
-  color: #eee;
-  padding: 1rem 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 0;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -20,13 +23,32 @@
 }
 
 .sidebar-logo {
-  color: #fff;
+  color: var(--green);
   text-decoration: none;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
-  padding: 0 1rem 1rem;
-  border-bottom: 1px solid #333;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
   display: block;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: var(--glow);
+}
+
+.sidebar-logo::before {
+  content: '> ';
+  color: var(--green-dim);
+}
+
+.sidebar-classification {
+  padding: 0.4rem 1rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  background: rgba(255, 176, 0, 0.05);
 }
 
 .sidebar-nav {
@@ -37,72 +59,96 @@
 
 .sidebar-nav a {
   display: block;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 1rem;
   text-decoration: none;
-  color: #aaa;
-  border-left: 3px solid transparent;
-  transition: background 0.15s, color 0.15s;
+  color: var(--text-dim);
+  border-left: 2px solid transparent;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.sidebar-nav a::before {
+  content: '  ';
 }
 
 .sidebar-nav a:hover {
-  color: #ddd;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--green);
+  background: rgba(0, 255, 65, 0.03);
 }
 
 .sidebar-nav a.active {
-  color: #fff;
-  background: #16213e;
-  border-left-color: #e94560;
+  color: var(--green);
+  background: rgba(0, 255, 65, 0.07);
+  border-left-color: var(--green);
+  text-shadow: var(--glow);
+}
+
+.sidebar-nav a.active::before {
+  content: '> ';
+  color: var(--green);
 }
 
 .sidebar-user {
   padding: 0.5rem 1rem;
-  border-top: 1px solid #333;
-  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
 }
 
 .sidebar-user-id {
-  color: #888;
-  margin-bottom: 0.5rem;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.sidebar-user-id::before {
+  content: 'USER: ';
+  color: var(--text-muted);
+}
+
+/* --- Main content --- */
 .main-content {
   flex: 1;
   padding: 1.5rem;
-  background: #f5f5f5;
+  background: var(--bg-black);
   overflow: auto;
   margin-left: 220px;
 }
 
-/* Hamburger button — hidden on desktop */
+/* --- Hamburger button --- */
 .hamburger {
   display: none;
   position: fixed;
   top: 0.75rem;
   left: 0.75rem;
   z-index: 200;
-  background: #1a1a2e;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  width: 40px;
-  height: 40px;
-  font-size: 1.4rem;
+  background: var(--bg-panel);
+  color: var(--green);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-mono);
 }
 
-/* Overlay behind sidebar on mobile */
+.hamburger:hover {
+  border-color: var(--green);
+  box-shadow: var(--glow);
+}
+
+/* --- Overlay --- */
 .sidebar-overlay {
   display: none;
 }
 
-/* Responsive — mobile breakpoint */
+/* --- Responsive --- */
 @media (max-width: 768px) {
   .hamburger {
     display: flex;
@@ -120,7 +166,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 10, 0, 0.8);
     z-index: 90;
   }
 
@@ -135,73 +181,179 @@
   }
 }
 
-/* Table wrapper for horizontal scroll */
+/* --- Table wrap --- */
 .table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
 }
 
 .table-wrap table {
   min-width: 500px;
 }
 
-/* Shared button styles */
+/* --- Buttons --- */
 .btn {
-  border: none;
-  border-radius: 4px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: opacity 0.15s;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  background: transparent;
+  color: var(--green);
 }
 
 .btn:hover {
-  opacity: 0.85;
+  border-color: var(--green);
+  box-shadow: var(--glow);
+  color: var(--text-bright);
 }
 
 .btn-primary {
-  background: #4a90d9;
-  color: #fff;
+  background: rgba(0, 255, 65, 0.1);
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+
+.btn-primary:hover {
+  background: rgba(0, 255, 65, 0.2);
 }
 
 .btn-secondary {
-  background: none;
-  border: 1px solid #666;
-  color: #666;
+  color: var(--text-dim);
+  border-color: var(--border);
 }
 
 .btn-danger {
-  background: #dc3545;
-  color: #fff;
+  color: var(--red);
+  border-color: #661111;
+}
+
+.btn-danger:hover {
+  border-color: var(--red);
+  box-shadow: 0 0 8px rgba(255, 51, 51, 0.3);
 }
 
 .btn-sm {
-  padding: 0.25rem 0.6rem;
-  font-size: 0.78rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
 }
 
-/* Card style */
+/* --- Card --- */
 .card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 1.2rem;
 }
 
 .card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-color: var(--green-dim);
+  box-shadow: var(--glow);
 }
 
-/* Dashboard grid (Home page) */
+/* --- Dashboard grid --- */
 .dash-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.8rem;
   margin-top: 1rem;
 }
 
-/* Meta text */
+/* --- Meta text --- */
 .meta {
-  font-size: 0.8em;
-  color: #888;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* --- FBI-style classification banner (top of Dossier page) --- */
+.fbi-banner {
+  text-align: center;
+  padding: 0.5rem;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 1rem;
+  background: rgba(255, 176, 0, 0.05);
+}
+
+/* --- Tab bar (Dossier page) --- */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+}
+
+.tab-btn {
+  padding: 0.35rem 0.8rem;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  border-bottom: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--green);
+}
+
+.tab-btn.active {
+  color: var(--green);
+  border-color: var(--border);
+  border-bottom-color: var(--bg-black);
+  background: var(--bg-black);
+  text-shadow: var(--glow);
+  margin-bottom: -1px;
+}
+
+/* --- Status indicators --- */
+.status-ok {
+  color: var(--green);
+}
+
+.status-warn {
+  color: var(--amber);
+}
+
+.status-err {
+  color: var(--red);
+}
+
+/* --- Blinking cursor effect for loading --- */
+.loading::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* --- Progress bar (upload) --- */
+.progress-bar {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  height: 16px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: var(--green-dim);
+  height: 100%;
+  transition: width 0.3s;
+  box-shadow: var(--glow);
 }

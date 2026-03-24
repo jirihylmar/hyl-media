@@ -77,7 +77,7 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
         {performerLinks.map(p => (
           <li key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Link to={`${getPath(p.performerType)}/${p.performerId}`}>{p.performerName}</Link>
-            <span style={{ color: '#888' }}>({p.performerType})</span>
+            <span style={{ color: 'var(--text-dim)' }}>({p.performerType})</span>
             <button
               onClick={() => handleRemove(p)}
               disabled={removing === p.id}
@@ -91,17 +91,17 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
       {adding && (
         <div style={{
           margin: '12px 0', padding: 12,
-          background: '#fff', border: '2px solid #4a90d9', borderRadius: 6, maxWidth: 400,
+          background: 'var(--bg-card)', border: '1px solid var(--border-bright)', maxWidth: 400,
         }}>
           <div style={{ marginBottom: 8, fontWeight: 'bold' }}>
             Add performer
             <button onClick={() => { setAdding(false); setSearch(''); setResults([]); }}
-              style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1em' }}>
+              style={{ float: 'right', background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '1.1em', fontFamily: 'var(--font-mono)' }}>
               {'\u00d7'}
             </button>
           </div>
           <div style={{ marginBottom: 8 }}>
-            <label style={{ fontSize: '0.9em', color: '#666' }}>Type: </label>
+            <label style={{ fontSize: '0.85em', color: 'var(--text-dim)' }}>Type: </label>
             {(['person', 'band', 'artist', 'collaboration'] as const).map(t => (
               <label key={t} style={{ marginRight: 12, fontSize: '0.9em' }}>
                 <input type="radio" name="perfType" value={t}
@@ -116,9 +116,9 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
             onChange={e => handleSearch(e.target.value)}
             placeholder={`Search ${perfType}s...`}
             autoFocus
-            style={{ width: '100%', padding: '6px 8px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: 4 }}
+            style={{ width: '100%' }}
           />
-          {searching && <p style={{ color: '#888', fontSize: '0.9em' }}>Searching...</p>}
+          {searching && <p className="meta">Searching...</p>}
           {results.length > 0 && (
             <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
               {results.map(p => (
@@ -127,8 +127,9 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
                     onClick={() => handleAdd(p)}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      padding: '6px 8px', margin: '2px 0', background: '#f8f8f8',
-                      border: '1px solid #eee', borderRadius: 3, cursor: 'pointer',
+                      padding: '5px 8px', margin: '2px 0', background: 'var(--bg-input)',
+                      border: '1px solid var(--border)', cursor: 'pointer',
+                      color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
                     }}
                   >{p.name}</button>
                 </li>
@@ -136,7 +137,7 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
             </ul>
           )}
           {search.length >= 2 && !searching && results.length === 0 && (
-            <p style={{ color: '#888', fontSize: '0.9em', margin: '8px 0 0' }}>No matches found</p>
+            <p className="meta" style={{ margin: '8px 0 0' }}>No matches found</p>
           )}
         </div>
       )}
@@ -145,12 +146,12 @@ export function PerformerManager({ recordingId, recordingName, performers, onUpd
 }
 
 const addBtnStyle: React.CSSProperties = {
-  background: '#4a90d9', color: '#fff', border: 'none', borderRadius: '50%',
-  width: 24, height: 24, fontSize: '1.1rem', cursor: 'pointer', lineHeight: '1',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(0, 255, 65, 0.1)', color: 'var(--green)', border: '1px solid var(--green-dim)',
+  width: 22, height: 22, fontSize: '1rem', cursor: 'pointer', lineHeight: '1',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)',
 };
 
 const removeBtnStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#c00', cursor: 'pointer',
-  fontSize: '1.1em', padding: '0 4px',
+  background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer',
+  fontSize: '1.1em', padding: '0 4px', fontFamily: 'var(--font-mono)',
 };

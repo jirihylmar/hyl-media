@@ -36,7 +36,7 @@ export function InlineEdit({ value, onSave, label, as = 'span' }: Props) {
   if (editing) {
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        {label && <span style={{ color: '#666', fontSize: '0.9em' }}>{label}: </span>}
+        {label && <span style={{ color: 'var(--text-dim)', fontSize: '0.9em' }}>{label}: </span>}
         <input
           value={draft}
           onChange={e => setDraft(e.target.value)}
@@ -45,16 +45,13 @@ export function InlineEdit({ value, onSave, label, as = 'span' }: Props) {
           autoFocus
           disabled={saving}
           style={{
-            fontSize: as === 'h1' ? '1.8rem' : '1rem',
+            fontSize: as === 'h1' ? '1.3rem' : '0.9rem',
             fontWeight: as === 'h1' ? 'bold' : 'normal',
             padding: '2px 6px',
-            border: '2px solid #4a90d9',
-            borderRadius: 4,
-            outline: 'none',
             minWidth: 120,
           }}
         />
-        {saving && <span style={{ color: '#888', fontSize: '0.8em' }}>saving...</span>}
+        {saving && <span className="meta">saving...</span>}
       </span>
     );
   }
@@ -66,13 +63,13 @@ export function InlineEdit({ value, onSave, label, as = 'span' }: Props) {
       title="Click to edit"
       style={{
         cursor: 'pointer',
-        borderBottom: '1px dashed #ccc',
+        borderBottom: '1px dashed var(--border)',
         paddingBottom: 1,
       }}
     >
-      {label && <span style={{ color: '#666', fontSize: '0.9em', fontWeight: 'normal' }}>{label}: </span>}
-      {value || <em style={{ color: '#999' }}>empty</em>}
-      <span style={{ color: '#bbb', fontSize: '0.7em', marginLeft: 6 }}>&#9998;</span>
+      {label && <span style={{ color: 'var(--text-dim)', fontSize: '0.9em', fontWeight: 'normal' }}>{label}: </span>}
+      {value || <em style={{ color: 'var(--text-muted)' }}>empty</em>}
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.7em', marginLeft: 6 }}>&#9998;</span>
     </span>
   );
 

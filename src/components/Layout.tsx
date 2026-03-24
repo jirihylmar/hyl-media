@@ -8,6 +8,7 @@ type Props = {
 };
 
 const NAV_ITEMS = [
+  { label: 'Dossier', path: '/dossier' },
   { label: 'Movies', path: '/movies' },
   { label: 'People', path: '/persons' },
   { label: 'Bands', path: '/bands' },
@@ -15,7 +16,6 @@ const NAV_ITEMS = [
   { label: 'Recordings', path: '/recordings' },
   { label: 'Library', path: '/library' },
   { label: 'Sheet Music', path: '/sheet-music' },
-  { label: 'Data', path: '/data' },
 ];
 
 export function Layout({ signOut, user }: Props) {
@@ -43,6 +43,9 @@ export function Layout({ signOut, user }: Props) {
         <Link to="/" className="sidebar-logo" onClick={closeSidebar}>
           HYL Media
         </Link>
+        <div className="sidebar-classification">
+          classified // personal
+        </div>
         <div className="sidebar-nav">
           {NAV_ITEMS.map(item => (
             <Link

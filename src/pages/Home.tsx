@@ -24,12 +24,17 @@ export function Home() {
 
   return (
     <div>
-      <h1>HYL Media</h1>
+      <div className="fbi-banner">HYL Media // Personal Archive System</div>
+      <h1>System Status</h1>
       <div className="dash-grid">
         {SECTIONS.map(s => (
-          <Link key={s.type} to={s.path} className="card" style={{ textDecoration: 'none', color: '#333' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{counts[s.type] ?? '...'}</div>
-            <div>{s.label}</div>
+          <Link key={s.type} to={s.path} className="card" style={{ textDecoration: 'none' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--green)' }}>
+              {counts[s.type] ?? <span className="loading" />}
+            </div>
+            <div style={{ color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.8rem' }}>
+              {s.label}
+            </div>
           </Link>
         ))}
       </div>

@@ -86,7 +86,7 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
   return (
     <div style={{
       margin: '16px 0', padding: 16,
-      background: '#fff', border: '2px solid #4a90d9', borderRadius: 8, maxWidth: 500,
+      background: 'var(--bg-card)', border: '1px solid var(--border-bright)', maxWidth: 500,
     }}>
       <h3 style={{ marginTop: 0 }}>Upload {type === 'book' ? 'Book' : 'Sheet Music'}</h3>
       <form onSubmit={handleSubmit}>
@@ -120,13 +120,13 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
         </div>
         {uploading && (
           <div style={{ marginBottom: 10 }}>
-            <div style={{ background: '#eee', borderRadius: 4, overflow: 'hidden', height: 20 }}>
-              <div style={{ background: '#4a90d9', height: '100%', width: `${progress}%`, transition: 'width 0.3s' }} />
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${progress}%` }} />
             </div>
-            <span style={{ fontSize: '0.85em', color: '#666' }}>{progress}%</span>
+            <span className="meta">{progress}%</span>
           </div>
         )}
-        {error && <p style={{ color: '#c00', fontSize: '0.9em' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--red)', fontSize: '0.85em' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button type="submit" disabled={uploading} className="btn btn-primary">{uploading ? 'Uploading...' : 'Upload'}</button>
           <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
@@ -136,5 +136,5 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
   );
 }
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: 2 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '6px 8px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: 4 };
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 };
+const inputStyle: React.CSSProperties = { width: '100%' };

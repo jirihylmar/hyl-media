@@ -110,30 +110,28 @@ export function DataManagement() {
     sheetPerfBySheet.set(sp.sheetMusicId as string, sp.performerName as string);
   }
 
-  const tabStyle = (t: string) => ({
-    padding: '6px 12px',
-    background: tab === t ? '#1a1a2e' : '#ddd',
-    color: tab === t ? '#fff' : '#333',
-    border: 'none',
-    borderRadius: '4px 4px 0 0',
-    cursor: 'pointer' as const,
-    fontWeight: tab === t ? 'bold' as const : 'normal' as const,
-    fontSize: '0.85rem',
-  });
+  const TABS: { id: TabId; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'movies', label: 'Movies' },
+    { id: 'bands', label: 'Bands' },
+    { id: 'people', label: 'People' },
+    { id: 'recordings', label: 'Recordings' },
+    { id: 'library', label: 'Library' },
+    { id: 'sheets', label: 'Sheet Music' },
+    { id: 'tags', label: 'Tags' },
+  ];
 
   return (
     <div>
-      <h1>Data</h1>
+      <div className="fbi-banner">Dossier // Personal Media Intelligence</div>
+      <h1>DOSSIER</h1>
 
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button style={tabStyle('overview')} onClick={() => setTab('overview')}>Overview</button>
-        <button style={tabStyle('movies')} onClick={() => setTab('movies')}>Movies</button>
-        <button style={tabStyle('bands')} onClick={() => setTab('bands')}>Bands</button>
-        <button style={tabStyle('people')} onClick={() => setTab('people')}>People</button>
-        <button style={tabStyle('recordings')} onClick={() => setTab('recordings')}>Recordings</button>
-        <button style={tabStyle('library')} onClick={() => setTab('library')}>Library</button>
-        <button style={tabStyle('sheets')} onClick={() => setTab('sheets')}>Sheet Music</button>
-        <button style={tabStyle('tags')} onClick={() => setTab('tags')}>Tags</button>
+      <div className="tab-bar">
+        {TABS.map(t => (
+          <button key={t.id} className={`tab-btn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* ========== OVERVIEW ========== */}
@@ -143,7 +141,7 @@ export function DataManagement() {
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', marginBottom: 24, width: '100%' }}>
             <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
                 <th style={cellStyle}>Entity</th>
                 <th style={cellStyle}>Count</th>
                 <th style={cellStyle}>External Links</th>
@@ -158,9 +156,9 @@ export function DataManagement() {
                   <tr key={label}>
                     <td style={cellStyle}>{label}</td>
                     <td style={cellStyle}>{total}</td>
-                    <td style={{ ...cellStyle, color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626', fontWeight: 'bold' }}>
+                    <td style={{ ...cellStyle, color: withLinks === total ? 'var(--green)' : withLinks > 0 ? 'var(--amber)' : 'var(--red)', fontWeight: 'bold' }}>
                       {withLinks}/{total} ({pct(withLinks, total)})
-                      <span style={{ fontWeight: 'normal', color: '#888', fontSize: '0.7rem', marginLeft: 6 }}>
+                      <span style={{ fontWeight: 'normal', color: 'var(--text-muted)', fontSize: '0.65rem', marginLeft: 6 }}>
                         {Object.entries(typeCounts).map(([t, c]) => `${t}:${c}`).join(' ')}
                       </span>
                     </td>
@@ -168,10 +166,10 @@ export function DataManagement() {
                   </tr>
                 );
               })}
-              <tr style={{ fontWeight: 'bold', background: '#f5f5f5' }}>
+              <tr style={{ fontWeight: 'bold', borderTop: '1px solid var(--border-bright)' }}>
                 <td style={cellStyle}>Total</td>
                 <td style={cellStyle}>{totalAll}</td>
-                <td style={{ ...cellStyle, color: totalWithLinks === totalAll ? '#059669' : '#d97706' }}>
+                <td style={{ ...cellStyle, color: totalWithLinks === totalAll ? 'var(--green)' : 'var(--amber)' }}>
                   {totalWithLinks}/{totalAll} ({pct(totalWithLinks, totalAll)})
                 </td>
                 <td style={cellStyle}>{taggedItems.length}/{totalAll}</td>
@@ -179,7 +177,7 @@ export function DataManagement() {
             </tbody>
           </table>
           </div>
-          <p style={{ fontSize: '0.8rem', color: '#888' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
             People roles: authors {roleCount('author')}, artists {roleCount('artist')}, actors {roleCount('actor')}, directors {roleCount('director')}, musicians {roleCount('musician')}
             &nbsp;|&nbsp; Cross-refs: {castRefs.length} cast, {perfRefs.length} rec. performers, {sheetPerfRefs.length} sheet performers
           </p>
@@ -192,7 +190,7 @@ export function DataManagement() {
           <SummaryLine items={movies} label="Movies" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Movie</th>
               <th style={cellStyle}>Language</th>
               <th style={cellStyle}>Cast</th>
@@ -212,9 +210,9 @@ export function DataManagement() {
                             const p = personById.get(c.personId as string);
                             return <span key={i}>{i > 0 && ', '}{p ? <Link to={`/persons/${p.id}`}>{c.personName}</Link> : c.personName}</span>;
                           })
-                        : <span style={{ color: '#ccc' }}>—</span>
+                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
-                      {cast.length > 4 && <span style={{ color: '#888' }}> +{cast.length - 4}</span>}
+                      {cast.length > 4 && <span style={{ color: 'var(--text-dim)' }}> +{cast.length - 4}</span>}
                     </td>
                     <td style={cellStyle}>{renderTags(m.tags as string[] | null)}</td>
                     <td style={cellStyle}>{renderLinkBadges(parseLinks(m.externalLinks as string | null))}</td>
@@ -233,7 +231,7 @@ export function DataManagement() {
           <SummaryLine items={bands} label="Bands" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Band</th>
               <th style={cellStyle}>Tags</th>
               <th style={cellStyle}>External Links</th>
@@ -258,7 +256,7 @@ export function DataManagement() {
           <SummaryLine items={persons} label="People" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Name</th>
               <th style={cellStyle}>Roles</th>
               <th style={cellStyle}>Tags</th>
@@ -271,9 +269,9 @@ export function DataManagement() {
                   <td style={cellStyle}>
                     {(p.roles as string[] | null)?.map(r => (
                       <span key={r} style={{
-                        padding: '1px 5px', marginRight: 3, borderRadius: 8, fontSize: '0.7rem',
-                        background: r === 'actor' ? '#3b82f620' : r === 'director' ? '#f59e0b20' : r === 'author' ? '#dc262620' : r === 'artist' ? '#0ea5e920' : '#66666620',
-                        color: r === 'actor' ? '#3b82f6' : r === 'director' ? '#f59e0b' : r === 'author' ? '#dc2626' : r === 'artist' ? '#0ea5e9' : '#666',
+                        padding: '1px 4px', marginRight: 3, fontSize: '0.68rem',
+                        border: `1px solid ${r === 'actor' ? '#4a8ab6' : r === 'director' ? '#b89e3b' : r === 'author' ? '#b64a4a' : r === 'artist' ? '#4ab6a6' : '#555'}40`,
+                        color: r === 'actor' ? '#4a8ab6' : r === 'director' ? '#b89e3b' : r === 'author' ? '#b64a4a' : r === 'artist' ? '#4ab6a6' : '#555',
                       }}>{r}</span>
                     )) || '—'}
                   </td>
@@ -293,7 +291,7 @@ export function DataManagement() {
           <SummaryLine items={recordings} label="Recordings" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Recording</th>
               <th style={cellStyle}>Performer</th>
               <th style={cellStyle}>Tags</th>
@@ -312,7 +310,7 @@ export function DataManagement() {
                             const route = entity ? ((entity as KnowledgeGraphItem).entityType === 'band' ? `/bands/${entity.id}` : `/persons/${entity.id}`) : null;
                             return <span key={i}>{i > 0 && ', '}{route ? <Link to={route}>{pf.performerName}</Link> : pf.performerName}</span>;
                           })
-                        : <span style={{ color: '#ccc' }}>—</span>
+                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
                     </td>
                     <td style={cellStyle}>{renderTags(r.tags as string[] | null)}</td>
@@ -332,7 +330,7 @@ export function DataManagement() {
           <SummaryLine items={bookItems} label="Library" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Title</th>
               <th style={cellStyle}>Author</th>
               <th style={cellStyle}>Tags</th>
@@ -346,8 +344,8 @@ export function DataManagement() {
                     <td style={cellStyle}><Link to={`/library/${b.id}`}>{b.name}</Link></td>
                     <td style={cellStyle}>
                       {authorPerson
-                        ? <Link to={`/persons/${authorPerson.id}`} style={{ color: '#059669' }}>{b.author}</Link>
-                        : <span style={{ color: '#888' }}>{b.author || '—'}</span>
+                        ? <Link to={`/persons/${authorPerson.id}`} style={{ color: 'var(--green)' }}>{b.author}</Link>
+                        : <span style={{ color: 'var(--text-dim)' }}>{b.author || '—'}</span>
                       }
                     </td>
                     <td style={cellStyle}>{renderTags(b.tags as string[] | null)}</td>
@@ -367,7 +365,7 @@ export function DataManagement() {
           <SummaryLine items={sheetItems} label="Sheet Music" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+            <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
               <th style={cellStyle}>Title</th>
               <th style={cellStyle}>Artist</th>
               <th style={cellStyle}>Tags</th>
@@ -383,8 +381,8 @@ export function DataManagement() {
                     <td style={cellStyle}><Link to={`/sheet-music/${s.id}`}>{s.name}</Link></td>
                     <td style={cellStyle}>
                       {route
-                        ? <Link to={route} style={{ color: '#059669' }}>{perfName}</Link>
-                        : <span style={{ color: '#888' }}>{(perfName as string) || '—'}</span>
+                        ? <Link to={route} style={{ color: 'var(--green)' }}>{perfName}</Link>
+                        : <span style={{ color: 'var(--text-dim)' }}>{(perfName as string) || '—'}</span>
                       }
                     </td>
                     <td style={cellStyle}>{renderTags(s.tags as string[] | null)}</td>
@@ -405,7 +403,7 @@ export function DataManagement() {
           {Object.entries(TAG_DICTIONARY).map(([catKey, cat]) => (
             <div key={catKey} style={{ marginBottom: 20 }}>
               <h3 style={{ color: TAG_COLORS[catKey], marginBottom: 4 }}>{cat.label}</h3>
-              <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 8px', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', margin: '0 0 8px', fontStyle: 'italic' }}>
                 Method: {cat.method}
               </p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -428,7 +426,7 @@ export function DataManagement() {
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', marginBottom: 16 }}>
             <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
                 <th style={cellStyle}>Entity Type</th>
                 <th style={cellStyle}>Total</th>
                 <th style={cellStyle}>Tagged</th>
@@ -443,7 +441,7 @@ export function DataManagement() {
                     <td style={cellStyle}>{label}</td>
                     <td style={cellStyle}>{items.length}</td>
                     <td style={cellStyle}>{tagged}</td>
-                    <td style={{ ...cellStyle, color: items.length - tagged > 0 ? '#dc2626' : '#059669', fontWeight: 'bold' }}>
+                    <td style={{ ...cellStyle, color: items.length - tagged > 0 ? 'var(--red)' : 'var(--green)', fontWeight: 'bold' }}>
                       {items.length - tagged}
                     </td>
                   </tr>
@@ -453,7 +451,7 @@ export function DataManagement() {
                 <td style={cellStyle}>Total</td>
                 <td style={cellStyle}>{allItems.length}</td>
                 <td style={cellStyle}>{taggedItems.length}</td>
-                <td style={{ ...cellStyle, color: allItems.length - taggedItems.length > 0 ? '#dc2626' : '#059669' }}>
+                <td style={{ ...cellStyle, color: allItems.length - taggedItems.length > 0 ? 'var(--red)' : 'var(--green)' }}>
                   {allItems.length - taggedItems.length}
                 </td>
               </tr>
@@ -474,8 +472,8 @@ function SummaryLine({ items, label }: { items: KnowledgeGraphItem[]; label: str
   return (
     <>
       <h2>{label} ({items.length})</h2>
-      <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
-        External links: {withLinks}/{items.length} &nbsp;|&nbsp; Tagged: {tagged}/{items.length}
+      <p className="meta" style={{ marginBottom: 12 }}>
+        External links: {withLinks}/{items.length} | Tagged: {tagged}/{items.length}
       </p>
     </>
   );
@@ -484,11 +482,12 @@ function SummaryLine({ items, label }: { items: KnowledgeGraphItem[]; label: str
 // --- Styles & helpers ---
 
 const cellStyle: React.CSSProperties = {
-  padding: '6px 12px',
-  border: '1px solid #ddd',
+  padding: '5px 10px',
+  borderBottom: '1px solid var(--border)',
   textAlign: 'left',
-  fontSize: '0.85rem',
+  fontSize: '0.8rem',
 };
+
 
 function pct(a: number, b: number) {
   if (b === 0) return '0%';
@@ -496,20 +495,20 @@ function pct(a: number, b: number) {
 }
 
 const LINK_COLORS: Record<string, string> = {
-  wikipedia: '#636466', imdb: '#f5c518', spotify: '#1db954', youtube: '#ff0000',
-  nkp: '#1a3a6b', openlibrary: '#0b6623', musicbrainz: '#ba478f', supermusic: '#e63946',
-  discogs: '#333', goodreads: '#553b08',
+  wikipedia: '#7a8a7a', imdb: '#d4a520', spotify: '#1db954', youtube: '#cc3333',
+  nkp: '#4a7a9a', openlibrary: '#2a8a4a', musicbrainz: '#9a5a8a', supermusic: '#cc4a5a',
+  discogs: '#6a6a6a', goodreads: '#8a7a3a',
 };
 
 function renderLinkBadges(links: { url: string; type: string }[]) {
-  if (links.length === 0) return <span style={{ color: '#ccc' }}>none</span>;
+  if (links.length === 0) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
   return (
     <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
       {links.map((l, i) => (
         <a key={i} href={l.url} target="_blank" rel="noopener noreferrer" style={{
-          padding: '1px 6px', background: `${LINK_COLORS[l.type] || '#666'}20`,
-          color: LINK_COLORS[l.type] || '#666', borderRadius: 10, fontSize: '0.7rem',
-          textDecoration: 'none', border: `1px solid ${LINK_COLORS[l.type] || '#666'}40`,
+          padding: '1px 5px', background: `${LINK_COLORS[l.type] || '#555'}20`,
+          color: LINK_COLORS[l.type] || '#555', fontSize: '0.68rem',
+          textDecoration: 'none', border: `1px solid ${LINK_COLORS[l.type] || '#555'}40`,
         }}>{l.type}</a>
       ))}
     </span>
@@ -517,16 +516,16 @@ function renderLinkBadges(links: { url: string; type: string }[]) {
 }
 
 function renderTags(tags: string[] | null) {
-  if (!tags || tags.length === 0) return <span style={{ color: '#ccc' }}>none</span>;
+  if (!tags || tags.length === 0) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
   return (
     <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
       {tags.map(tag => {
         const cat = getTagCategory(tag);
-        const color = cat ? TAG_COLORS[cat] : '#666';
+        const color = cat ? TAG_COLORS[cat] : 'var(--text-dim)';
         return (
           <span key={tag} style={{
-            padding: '1px 6px', background: `${color}20`, color,
-            borderRadius: 10, fontSize: '0.75rem',
+            padding: '1px 5px', background: `${color}15`, color,
+            fontSize: '0.7rem', border: `1px solid ${color}30`,
           }}>{tag}</span>
         );
       })}

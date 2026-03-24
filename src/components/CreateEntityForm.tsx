@@ -64,13 +64,13 @@ export function CreateEntityForm({ entityType, title, fields, detailPath, onCanc
   return (
     <div style={{
       margin: '16px 0', padding: 16,
-      background: '#fff', border: '2px solid #4a90d9', borderRadius: 8, maxWidth: 500,
+      background: 'var(--bg-card)', border: '1px solid var(--border-bright)', maxWidth: 500,
     }}>
       <h3 style={{ marginTop: 0 }}>New {title}</h3>
       <form onSubmit={handleSubmit}>
         {fields.map(f => (
           <div key={f.name} style={{ marginBottom: 10 }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: 2 }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>
               {f.label}{f.required && ' *'}
             </label>
             <input
@@ -78,11 +78,11 @@ export function CreateEntityForm({ entityType, title, fields, detailPath, onCanc
               onChange={e => handleChange(f.name, e.target.value)}
               placeholder={f.placeholder}
               required={f.required}
-              style={{ width: '100%', padding: '6px 8px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: 4 }}
+              style={{ width: '100%' }}
             />
           </div>
         ))}
-        {error && <p style={{ color: '#c00', fontSize: '0.9em' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--red)', fontSize: '0.85em' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <button type="submit" disabled={saving} className="btn btn-primary">{saving ? 'Creating...' : 'Create'}</button>
           <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
