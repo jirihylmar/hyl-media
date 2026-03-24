@@ -18,9 +18,10 @@ const KNOWN_TYPES: Record<string, { label: string; icon: string; color: string }
   youtube: { label: 'YouTube', icon: 'Y', color: '#ff0000' },
   discogs: { label: 'Discogs', icon: 'D', color: '#333' },
   goodreads: { label: 'Goodreads', icon: 'G', color: '#553b08' },
-  musicbrainz: { label: 'MusicBrainz', icon: 'M', color: '#ba478f' },
+  musicbrainz: { label: 'MusicBrainz', icon: 'MB', color: '#ba478f' },
   openlibrary: { label: 'Open Library', icon: 'OL', color: '#0b6623' },
   nkp: { label: 'NKP', icon: 'NK', color: '#1a3a6b' },
+  supermusic: { label: 'Supermusic', icon: 'SM', color: '#e63946' },
 };
 
 export function parseLinks(raw?: string | null): ExternalLink[] {
