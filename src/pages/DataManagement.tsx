@@ -482,10 +482,10 @@ function SummaryLine({ items, label }: { items: KnowledgeGraphItem[]; label: str
 // --- Styles & helpers ---
 
 const cellStyle: React.CSSProperties = {
-  padding: '5px 10px',
+  padding: '6px 12px',
   borderBottom: '1px solid var(--border)',
   textAlign: 'left',
-  fontSize: '0.8rem',
+  fontSize: '0.85rem',
 };
 
 

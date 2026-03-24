@@ -62,22 +62,22 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-bright)', textAlign: 'left' }}>
-              <th style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>Name</th>
-              <th style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>Lang</th>
+              <th style={{ padding: '0.5rem 0.6rem', color: 'var(--text-bright)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: 1 }}>Name</th>
+              <th style={{ padding: '0.5rem 0.6rem', color: 'var(--text-bright)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: 1 }}>Lang</th>
               {extraColumns?.map(col => (
-                <th key={col.label} style={{ padding: '0.4rem 0.5rem', color: 'var(--green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: 1 }}>{col.label}</th>
+                <th key={col.label} style={{ padding: '0.5rem 0.6rem', color: 'var(--text-bright)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: 1 }}>{col.label}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map(item => (
               <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '0.3rem 0.5rem' }}>
+                <td style={{ padding: '0.4rem 0.6rem' }}>
                   <Link to={`${detailPath}/${item.id}`}>{item.name}</Link>
                 </td>
-                <td style={{ padding: '0.3rem 0.5rem', color: 'var(--text-dim)' }}>{item.language}</td>
+                <td style={{ padding: '0.4rem 0.6rem', color: 'var(--text-dim)' }}>{item.language}</td>
                 {extraColumns?.map(col => (
-                  <td key={col.label} style={{ padding: '0.3rem 0.5rem' }}>{col.render(item)}</td>
+                  <td key={col.label} style={{ padding: '0.4rem 0.6rem' }}>{col.render(item)}</td>
                 ))}
               </tr>
             ))}
