@@ -31,8 +31,8 @@ export function PersonList() {
             <option value="">All</option>
             <option value="actor">Actor</option>
             <option value="director">Director</option>
-            <option value="musician">Musician</option>
             <option value="artist">Artist</option>
+            <option value="author">Author</option>
           </select>
         </div>
       }

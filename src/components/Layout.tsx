@@ -8,13 +8,13 @@ type Props = {
 
 const NAV_ITEMS = [
   { label: 'Movies', path: '/movies' },
-  { label: 'Persons', path: '/persons' },
+  { label: 'People', path: '/persons' },
   { label: 'Bands', path: '/bands' },
   { label: 'Collaborations', path: '/collaborations' },
   { label: 'Recordings', path: '/recordings' },
   { label: 'Library', path: '/library' },
   { label: 'Sheet Music', path: '/sheet-music' },
-  { label: 'Data Mgmt', path: '/data' },
+  { label: 'Data', path: '/data' },
 ];
 
 export function Layout({ signOut, user }: Props) {

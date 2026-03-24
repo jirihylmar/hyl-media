@@ -8,6 +8,10 @@ import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 export function LibraryDetail() {
   const { id } = useParams<{ id: string }>();
   const userId = useUserId();
@@ -27,7 +31,8 @@ export function LibraryDetail() {
       // Try to find author as a person entity
       if (data?.author) {
         listByType('person').then(persons => {
-          const match = persons.find(p => p.name === data.author);
+          const authorNorm = normalize(data.author!);
+          const match = persons.find(p => p.name && normalize(p.name) === authorNorm);
           if (match) setAuthorPerson(match);
         });
       }

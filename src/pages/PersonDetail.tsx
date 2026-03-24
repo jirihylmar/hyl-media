@@ -7,6 +7,10 @@ import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 export function PersonDetail() {
   const { id } = useParams<{ id: string }>();
   const userId = useUserId();
@@ -23,15 +27,22 @@ export function PersonDetail() {
       // Find books by this person (author name match)
       if (data?.name) {
         listByType('book').then(items => {
-          setBooks(items.filter(b => b.author === data.name));
+          const personNorm = normalize(data.name!);
+          setBooks(items.filter(b => b.author && normalize(b.author) === personNorm));
         });
       }
     });
     listByPersonFilm(id).then(setFilms);
     listByPerformer(id).then(setRecordings);
-    // Find sheet music where this person is a performer
-    listByType('sheet_music_performer').then(items => {
-      setSheetMusic(items.filter(i => i.performerId === id));
+    // Find sheet music by artistName match (handles diacritics)
+    getItem(id, 'person').then(p => {
+      if (!p?.name) return;
+      const pNorm = normalize(p.name!);
+      listByType('sheet_music').then(sheets => {
+        setSheetMusic(sheets.filter(s =>
+          s.artistName && normalize(s.artistName).includes(pNorm)
+        ));
+      });
     });
   }, [id]);
 
@@ -102,7 +113,7 @@ export function PersonDetail() {
           <ul>
             {sheetMusic.map(sm => (
               <li key={sm.id}>
-                <Link to={`/sheet-music/${sm.sheetMusicId}`}>{sm.name}</Link>
+                <Link to={`/sheet-music/${sm.id}`}>{sm.name}</Link>
               </li>
             ))}
           </ul>

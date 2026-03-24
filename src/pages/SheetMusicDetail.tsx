@@ -8,12 +8,25 @@ import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function fuzzyMatch(artistName: string, entityName: string): boolean {
+  const a = normalize(artistName);
+  const b = normalize(entityName);
+  if (a === b) return true;
+  // "Rolling Stones" matches "The Rolling Stones"
+  if (b.includes(a) || a.includes(b)) return true;
+  return false;
+}
+
 export function SheetMusicDetail() {
   const { id } = useParams<{ id: string }>();
   const userId = useUserId();
   const [sheet, setSheet] = useState<KnowledgeGraphItem | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string>('');
-  const [crossRefs, setCrossRefs] = useState<KnowledgeGraphItem[]>([]);
+  const [artistEntity, setArtistEntity] = useState<{ id: string; path: string; name: string } | null>(null);
   const [relatedRecordings, setRelatedRecordings] = useState<KnowledgeGraphItem[]>([]);
 
   useEffect(() => {
@@ -25,22 +38,40 @@ export function SheetMusicDetail() {
           setDownloadUrl(result.url.toString());
         });
       }
-    });
-    // Find cross-references (sheet_music_performer links)
-    listByType('sheet_music_performer').then(items => {
-      const refs = items.filter(i => i.sheetMusicId === id);
-      setCrossRefs(refs);
-      // Find recordings by the same performers
-      Promise.all(refs.map(ref => listByPerformer(ref.performerId!))).then(results => {
-        const allRecordings = results.flat().filter(r => r.entityType === 'recording_performer');
-        // Deduplicate by recordingId
-        const seen = new Set<string>();
-        setRelatedRecordings(allRecordings.filter(r => {
-          if (seen.has(r.recordingId!)) return false;
-          seen.add(r.recordingId!);
-          return true;
-        }));
-      });
+      // Find the artist entity by name match (person or band)
+      if (data?.artistName) {
+        const name = data.artistName;
+        Promise.all([listByType('person'), listByType('band')]).then(([persons, bands]) => {
+          const person = persons.find(p => p.name && fuzzyMatch(name, p.name));
+          if (person) {
+            setArtistEntity({ id: person.id!, path: '/persons', name: person.name! });
+            // Load their recordings
+            listByPerformer(person.id!).then(recs => {
+              const recordings = recs.filter(r => r.entityType === 'recording_performer');
+              const seen = new Set<string>();
+              setRelatedRecordings(recordings.filter(r => {
+                if (seen.has(r.recordingId!)) return false;
+                seen.add(r.recordingId!);
+                return true;
+              }));
+            });
+            return;
+          }
+          const band = bands.find(b => b.name && fuzzyMatch(name, b.name));
+          if (band) {
+            setArtistEntity({ id: band.id!, path: '/bands', name: band.name! });
+            listByPerformer(band.id!).then(recs => {
+              const recordings = recs.filter(r => r.entityType === 'recording_performer');
+              const seen = new Set<string>();
+              setRelatedRecordings(recordings.filter(r => {
+                if (seen.has(r.recordingId!)) return false;
+                seen.add(r.recordingId!);
+                return true;
+              }));
+            });
+          }
+        });
+      }
     });
   }, [id]);
 
@@ -54,7 +85,12 @@ export function SheetMusicDetail() {
   return (
     <div>
       <InlineEdit value={sheet.name || ''} onSave={v => handleSave('name', v)} as="h1" />
-      {sheet.artistName && <p>Artist: {sheet.artistName}</p>}
+      {sheet.artistName && (
+        <p>Artist: {artistEntity
+          ? <Link to={`${artistEntity.path}/${artistEntity.id}`}>{sheet.artistName}</Link>
+          : sheet.artistName
+        }</p>
+      )}
       <p><InlineEdit value={sheet.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {sheet.updatedAt && (
         <p style={{ fontSize: '0.8em', color: '#888' }}>
@@ -74,22 +110,6 @@ export function SheetMusicDetail() {
         tags={(sheet.tags as string[] | null) || []}
         onUpdate={tags => setSheet({ ...sheet, tags } as typeof sheet)}
       />
-
-      {crossRefs.length > 0 && (
-        <>
-          <h2>Related Artists</h2>
-          <ul>
-            {crossRefs.map(ref => {
-              const path = ref.performerType === 'band' ? '/bands' : '/persons';
-              return (
-                <li key={ref.id}>
-                  <Link to={`${path}/${ref.performerId}`}>{ref.performerName}</Link>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
 
       {relatedRecordings.length > 0 && (
         <>

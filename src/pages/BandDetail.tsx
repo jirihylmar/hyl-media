@@ -7,6 +7,10 @@ import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
 
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 // Used for bands and collaborations
 export function BandDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,12 +27,19 @@ export function BandDetail() {
 
   useEffect(() => {
     if (!id) return;
-    getItem(id, entityType).then(setEntity);
-    listByPerformer(id).then(setRecordings);
-    // Find sheet music where this band/collaboration is a performer
-    listByType('sheet_music_performer').then(items => {
-      setSheetMusic(items.filter(i => i.performerId === id));
+    getItem(id, entityType).then(data => {
+      setEntity(data);
+      // Find sheet music by artistName match (handles diacritics + partial names)
+      if (data?.name) {
+        const bNorm = normalize(data.name);
+        listByType('sheet_music').then(sheets => {
+          setSheetMusic(sheets.filter(s =>
+            s.artistName && (normalize(s.artistName).includes(bNorm) || bNorm.includes(normalize(s.artistName)))
+          ));
+        });
+      }
     });
+    listByPerformer(id).then(setRecordings);
   }, [id, entityType]);
 
   if (!entity) return <p>Loading...</p>;
@@ -80,7 +91,7 @@ export function BandDetail() {
           <ul>
             {sheetMusic.map(sm => (
               <li key={sm.id}>
-                <Link to={`/sheet-music/${sm.sheetMusicId}`}>{sm.name}</Link>
+                <Link to={`/sheet-music/${sm.id}`}>{sm.name}</Link>
               </li>
             ))}
           </ul>
