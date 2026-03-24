@@ -587,9 +587,82 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_8_flexible_links": {
+      "name": "Flexible External Links + Link Research",
+      "status": "in_progress",
+      "started_at": "2026-03-24",
+      "completed_at": null,
+      "description": "Restructure external links from fixed fields to flexible {url, type} array. Research and populate missing Wikipedia/IMDB links.",
+      "tasks": [
+        {
+          "id": "8.1",
+          "name": "Schema change — replace 4 URL fields with externalLinks JSON string",
+          "status": "complete",
+          "size": "small",
+          "verify": "amplify/data/resource.ts has externalLinks field, old fields removed",
+          "completed_at": "2026-03-24"
+        },
+        {
+          "id": "8.2",
+          "name": "Data migration — convert existing URL field values to externalLinks array format",
+          "status": "complete",
+          "size": "small",
+          "verify": "Spot-check 10 items: links preserved in new format",
+          "depends_on": ["8.1"],
+          "completed_at": "2026-03-24",
+          "notes": "No items had old URL fields populated — clean migration, no data to convert"
+        },
+        {
+          "id": "8.3",
+          "name": "Refactor ExternalLinks component for {url, type} array with open type support",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Can add/edit/remove links of any type on movie detail",
+          "depends_on": ["8.1"],
+          "completed_at": "2026-03-24",
+          "notes": "Supports 7 known types (wikipedia, imdb, spotify, youtube, discogs, goodreads, musicbrainz) with custom type fallback"
+        },
+        {
+          "id": "8.4",
+          "name": "Update all detail pages to pass new externalLinks prop",
+          "status": "complete",
+          "size": "small",
+          "verify": "All 6 detail page types render links correctly",
+          "depends_on": ["8.3"],
+          "completed_at": "2026-03-24"
+        },
+        {
+          "id": "8.5",
+          "name": "Deploy and verify — build succeeds, links display on live site",
+          "status": "complete",
+          "size": "small",
+          "verify": "Amplify build passes, spot-check links on deployed app",
+          "depends_on": ["8.2", "8.4"],
+          "completed_at": "2026-03-24",
+          "notes": "TypeScript clean, Vite build succeeds"
+        },
+        {
+          "id": "8.6",
+          "name": "Research + bulk-add Wikipedia links for movies, persons, bands",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Wikipedia link count increases significantly",
+          "depends_on": ["8.5"]
+        },
+        {
+          "id": "8.7",
+          "name": "Research + bulk-add IMDB links for movies and persons",
+          "status": "pending",
+          "size": "medium",
+          "verify": "IMDB link count increases significantly",
+          "depends_on": ["8.5"]
+        }
+      ],
+      "artifacts": []
     }
   },
-  "current_task": null,
+  "current_task": "8.1",
   "git_repos": {
     "orchestration": {
       "local": ".",

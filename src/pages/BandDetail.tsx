@@ -61,9 +61,8 @@ export function BandDetail() {
 
       <ExternalLinks
         id={id!} entityType={entityType}
-        wikiUrl={entity.wikiUrl} imdbUrl={entity.imdbUrl}
-        spotifyUrl={entity.spotifyUrl} youtubeUrl={entity.youtubeUrl}
-        onUpdate={fields => setEntity({ ...entity, ...fields } as typeof entity)}
+        externalLinks={entity.externalLinks}
+        onUpdate={externalLinks => setEntity({ ...entity, externalLinks } as typeof entity)}
       />
 
       <TagManager

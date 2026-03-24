@@ -48,9 +48,8 @@ export function MovieDetail() {
 
       <ExternalLinks
         id={id!} entityType="movie"
-        wikiUrl={movie.wikiUrl} imdbUrl={movie.imdbUrl}
-        spotifyUrl={movie.spotifyUrl} youtubeUrl={movie.youtubeUrl}
-        onUpdate={fields => setMovie({ ...movie, ...fields } as typeof movie)}
+        externalLinks={movie.externalLinks}
+        onUpdate={externalLinks => setMovie({ ...movie, externalLinks } as typeof movie)}
       />
 
       <TagManager

@@ -65,9 +65,8 @@ export function LibraryDetail() {
 
       <ExternalLinks
         id={id!} entityType="book"
-        wikiUrl={book.wikiUrl} imdbUrl={book.imdbUrl}
-        spotifyUrl={book.spotifyUrl} youtubeUrl={book.youtubeUrl}
-        onUpdate={fields => setBook({ ...book, ...fields } as typeof book)}
+        externalLinks={book.externalLinks}
+        onUpdate={externalLinks => setBook({ ...book, externalLinks } as typeof book)}
       />
 
       <TagManager

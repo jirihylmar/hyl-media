@@ -100,9 +100,8 @@ export function SheetMusicDetail() {
 
       <ExternalLinks
         id={id!} entityType="sheet_music"
-        wikiUrl={sheet.wikiUrl} imdbUrl={sheet.imdbUrl}
-        spotifyUrl={sheet.spotifyUrl} youtubeUrl={sheet.youtubeUrl}
-        onUpdate={fields => setSheet({ ...sheet, ...fields } as typeof sheet)}
+        externalLinks={sheet.externalLinks}
+        onUpdate={externalLinks => setSheet({ ...sheet, externalLinks } as typeof sheet)}
       />
 
       <TagManager

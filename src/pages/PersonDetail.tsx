@@ -69,9 +69,8 @@ export function PersonDetail() {
 
       <ExternalLinks
         id={id!} entityType="person"
-        wikiUrl={person.wikiUrl} imdbUrl={person.imdbUrl}
-        spotifyUrl={person.spotifyUrl} youtubeUrl={person.youtubeUrl}
-        onUpdate={fields => setPerson({ ...person, ...fields } as typeof person)}
+        externalLinks={person.externalLinks}
+        onUpdate={externalLinks => setPerson({ ...person, externalLinks } as typeof person)}
       />
 
       <TagManager

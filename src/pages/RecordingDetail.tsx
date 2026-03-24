@@ -46,9 +46,8 @@ export function RecordingDetail() {
 
       <ExternalLinks
         id={id!} entityType="recording"
-        wikiUrl={recording.wikiUrl} imdbUrl={recording.imdbUrl}
-        spotifyUrl={recording.spotifyUrl} youtubeUrl={recording.youtubeUrl}
-        onUpdate={fields => setRecording({ ...recording, ...fields } as typeof recording)}
+        externalLinks={recording.externalLinks}
+        onUpdate={externalLinks => setRecording({ ...recording, externalLinks } as typeof recording)}
       />
 
       <TagManager

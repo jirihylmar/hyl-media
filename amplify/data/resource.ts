@@ -29,11 +29,8 @@ const schema = a.schema({
     // Sheet music fields
     artistName: a.string(),
     sheetMusicId: a.string(),
-    // External links
-    wikiUrl: a.string(),
-    imdbUrl: a.string(),
-    spotifyUrl: a.string(),
-    youtubeUrl: a.string(),
+    // External links — JSON-serialized Array<{url: string, type: string}>
+    externalLinks: a.string(),
     // Tags (controlled vocabulary)
     tags: a.string().array(),
     // Audit fields
