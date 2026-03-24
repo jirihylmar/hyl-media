@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { listByType } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
+import { parseLinks } from '../components/ExternalLinks';
 
 type LinkStatus = {
   item: KnowledgeGraphItem;
@@ -19,7 +20,7 @@ export function DataManagement() {
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
   const [crossRefs, setCrossRefs] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'books' | 'sheets' | 'tags' | 'persons'>('overview');
+  const [tab, setTab] = useState<'overview' | 'links' | 'books' | 'sheets' | 'tags' | 'persons'>('overview');
 
   useEffect(() => {
     Promise.all([
@@ -77,6 +78,31 @@ export function DataManagement() {
     }
   }
 
+  // External link stats — per entity type
+  const entityGroups = [
+    { label: 'Movies', items: movies, route: 'movies' },
+    { label: 'Bands', items: bands, route: 'bands' },
+    { label: 'People', items: persons, route: 'persons' },
+    { label: 'Recordings', items: recordings, route: 'recordings' },
+    { label: 'Books', items: books.map(b => b.item), route: 'library' },
+    { label: 'Sheet Music', items: sheets.map(s => s.item), route: 'sheet-music' },
+  ];
+
+  const linkStats = entityGroups.map(({ label, items }) => {
+    const withLinks = items.filter(i => parseLinks(i.externalLinks as string | null).length > 0);
+    const typeCounts: Record<string, number> = {};
+    for (const item of items) {
+      for (const l of parseLinks(item.externalLinks as string | null)) {
+        typeCounts[l.type] = (typeCounts[l.type] || 0) + 1;
+      }
+    }
+    return { label, total: items.length, withLinks: withLinks.length, typeCounts };
+  });
+
+  const allLinkTypes = [...new Set(linkStats.flatMap(s => Object.keys(s.typeCounts)))].sort();
+  const totalWithLinks = linkStats.reduce((s, r) => s + r.withLinks, 0);
+  const totalAll = linkStats.reduce((s, r) => s + r.total, 0);
+
   // Person role stats
   const authorPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('author'));
   const artistPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('artist'));
@@ -99,6 +125,7 @@ export function DataManagement() {
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
         <button style={tabStyle('overview')} onClick={() => setTab('overview')}>Overview</button>
+        <button style={tabStyle('links')} onClick={() => setTab('links')}>External Links</button>
         <button style={tabStyle('books')} onClick={() => setTab('books')}>Books</button>
         <button style={tabStyle('sheets')} onClick={() => setTab('sheets')}>Sheet Music</button>
         <button style={tabStyle('persons')} onClick={() => setTab('persons')}>Persons</button>
@@ -113,42 +140,117 @@ export function DataManagement() {
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
                 <th style={cellStyle}>Entity</th>
                 <th style={cellStyle}>Count</th>
-                <th style={cellStyle}>Linked</th>
+                <th style={cellStyle}>External Links</th>
                 <th style={cellStyle}>Tagged</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style={cellStyle}>Books</td>
-                <td style={cellStyle}>{books.length}</td>
-                <td style={cellStyle}>{linkedBooks.length} / {books.length} ({pct(linkedBooks.length, books.length)})</td>
-                <td style={cellStyle}>{books.filter(b => b.item.tags && (b.item.tags as string[]).length > 0).length} / {books.length}</td>
-              </tr>
-              <tr>
-                <td style={cellStyle}>Sheet Music</td>
-                <td style={cellStyle}>{sheets.length}</td>
-                <td style={cellStyle}>{linkedSheets.length} / {sheets.length} ({pct(linkedSheets.length, sheets.length)})</td>
-                <td style={cellStyle}>{sheets.filter(s => s.item.tags && (s.item.tags as string[]).length > 0).length} / {sheets.length}</td>
-              </tr>
-              <tr>
-                <td style={cellStyle}>Persons</td>
-                <td style={cellStyle}>{persons.length}</td>
-                <td style={cellStyle} colSpan={2}>
-                  authors: {authorPersons.length}, artists: {artistPersons.length}, actors: {actorPersons.length}, directors: {directorPersons.length}
+              {linkStats.map(({ label, total, withLinks, typeCounts }) => {
+                const items = entityGroups.find(g => g.label === label)?.items || [];
+                const tagged = items.filter(i => i.tags && (i.tags as string[]).length > 0).length;
+                return (
+                  <tr key={label}>
+                    <td style={cellStyle}>{label}</td>
+                    <td style={cellStyle}>{total}</td>
+                    <td style={{
+                      ...cellStyle,
+                      color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626',
+                      fontWeight: 'bold',
+                    }}>
+                      {withLinks}/{total} ({pct(withLinks, total)})
+                      <span style={{ fontWeight: 'normal', color: '#888', fontSize: '0.75rem', marginLeft: 6 }}>
+                        {Object.entries(typeCounts).map(([t, c]) => `${t}:${c}`).join(' ')}
+                      </span>
+                    </td>
+                    <td style={cellStyle}>{tagged}/{total}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ fontWeight: 'bold' }}>
+                <td style={cellStyle}>Total</td>
+                <td style={cellStyle}>{totalAll}</td>
+                <td style={{
+                  ...cellStyle,
+                  color: totalWithLinks === totalAll ? '#059669' : '#d97706',
+                }}>
+                  {totalWithLinks}/{totalAll} ({pct(totalWithLinks, totalAll)})
                 </td>
+                <td style={cellStyle}>{taggedItems.length}/{totalAll}</td>
               </tr>
               <tr>
-                <td style={cellStyle}>Bands</td>
-                <td style={cellStyle}>{bands.length}</td>
-                <td style={cellStyle} colSpan={2}>—</td>
-              </tr>
-              <tr>
-                <td style={cellStyle}>Cross-refs (sheet_music_performer)</td>
+                <td style={cellStyle}>Cross-refs</td>
                 <td style={cellStyle}>{crossRefs.length}</td>
-                <td style={cellStyle} colSpan={2}>—</td>
+                <td style={cellStyle} colSpan={2}>
+                  People roles: authors {authorPersons.length}, artists {artistPersons.length}, actors {actorPersons.length}, directors {directorPersons.length}
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      )}
+
+      {tab === 'links' && (
+        <div>
+          <h2>External Links Coverage</h2>
+          <table style={{ borderCollapse: 'collapse', marginBottom: 24, width: '100%' }}>
+            <thead>
+              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
+                <th style={cellStyle}>Entity Type</th>
+                <th style={cellStyle}>Total</th>
+                <th style={cellStyle}>With Links</th>
+                {allLinkTypes.map(t => (
+                  <th key={t} style={{ ...cellStyle, fontSize: '0.75rem' }}>{t}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {linkStats.map(({ label, total, withLinks, typeCounts }) => (
+                <tr key={label}>
+                  <td style={cellStyle}>{label}</td>
+                  <td style={cellStyle}>{total}</td>
+                  <td style={{
+                    ...cellStyle,
+                    color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626',
+                    fontWeight: 'bold',
+                  }}>
+                    {withLinks} ({pct(withLinks, total)})
+                  </td>
+                  {allLinkTypes.map(t => (
+                    <td key={t} style={{
+                      ...cellStyle,
+                      color: typeCounts[t] ? (typeCounts[t] === total ? '#059669' : '#d97706') : '#ddd',
+                    }}>
+                      {typeCounts[t] || 0}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr style={{ fontWeight: 'bold' }}>
+                <td style={cellStyle}>Total</td>
+                <td style={cellStyle}>{totalAll}</td>
+                <td style={cellStyle}>{totalWithLinks} ({pct(totalWithLinks, totalAll)})</td>
+                {allLinkTypes.map(t => {
+                  const sum = linkStats.reduce((s, r) => s + (r.typeCounts[t] || 0), 0);
+                  return <td key={t} style={cellStyle}>{sum}</td>;
+                })}
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Link Sources</h2>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {allLinkTypes.map(t => {
+              const total = linkStats.reduce((s, r) => s + (r.typeCounts[t] || 0), 0);
+              return (
+                <div key={t} style={{
+                  padding: '8px 16px', background: '#f5f5f5', borderRadius: 8,
+                  border: '1px solid #ddd', fontSize: '0.85rem',
+                }}>
+                  <strong>{t}</strong>: {total} links
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
