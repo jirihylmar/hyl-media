@@ -77,11 +77,6 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
     setEditing(null);
   };
 
-  const handleRemove = async (index: number) => {
-    const updated = links.filter((_, i) => i !== index);
-    await persist(updated);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
     if (e.key === 'Enter') action();
     if (e.key === 'Escape') { setEditing(null); setAdding(false); }
