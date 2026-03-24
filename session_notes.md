@@ -4,6 +4,40 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-03-24 — 80s FBI Terminal Theme + Dossier Rename
+
+**Context**:
+- Task 5.4 (UI polish) completed, then full visual redesign per user request
+
+**What was done**:
+
+**Task 5.4 — UI Polish (commit 403dc70)**:
+1. Responsive sidebar with hamburger menu (768px breakpoint)
+2. Table horizontal scroll wrappers on all data tables
+3. Shared CSS classes (btn, card, meta, table-wrap, dash-grid)
+4. Cleaned Vite template CSS from App.css
+5. Fixed Home page: removed stale Artists card, updated labels
+
+**FBI Terminal Theme (commit b07000a)**:
+6. **Renamed Data → Dossier** — user said core info page shouldn't be called "data", chose FBI-style "Dossier"
+7. **Full dark terminal aesthetic**: #0a0a0a background, #00ff41 green monospace text, CRT scanline overlay
+8. **Sidebar**: dark panel with `> HYL MEDIA` prompt, amber "CLASSIFIED // PERSONAL" banner, `> ` active indicator
+9. **Dossier page**: FBI banner header, terminal-style tab bar, themed tables/badges/links
+10. **All 14 component files themed**: Layout, EntityList, all detail pages, forms, CastManager, PerformerManager, ExternalLinks, TagManager, InlineEdit, AssetUpload
+11. **CSS variables**: --green, --amber, --red, --border, --bg-card, etc. for consistent theming
+12. **User direction**: "80s internet FBI-like with all modern features under the hood" — Claude Cowork is primary operator
+
+**Key decisions**:
+- Dossier as first nav item (primary page)
+- Green terminal (#00ff41) over amber — classic hacker/terminal feel
+- Monospace font (Courier New) throughout
+- CRT scanline CSS overlay for authenticity
+- All modern responsive/interactive features preserved
+
+**All phases (0-8) remain complete.**
+
+---
+
 ### Session: 2026-03-24 — Phase 5 Complete: UI Polish & Responsive Design
 
 **Context**:

@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 5 complete — Task 5.4 UI polish: responsive sidebar with hamburger menu (768px breakpoint), table horizontal scroll wrappers, shared CSS classes (btn, card, meta, dash-grid, table-wrap), cleaned Vite template CSS, fixed Home page (removed stale Artists, updated labels to match nav). All phases 0-8 now complete.",
+  "last_session_summary": "80s FBI terminal theme applied. Dark terminal aesthetic (#0a0a0a bg, #00ff41 green monospace, CRT scanlines). Data page renamed to Dossier (FBI case file concept), moved to first nav position. All 14 component files themed. Classification banners, terminal-style buttons/inputs/tables. Responsive design preserved. All phases 0-8 complete.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
