@@ -23,7 +23,6 @@ from diagrams.aws.integration import Appsync
 from diagrams.aws.network import CloudFront
 from diagrams.aws.security import Cognito
 from diagrams.aws.storage import S3
-from diagrams.aws.devtools import CommandLineInterface
 from diagrams.onprem.client import User
 from diagrams.programming.framework import React
 
@@ -61,14 +60,14 @@ with Diagram(
 
     with Cluster("Amplify Hosting\nhttps://main.d2r70lavusnzlx.amplifyapp.com"):
         cloudfront = CloudFront("CloudFront\nSPA + custom\nrewrite rules")
-        react = React("React + TypeScript\n+ Amplify UI\n(Vite build)")
+        react = React("React + TypeScript\n+ Amplify UI\n(Vite build)\n\n8 routes: movies, bands,\npersons, recordings,\nlibrary, sheet-music, data")
 
     with Cluster("Amplify Gen 2 Backend (AppSync)"):
         cognito = Cognito("Cognito User Pool\neu-central-1_GJhwO2ww5\nemail/password auth")
         appsync = Appsync("AppSync GraphQL\n366ya64s65cqjhilw34nx5r2vu\nauto-generated CRUD")
 
     with Cluster("DynamoDB"):
-        dynamodb = Dynamodb("KnowledgeGraphItem-\ng7elqzchivgt3g2i2zs6rfn64u-NONE\n\n905 items (single-table)\n6 GSIs: byType, byCastMovie,\nbyPersonFilm, byRecording,\nbyPerformer, byLanguage")
+        dynamodb = Dynamodb("KnowledgeGraphItem-\ng7elqzchivgt3g2i2zs6rfn64u-NONE\n\n~1,600 items (single-table)\n9 entity types, 6 GSIs\n\nexternalLinks: {url, type}[]\ntags: string[]")
 
     with Cluster("S3 Buckets (3 — all managed by Amplify stack)"):
         s3_storage = S3("hylmediastoragebucketefb-*\n\nUser content:\nlibrary/ (307 books)\nsheet-music/ (112 PDFs)")
