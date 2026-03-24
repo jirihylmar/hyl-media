@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "80s FBI terminal theme applied. Dark terminal aesthetic (#0a0a0a bg, #00ff41 green monospace, CRT scanlines). Data page renamed to Dossier (FBI case file concept), moved to first nav position. All 14 component files themed. Classification banners, terminal-style buttons/inputs/tables. Responsive design preserved. All phases 0-8 complete.",
+  "last_session_summary": "Phase 9 complete (4 tasks). 80s FBI terminal theme: dark bg, green monospace, CRT scanlines. Data→Dossier rename. Nav restructured: Dossier top-level, Editor collapsible group. Readability pass: brighter text, larger fonts, lighter scanlines. All phases 0-9 complete (57 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -706,6 +706,54 @@
           "completed_at": "2026-03-24",
           "added_reason": "Data page was missing Movies/Bands/Recordings tabs, Books terminology wrong, author links not clickable",
           "notes": "All tabs show: name→detail, related entities (clickable), tags, external links (clickable badges). Fixed Books→Library terminology. Fuzzy diacritics matching for person/band links."
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_9_design_overhaul": {
+      "name": "80s FBI Terminal Design + Navigation Overhaul",
+      "status": "complete",
+      "started_at": "2026-03-24",
+      "completed_at": "2026-03-24",
+      "description": "Full visual redesign to 80s FBI terminal aesthetic. Restructure navigation with Dossier as primary page.",
+      "tasks": [
+        {
+          "id": "9.1",
+          "name": "Rename Data page to Dossier — route, nav, component title",
+          "status": "complete",
+          "size": "small",
+          "verify": "/dossier route works, nav shows Dossier",
+          "completed_at": "2026-03-24",
+          "added_reason": "User: core info page should not be called Data"
+        },
+        {
+          "id": "9.2",
+          "name": "80s FBI terminal theme — dark background, green monospace, CRT scanlines",
+          "status": "complete",
+          "size": "medium",
+          "verify": "All pages render with dark terminal aesthetic",
+          "completed_at": "2026-03-24",
+          "notes": "CSS variables: --green (#44ee66), --bg-black (#0c0c0c), --amber, --red. Monospace font. CRT scanline overlay (6% opacity). Classification banners. All 14 component files themed."
+        },
+        {
+          "id": "9.3",
+          "name": "Nav restructure — Dossier top-level, Editor collapsible group",
+          "status": "complete",
+          "size": "small",
+          "verify": "Sidebar shows Dossier at top, Editor toggle with entity pages underneath",
+          "completed_at": "2026-03-24",
+          "added_reason": "User: top level should be only Dossier, editor sections collapsed",
+          "notes": "Editor auto-opens when on entity page. Triangle toggle indicator."
+        },
+        {
+          "id": "9.4",
+          "name": "Readability improvements — brighter text, larger fonts, lighter scanlines",
+          "status": "complete",
+          "size": "small",
+          "verify": "Text clearly readable on dark background",
+          "completed_at": "2026-03-24",
+          "added_reason": "User: style is there but not well readable",
+          "notes": "Base font 15px (was 14px), brighter green (#44dd55 vs #00dd36), scanline 6% opacity (was 15%), bumped cell/tab/button sizes."
         }
       ],
       "artifacts": []

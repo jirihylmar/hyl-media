@@ -27,14 +27,19 @@ This file tracks session history for context continuity between Claude Code sess
 11. **CSS variables**: --green, --amber, --red, --border, --bg-card, etc. for consistent theming
 12. **User direction**: "80s internet FBI-like with all modern features under the hood" — Claude Cowork is primary operator
 
-**Key decisions**:
-- Dossier as first nav item (primary page)
-- Green terminal (#00ff41) over amber — classic hacker/terminal feel
-- Monospace font (Courier New) throughout
-- CRT scanline CSS overlay for authenticity
-- All modern responsive/interactive features preserved
+**Nav Restructure + Readability (commit 49551ea)**:
+13. **Nav restructured**: Dossier only at top level, Editor as collapsible `▶ EDITOR` toggle with entity pages underneath
+14. **Readability pass**: brighter text (#44dd55 vs #00dd36), base font 15px (was 14px), scanline 6% opacity (was 15%), bumped cell/tab/button font sizes
 
-**All phases (0-8) remain complete.**
+**Key decisions**:
+- Dossier as sole top-level nav item (primary page)
+- Entity edit pages collapsed under "Editor" group
+- Green terminal (#44ee66) — tuned brighter for readability
+- Monospace font (Courier New) throughout
+- CRT scanline CSS overlay — lightened to not impair reading
+- Claude Cowork is primary operator — nav kept functional, not hidden
+
+**Phase 9 added (4 tasks, all complete). All phases 0-9 complete (57 tasks).**
 
 ---
 
