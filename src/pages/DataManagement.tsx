@@ -86,7 +86,6 @@ export function DataManagement() {
     }
     return { label, total: items.length, withLinks: withLinks.length, typeCounts };
   });
-  const allLinkTypes = [...new Set(linkStats.flatMap(s => Object.keys(s.typeCounts)))].sort();
   const totalWithLinks = linkStats.reduce((s, r) => s + r.withLinks, 0);
   const totalAll = linkStats.reduce((s, r) => s + r.total, 0);
 
