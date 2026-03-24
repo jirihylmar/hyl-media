@@ -41,10 +41,7 @@ export function LibraryList() {
               </select>
             </div>
             {!showUpload && (
-              <button onClick={() => setShowUpload(true)} style={{
-                background: '#4a90d9', color: '#fff', border: 'none', borderRadius: 4,
-                padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer',
-              }}>+ Upload Book</button>
+              <button onClick={() => setShowUpload(true)} className="btn btn-primary btn-sm">+ Upload Book</button>
             )}
           </div>
         }

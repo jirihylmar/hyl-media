@@ -41,7 +41,7 @@ export function MovieDetail() {
       <InlineEdit value={movie.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={movie.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {movie.updatedAt && (
-        <p style={{ fontSize: '0.8em', color: '#888' }}>
+        <p className="meta">
           Last updated: {new Date(movie.updatedAt).toLocaleString()} by {movie.updatedBy}
         </p>
       )}

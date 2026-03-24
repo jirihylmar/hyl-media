@@ -93,7 +93,7 @@ export function SheetMusicDetail() {
       )}
       <p><InlineEdit value={sheet.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {sheet.updatedAt && (
-        <p style={{ fontSize: '0.8em', color: '#888' }}>
+        <p className="meta">
           Last updated: {new Date(sheet.updatedAt).toLocaleString()} by {sheet.updatedBy}
         </p>
       )}

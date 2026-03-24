@@ -58,7 +58,7 @@ export function LibraryDetail() {
       <p>Format: {book.format}</p>
       <p><InlineEdit value={book.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {book.updatedAt && (
-        <p style={{ fontSize: '0.8em', color: '#888' }}>
+        <p className="meta">
           Last updated: {new Date(book.updatedAt).toLocaleString()} by {book.updatedBy}
         </p>
       )}

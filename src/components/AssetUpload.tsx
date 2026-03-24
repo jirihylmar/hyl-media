@@ -128,14 +128,8 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
         )}
         {error && <p style={{ color: '#c00', fontSize: '0.9em' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button type="submit" disabled={uploading} style={{
-            padding: '6px 16px', background: '#4a90d9', color: '#fff',
-            border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.95rem',
-          }}>{uploading ? 'Uploading...' : 'Upload'}</button>
-          <button type="button" onClick={onCancel} style={{
-            padding: '6px 16px', background: '#eee', color: '#333',
-            border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer', fontSize: '0.95rem',
-          }}>Cancel</button>
+          <button type="submit" disabled={uploading} className="btn btn-primary">{uploading ? 'Uploading...' : 'Upload'}</button>
+          <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
         </div>
       </form>
     </div>

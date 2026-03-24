@@ -42,10 +42,7 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {title} ({loading ? '...' : filtered.length})
         {createFields && !showCreate && (
-          <button onClick={() => setShowCreate(true)} style={{
-            background: '#4a90d9', color: '#fff', border: 'none', borderRadius: 4,
-            padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer',
-          }}>+ New</button>
+          <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-sm">+ New</button>
         )}
       </h1>
       {filters}
@@ -61,6 +58,7 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
       {loading ? (
         <p>Loading...</p>
       ) : (
+        <div className="table-wrap">
         <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
@@ -85,6 +83,7 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

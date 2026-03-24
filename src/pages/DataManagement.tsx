@@ -140,6 +140,7 @@ export function DataManagement() {
       {tab === 'overview' && (
         <div>
           <h2>Entity Overview</h2>
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', marginBottom: 24, width: '100%' }}>
             <thead>
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
@@ -177,6 +178,7 @@ export function DataManagement() {
               </tr>
             </tbody>
           </table>
+          </div>
           <p style={{ fontSize: '0.8rem', color: '#888' }}>
             People roles: authors {roleCount('author')}, artists {roleCount('artist')}, actors {roleCount('actor')}, directors {roleCount('director')}, musicians {roleCount('musician')}
             &nbsp;|&nbsp; Cross-refs: {castRefs.length} cast, {perfRefs.length} rec. performers, {sheetPerfRefs.length} sheet performers
@@ -188,6 +190,7 @@ export function DataManagement() {
       {tab === 'movies' && (
         <div>
           <SummaryLine items={movies} label="Movies" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Movie</th>
@@ -220,6 +223,7 @@ export function DataManagement() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -227,6 +231,7 @@ export function DataManagement() {
       {tab === 'bands' && (
         <div>
           <SummaryLine items={bands} label="Bands" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Band</th>
@@ -243,6 +248,7 @@ export function DataManagement() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -250,6 +256,7 @@ export function DataManagement() {
       {tab === 'people' && (
         <div>
           <SummaryLine items={persons} label="People" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Name</th>
@@ -276,6 +283,7 @@ export function DataManagement() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -283,6 +291,7 @@ export function DataManagement() {
       {tab === 'recordings' && (
         <div>
           <SummaryLine items={recordings} label="Recordings" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Recording</th>
@@ -313,6 +322,7 @@ export function DataManagement() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -320,6 +330,7 @@ export function DataManagement() {
       {tab === 'library' && (
         <div>
           <SummaryLine items={bookItems} label="Library" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Title</th>
@@ -346,6 +357,7 @@ export function DataManagement() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -353,6 +365,7 @@ export function DataManagement() {
       {tab === 'sheets' && (
         <div>
           <SummaryLine items={sheetItems} label="Sheet Music" />
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
               <th style={cellStyle}>Title</th>
@@ -381,6 +394,7 @@ export function DataManagement() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -411,6 +425,7 @@ export function DataManagement() {
           ))}
 
           <h2 style={{ marginTop: 24 }}>Tag Coverage</h2>
+          <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', marginBottom: 16 }}>
             <thead>
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
@@ -444,6 +459,7 @@ export function DataManagement() {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

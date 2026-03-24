@@ -54,7 +54,7 @@ export function BandDetail() {
       <InlineEdit value={entity.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={entity.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {entity.updatedAt && (
-        <p style={{ fontSize: '0.8em', color: '#888' }}>
+        <p className="meta">
           Last updated: {new Date(entity.updatedAt).toLocaleString()} by {entity.updatedBy}
         </p>
       )}

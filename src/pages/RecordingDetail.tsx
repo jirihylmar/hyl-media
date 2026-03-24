@@ -39,7 +39,7 @@ export function RecordingDetail() {
       <InlineEdit value={recording.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={recording.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {recording.updatedAt && (
-        <p style={{ fontSize: '0.8em', color: '#888' }}>
+        <p className="meta">
           Last updated: {new Date(recording.updatedAt).toLocaleString()} by {recording.updatedBy}
         </p>
       )}

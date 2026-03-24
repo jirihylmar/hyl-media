@@ -18,6 +18,7 @@ import { SheetMusicList } from './pages/SheetMusicList';
 import { SheetMusicDetail } from './pages/SheetMusicDetail';
 import { DataManagement } from './pages/DataManagement';
 import '@aws-amplify/ui-react/styles.css';
+import './App.css';
 
 function AuthenticatedApp() {
   return (

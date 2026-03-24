@@ -84,14 +84,8 @@ export function CreateEntityForm({ entityType, title, fields, detailPath, onCanc
         ))}
         {error && <p style={{ color: '#c00', fontSize: '0.9em' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button type="submit" disabled={saving} style={{
-            padding: '6px 16px', background: '#4a90d9', color: '#fff',
-            border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.95rem',
-          }}>{saving ? 'Creating...' : 'Create'}</button>
-          <button type="button" onClick={onCancel} style={{
-            padding: '6px 16px', background: '#eee', color: '#333',
-            border: '1px solid #ccc', borderRadius: 4, cursor: 'pointer', fontSize: '0.95rem',
-          }}>Cancel</button>
+          <button type="submit" disabled={saving} className="btn btn-primary">{saving ? 'Creating...' : 'Create'}</button>
+          <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
         </div>
       </form>
     </div>

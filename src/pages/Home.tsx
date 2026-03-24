@@ -4,11 +4,10 @@ import { listByType } from '../lib/queries';
 
 const SECTIONS = [
   { type: 'movie', label: 'Movies', path: '/movies' },
-  { type: 'person', label: 'Persons', path: '/persons' },
+  { type: 'person', label: 'People', path: '/persons' },
   { type: 'band', label: 'Bands', path: '/bands' },
-  { type: 'artist', label: 'Artists', path: '/artists' },
   { type: 'recording', label: 'Recordings', path: '/recordings' },
-  { type: 'book', label: 'Books', path: '/library' },
+  { type: 'book', label: 'Library', path: '/library' },
   { type: 'sheet_music', label: 'Sheet Music', path: '/sheet-music' },
 ];
 
@@ -26,16 +25,9 @@ export function Home() {
   return (
     <div>
       <h1>HYL Media</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+      <div className="dash-grid">
         {SECTIONS.map(s => (
-          <Link key={s.type} to={s.path} style={{
-            background: '#fff',
-            padding: '1.5rem',
-            borderRadius: 8,
-            textDecoration: 'none',
-            color: '#333',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}>
+          <Link key={s.type} to={s.path} className="card" style={{ textDecoration: 'none', color: '#333' }}>
             <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{counts[s.type] ?? '...'}</div>
             <div>{s.label}</div>
           </Link>

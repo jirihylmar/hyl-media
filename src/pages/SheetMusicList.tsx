@@ -25,10 +25,7 @@ export function SheetMusicList() {
         filters={
           !showUpload ? (
             <div style={{ marginBottom: '1rem' }}>
-              <button onClick={() => setShowUpload(true)} style={{
-                background: '#4a90d9', color: '#fff', border: 'none', borderRadius: 4,
-                padding: '4px 12px', fontSize: '0.8rem', cursor: 'pointer',
-              }}>+ Upload Sheet Music</button>
+              <button onClick={() => setShowUpload(true)} className="btn btn-primary btn-sm">+ Upload Sheet Music</button>
             </div>
           ) : undefined
         }

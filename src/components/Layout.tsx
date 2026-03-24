@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import type { UseAuthenticator } from '@aws-amplify/ui-react';
 
@@ -19,60 +20,50 @@ const NAV_ITEMS = [
 
 export function Layout({ signOut, user }: Props) {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <nav style={{
-        width: 200,
-        background: '#1a1a2e',
-        color: '#eee',
-        padding: '1rem 0',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        <Link to="/" style={{
-          color: '#fff',
-          textDecoration: 'none',
-          fontSize: '1.2rem',
-          fontWeight: 'bold',
-          padding: '0 1rem 1rem',
-          borderBottom: '1px solid #333',
-        }}>
+    <div className="app-layout">
+      <button
+        className="hamburger"
+        onClick={() => setSidebarOpen(o => !o)}
+        aria-label="Toggle navigation"
+      >
+        {sidebarOpen ? '\u2715' : '\u2630'}
+      </button>
+
+      <div
+        className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`}
+        onClick={closeSidebar}
+      />
+
+      <nav className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+        <Link to="/" className="sidebar-logo" onClick={closeSidebar}>
           HYL Media
         </Link>
-        <div style={{ flex: 1, padding: '0.5rem 0' }}>
+        <div className="sidebar-nav">
           {NAV_ITEMS.map(item => (
             <Link
               key={item.path}
               to={item.path}
-              style={{
-                display: 'block',
-                padding: '0.5rem 1rem',
-                color: location.pathname.startsWith(item.path) ? '#fff' : '#aaa',
-                textDecoration: 'none',
-                background: location.pathname.startsWith(item.path) ? '#16213e' : 'transparent',
-                borderLeft: location.pathname.startsWith(item.path) ? '3px solid #e94560' : '3px solid transparent',
-              }}
+              className={location.pathname.startsWith(item.path) ? 'active' : ''}
+              onClick={closeSidebar}
             >
               {item.label}
             </Link>
           ))}
         </div>
-        <div style={{ padding: '0.5rem 1rem', borderTop: '1px solid #333', fontSize: '0.8rem' }}>
-          <div style={{ color: '#888', marginBottom: '0.5rem' }}>{user?.signInDetails?.loginId}</div>
-          <button onClick={signOut} style={{
-            background: 'none',
-            border: '1px solid #666',
-            color: '#aaa',
-            padding: '0.3rem 0.8rem',
-            cursor: 'pointer',
-            borderRadius: 4,
-          }}>
+        <div className="sidebar-user">
+          <div className="sidebar-user-id">{user?.signInDetails?.loginId}</div>
+          <button onClick={signOut} className="btn btn-secondary btn-sm">
             Sign out
           </button>
         </div>
       </nav>
-      <main style={{ flex: 1, padding: '1.5rem', background: '#f5f5f5', overflow: 'auto' }}>
+
+      <main className="main-content">
         <Outlet />
       </main>
     </div>
