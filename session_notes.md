@@ -352,8 +352,16 @@ hyl-media/                      # Orchestration repo (this)
 - Bands: 33 → 45 (added 12 sheet music bands)
 - Cross-refs: 21 → 83 (added 62 sheet_music_performer)
 
+**Phase 7 Further Extension (same session)**:
+- **Task 7.11**: Fuzzy name matching — normalize() strips diacritics, fuzzyMatch() does substring matching. Fixed "Tři sestry"↔"Tri sestry", "Rolling Stones"↔"The Rolling Stones", "Nick Cave"↔"Nick Cave & The Bad Seeds". Applied to SheetMusicDetail, LibraryDetail, PersonDetail, BandDetail. Nav: Persons→People. PersonList: +Author filter.
+- **Task 7.12**: Tag dictionary method descriptions — each category now has a `method` field explaining how tags were established.
+- **Task 7.13**: Bulk-tagged 649 remaining items: 416 persons (role from roles[]), 45 bands (genre), 94 movies (entertainment), 94 recordings (genre from performer). Data page Tags tab shows coverage per entity type. 0 untagged items across all entity types.
+
+**Scripts Created**:
+- `scripts/bulk-tag-all.mjs` — tags persons (role), bands (genre), movies (entertainment), recordings (genre from performer)
+
 **Next Session**:
-- All phases 0-7 complete (10 tasks in Phase 7)
+- All phases 0-7 complete (13 tasks in Phase 7)
 - Could add: tag filtering on list pages, search, Kindle integration
 
 ---

@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 7 extended. Created 182 person + 12 band entities for book authors and sheet music artists. 62 new cross-refs. Data Management page with overview, link status, tag dictionary. Tag dictionary expanded with instrument and role categories.",
+  "last_session_summary": "Phase 7 complete (13 tasks). Books+sheets enriched with tags/links/graph. 194 new entities created. Fuzzy name matching for diacritics. Data Management page. All 1067 items tagged (649 this session). Tag dictionary has 5 categories with methods.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -555,6 +555,35 @@
           "verify": "/data page loads with overview stats and tabs",
           "completed_at": "2026-03-24",
           "added_reason": "User requested management page"
+        },
+        {
+          "id": "7.11",
+          "name": "Fix fuzzy name matching for artist/author links across all detail pages",
+          "status": "complete",
+          "size": "medium",
+          "verify": "SheetMusicDetail links 'Tři sestry' to band, PersonDetail finds sheet music by diacritics-insensitive match",
+          "completed_at": "2026-03-24",
+          "added_reason": "User reported sheet music artists not linked — diacritics mismatch",
+          "notes": "normalize() strips diacritics + lowercases. fuzzyMatch() does substring matching. Applied to SheetMusicDetail, LibraryDetail, PersonDetail, BandDetail. Nav: Persons→People, Data Mgmt→Data. PersonList: +Author filter."
+        },
+        {
+          "id": "7.12",
+          "name": "Add method descriptions to tag dictionary categories",
+          "status": "complete",
+          "size": "small",
+          "verify": "tagDictionary.ts has method field, Data page Tags tab shows methods",
+          "completed_at": "2026-03-24",
+          "added_reason": "User requested method documentation per tag group"
+        },
+        {
+          "id": "7.13",
+          "name": "Bulk-tag all remaining entities (persons, bands, movies, recordings)",
+          "status": "complete",
+          "size": "medium",
+          "verify": "0 untagged items across all entity types",
+          "completed_at": "2026-03-24",
+          "added_reason": "User requested filling in all untagged items",
+          "notes": "649 items tagged: 416 persons (role), 45 bands (genre), 94 movies (entertainment), 94 recordings (genre from performer). Data page Tags tab shows coverage per entity type."
         }
       ],
       "artifacts": []
