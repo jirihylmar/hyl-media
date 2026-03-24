@@ -4,6 +4,42 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Multi-Source Research + Data Page
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1-8.10 (all complete)
+
+**What was done**:
+
+**Architecture (8.1-8.5)**:
+1. Schema: replaced 4 fixed URL fields with single `externalLinks` JSON string `Array<{url, type}>`
+2. ExternalLinks component: supports 10 known types + any custom type
+3. All 6 detail pages updated, legacy fields kept for Amplify compatibility
+
+**Link Research (8.6-8.9)**:
+4. Wikipedia: 94 movies, 45 bands, 260 persons, 69 recordings, 66 sheet music, 5 books
+5. IMDB: 94 movies, 196 persons (all actors/directors)
+6. NKP (Czech National Library): 306/306 books (100%)
+7. Open Library: 61 international books
+8. MusicBrainz: 85 recordings, 95 sheet music
+9. Supermusic.cz: 91 recordings, 112 sheet music
+
+**Data Page Rewrite (8.10)**:
+10. 8 consolidated tabs: Overview, Movies, Bands, People, Recordings, Library, Sheet Music, Tags
+11. Each tab shows: name→detail, related entities (clickable to person/band), tags, external links (clickable badges)
+12. Fixed terminology: Books→Library
+13. Fuzzy diacritics-insensitive matching for author/artist→person/band links
+
+**Final coverage**: 908/1067 items (85%) have external links
+- 100%: Movies, Bands, Library, Sheet Music
+- 97%: Recordings
+- 63%: People (remaining are obscure book authors)
+
+**Link sources used**: Wikipedia, IMDB, NKP, Open Library, MusicBrainz, Supermusic
+
+---
+
 ### Session: 2026-03-24 — Phase 8: Flexible External Links + Link Research
 
 **Context**:
@@ -20,6 +56,42 @@ This file tracks session history for context continuity between Claude Code sess
 7. **IMDB research** (8.7): 94/94 movies now have IMDB links with manually verified title IDs.
 
 **Architecture decision**: External links now use `{url, type}` pattern — any new link source (Discogs, Goodreads, MusicBrainz, etc.) can be added without schema changes.
+
+---
+
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Multi-Source Research + Data Page
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1-8.10 (all complete)
+
+**What was done**:
+
+**Architecture (8.1-8.5)**:
+1. Schema: replaced 4 fixed URL fields with single `externalLinks` JSON string `Array<{url, type}>`
+2. ExternalLinks component: supports 10 known types + any custom type
+3. All 6 detail pages updated, legacy fields kept for Amplify compatibility
+
+**Link Research (8.6-8.9)**:
+4. Wikipedia: 94 movies, 45 bands, 260 persons, 69 recordings, 66 sheet music, 5 books
+5. IMDB: 94 movies, 196 persons (all actors/directors)
+6. NKP (Czech National Library): 306/306 books (100%)
+7. Open Library: 61 international books
+8. MusicBrainz: 85 recordings, 95 sheet music
+9. Supermusic.cz: 91 recordings, 112 sheet music
+
+**Data Page Rewrite (8.10)**:
+10. 8 consolidated tabs: Overview, Movies, Bands, People, Recordings, Library, Sheet Music, Tags
+11. Each tab shows: name→detail, related entities (clickable to person/band), tags, external links (clickable badges)
+12. Fixed terminology: Books→Library
+13. Fuzzy diacritics-insensitive matching for author/artist→person/band links
+
+**Final coverage**: 908/1067 items (85%) have external links
+- 100%: Movies, Bands, Library, Sheet Music
+- 97%: Recordings
+- 63%: People (remaining are obscure book authors)
+
+**Link sources used**: Wikipedia, IMDB, NKP, Open Library, MusicBrainz, Supermusic
 
 ---
 
@@ -247,6 +319,42 @@ hyl-media/                      # Orchestration repo (this)
 ├── input/                      # Source materials (read-only)
 └── tasks/
 ```
+
+---
+
+### Session: 2026-03-24 — Phase 8: Flexible External Links + Multi-Source Research + Data Page
+
+**Context**:
+- Phase: 8 - Flexible External Links + Link Research
+- Tasks: 8.1-8.10 (all complete)
+
+**What was done**:
+
+**Architecture (8.1-8.5)**:
+1. Schema: replaced 4 fixed URL fields with single `externalLinks` JSON string `Array<{url, type}>`
+2. ExternalLinks component: supports 10 known types + any custom type
+3. All 6 detail pages updated, legacy fields kept for Amplify compatibility
+
+**Link Research (8.6-8.9)**:
+4. Wikipedia: 94 movies, 45 bands, 260 persons, 69 recordings, 66 sheet music, 5 books
+5. IMDB: 94 movies, 196 persons (all actors/directors)
+6. NKP (Czech National Library): 306/306 books (100%)
+7. Open Library: 61 international books
+8. MusicBrainz: 85 recordings, 95 sheet music
+9. Supermusic.cz: 91 recordings, 112 sheet music
+
+**Data Page Rewrite (8.10)**:
+10. 8 consolidated tabs: Overview, Movies, Bands, People, Recordings, Library, Sheet Music, Tags
+11. Each tab shows: name→detail, related entities (clickable to person/band), tags, external links (clickable badges)
+12. Fixed terminology: Books→Library
+13. Fuzzy diacritics-insensitive matching for author/artist→person/band links
+
+**Final coverage**: 908/1067 items (85%) have external links
+- 100%: Movies, Bands, Library, Sheet Music
+- 97%: Recordings
+- 63%: People (remaining are obscure book authors)
+
+**Link sources used**: Wikipedia, IMDB, NKP, Open Library, MusicBrainz, Supermusic
 
 ---
 

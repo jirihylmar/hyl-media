@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 8 complete. External links restructured to flexible {url, type} array. Link research: movies 100%, bands 100%, persons 63%, recordings 73%, sheet music 59%, books 2%. Total 539 items linked.",
+  "last_session_summary": "Phase 8 complete (10 tasks). External links restructured to flexible {url, type} array. Multi-source link research: movies 100%, bands 100%, library 100%, sheet music 100%, recordings 97%, persons 63%. Total 908/1067 items linked (85%). Sources: Wikipedia, IMDB, NKP, Open Library, MusicBrainz, Supermusic. Data page rewritten with 8 consolidated tabs.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -625,7 +625,7 @@
             "8.1"
           ],
           "completed_at": "2026-03-24",
-          "notes": "Supports 7 known types (wikipedia, imdb, spotify, youtube, discogs, goodreads, musicbrainz) with custom type fallback"
+          "notes": "Supports 10 known types: wikipedia, imdb, spotify, youtube, discogs, goodreads, musicbrainz, openlibrary, nkp, supermusic. Custom type fallback for any new source."
         },
         {
           "id": "8.4",
@@ -661,7 +661,7 @@
             "8.5"
           ],
           "completed_at": "2026-03-24",
-          "notes": "Movies: 94/94 Wikipedia. Bands: 45/45 Wikipedia. Persons: 260/416 Wikipedia (63%). Recordings: 69/94 Wikipedia (73%). Sheet music: 66/112 Wikipedia (59%). Books: 5/306 Wikipedia (2%). Remaining are obscure Czech authors, Czech-only songs, specialized books."
+          "notes": "Final coverage: Movies 94/94 Wikipedia, Bands 45/45, Persons 260/416 (63%), Recordings 69/94 (73%), Sheet Music 66/112 (59%), Books 5/306 (2%). Remaining persons are obscure book authors. 4 research scripts used: MediaWiki API + hardcoded URLs."
         },
         {
           "id": "8.7",
@@ -673,7 +673,37 @@
             "8.5"
           ],
           "completed_at": "2026-03-24",
-          "notes": "Movies: 94/94 IMDB. Persons: 196/416 IMDB (all actors/directors covered). Bands/recordings/books/sheets not applicable for IMDB."
+          "notes": "Movies: 94/94 IMDB. Persons: 196/416 IMDB (all actors/directors covered)."
+        },
+        {
+          "id": "8.8",
+          "name": "Research + bulk-add NKP and Open Library links for all 306 books",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Book link coverage 100%",
+          "completed_at": "2026-03-24",
+          "added_reason": "Books had only 2% Wikipedia coverage — needed domain-specific sources",
+          "notes": "NKP (Czech National Library): 306/306. Open Library: 61/306. ExternalLinks component: added NKP + Open Library known types."
+        },
+        {
+          "id": "8.9",
+          "name": "Research + bulk-add MusicBrainz and Supermusic links for recordings and sheet music",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Recording coverage 97%, sheet music 100%",
+          "completed_at": "2026-03-24",
+          "added_reason": "Recordings and sheet music needed domain-specific music sources",
+          "notes": "Recordings: 91/94 (97%) — MusicBrainz 85, Supermusic 91. Sheet Music: 112/112 (100%) — MusicBrainz 95, Supermusic 112."
+        },
+        {
+          "id": "8.10",
+          "name": "Rewrite Data Management page — consolidated tabs for all entity types",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Data page has 8 tabs: Overview, Movies, Bands, People, Recordings, Library, Sheet Music, Tags",
+          "completed_at": "2026-03-24",
+          "added_reason": "Data page was missing Movies/Bands/Recordings tabs, Books terminology wrong, author links not clickable",
+          "notes": "All tabs show: name→detail, related entities (clickable), tags, external links (clickable badges). Fixed Books→Library terminology. Fuzzy diacritics matching for person/band links."
         }
       ],
       "artifacts": []
