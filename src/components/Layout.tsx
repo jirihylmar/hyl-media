@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: 'Recordings', path: '/recordings' },
   { label: 'Library', path: '/library' },
   { label: 'Sheet Music', path: '/sheet-music' },
+  { label: 'Data Mgmt', path: '/data' },
 ];
 
 export function Layout({ signOut, user }: Props) {

@@ -12,6 +12,13 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'hip-hop', 'soundtrack', 'world', 'ambient', 'r&b',
     ],
   },
+  instrument: {
+    label: 'Instrument',
+    tags: [
+      'guitar', 'piano', 'vocals', 'bass', 'drums', 'violin',
+      'harmonica', 'accordion', 'flute', 'saxophone', 'trumpet',
+    ],
+  },
   library_type: {
     label: 'Library Type',
     tags: [
@@ -25,6 +32,12 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
       'spiritual', 'technical', 'creative', 'educational',
       'entertainment', 'philosophical', 'scientific', 'political',
       'historical', 'medical', 'programming', 'yoga',
+    ],
+  },
+  role: {
+    label: 'Role',
+    tags: [
+      'actor', 'director', 'artist', 'author', 'composer', 'producer',
     ],
   },
 };
@@ -42,6 +55,8 @@ export function getTagCategory(tag: string): string | undefined {
 
 export const TAG_COLORS: Record<string, string> = {
   genre: '#8b5cf6',
+  instrument: '#0ea5e9',
   library_type: '#059669',
   content: '#d97706',
+  role: '#dc2626',
 };

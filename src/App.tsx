@@ -16,6 +16,7 @@ import { LibraryList } from './pages/LibraryList';
 import { LibraryDetail } from './pages/LibraryDetail';
 import { SheetMusicList } from './pages/SheetMusicList';
 import { SheetMusicDetail } from './pages/SheetMusicDetail';
+import { DataManagement } from './pages/DataManagement';
 import '@aws-amplify/ui-react/styles.css';
 
 function AuthenticatedApp() {
@@ -43,6 +44,7 @@ function AuthenticatedApp() {
               <Route path="/library/:id" element={<LibraryDetail />} />
               <Route path="/sheet-music" element={<SheetMusicList />} />
               <Route path="/sheet-music/:id" element={<SheetMusicDetail />} />
+              <Route path="/data" element={<DataManagement />} />
             </Route>
           </Routes>
         </BrowserRouter>

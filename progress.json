@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph \u2014 movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 7 complete. Tags, external links, inline editing added to books and sheet music. Graph connections: person/band detail shows sheet music, book detail links author to person, sheet music shows related recordings. Bulk-tagged 306 books + 112 sheet music.",
+  "last_session_summary": "Phase 7 extended. Created 182 person + 12 band entities for book authors and sheet music artists. 62 new cross-refs. Data Management page with overview, link status, tag dictionary. Tag dictionary expanded with instrument and role categories.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -527,6 +527,34 @@
           "verify": "Build succeeds, manual walkthrough of 5 books + 5 sheet music passes",
           "completed_at": "2026-03-24",
           "notes": "TypeScript compiles clean. Vite build succeeds. All components follow established patterns."
+        },
+        {
+          "id": "7.8",
+          "name": "Create missing person/band entities for book authors and sheet music artists",
+          "status": "complete",
+          "size": "medium",
+          "verify": "Person count increased by ~182, band count by ~12, cross-refs by ~62",
+          "completed_at": "2026-03-24",
+          "added_reason": "User reported authors/artists not in persons DB, not graphed",
+          "notes": "scripts/create-missing-entities.mjs: 13 artist persons, 12 bands, 169 book author persons, 62 sheet_music_performer cross-refs."
+        },
+        {
+          "id": "7.9",
+          "name": "Expand tag dictionary with instrument and role categories",
+          "status": "complete",
+          "size": "small",
+          "verify": "tagDictionary.ts has instrument and role categories",
+          "completed_at": "2026-03-24",
+          "added_reason": "User requested help with tag dictionary"
+        },
+        {
+          "id": "7.10",
+          "name": "Data Management page with overview, link status, tag dictionary, person browser",
+          "status": "complete",
+          "size": "medium",
+          "verify": "/data page loads with overview stats and tabs",
+          "completed_at": "2026-03-24",
+          "added_reason": "User requested management page"
         }
       ],
       "artifacts": []

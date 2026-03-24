@@ -339,8 +339,21 @@ hyl-media/                      # Orchestration repo (this)
 - Staré pověsti české → prose, historical
 - Katyně → prose, historical, political
 
+**Phase 7 Extension (same session)**:
+- **Task 7.8**: Created 182 person entities (169 book authors + 13 sheet music artists) and 12 band entities (sheet music). Created 62 sheet_music_performer cross-refs. Near-match handling for Rolling Stones, Nick Cave, Patti Smith, Johnny Cash, Jiri Suchy.
+- **Task 7.9**: Tag dictionary expanded: +instrument category (guitar, piano, vocals, etc.), +role category (actor, director, artist, author, composer, producer)
+- **Task 7.10**: Data Management page at /data with 5 tabs: Overview (entity counts, link/tag stats), Books (linked/unlinked), Sheets (linked/unlinked), Persons (by role browser), Tags (dictionary with usage counts)
+
+**Scripts Created**:
+- `scripts/create-missing-entities.mjs` — creates person/band entities for unmatched book authors and sheet music artists, plus cross-refs
+
+**Entity Counts After Migration**:
+- Persons: 234 → ~416 (added 169 authors + 13 artists)
+- Bands: 33 → 45 (added 12 sheet music bands)
+- Cross-refs: 21 → 83 (added 62 sheet_music_performer)
+
 **Next Session**:
-- All phases 0-7 complete
+- All phases 0-7 complete (10 tasks in Phase 7)
 - Could add: tag filtering on list pages, search, Kindle integration
 
 ---
