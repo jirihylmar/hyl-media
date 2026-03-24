@@ -5,71 +5,60 @@ import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
 import { parseLinks } from '../components/ExternalLinks';
 
-type LinkStatus = {
-  item: KnowledgeGraphItem;
-  linked: boolean;
-  linkedTo?: string | null;
-};
+type TabId = 'overview' | 'movies' | 'bands' | 'people' | 'recordings' | 'library' | 'sheets' | 'tags';
 
 export function DataManagement() {
-  const [books, setBooks] = useState<LinkStatus[]>([]);
-  const [sheets, setSheets] = useState<LinkStatus[]>([]);
   const [persons, setPersons] = useState<KnowledgeGraphItem[]>([]);
   const [bands, setBands] = useState<KnowledgeGraphItem[]>([]);
   const [movies, setMovies] = useState<KnowledgeGraphItem[]>([]);
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
-  const [crossRefs, setCrossRefs] = useState<KnowledgeGraphItem[]>([]);
+  const [bookItems, setBookItems] = useState<KnowledgeGraphItem[]>([]);
+  const [sheetItems, setSheetItems] = useState<KnowledgeGraphItem[]>([]);
+  const [castRefs, setCastRefs] = useState<KnowledgeGraphItem[]>([]);
+  const [perfRefs, setPerfRefs] = useState<KnowledgeGraphItem[]>([]);
+  const [sheetPerfRefs, setSheetPerfRefs] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'links' | 'books' | 'sheets' | 'tags' | 'persons'>('overview');
+  const [tab, setTab] = useState<TabId>('overview');
 
   useEffect(() => {
     Promise.all([
-      listByType('book'),
-      listByType('sheet_music'),
       listByType('person'),
       listByType('band'),
       listByType('movie'),
       listByType('recording'),
+      listByType('book'),
+      listByType('sheet_music'),
+      listByType('movie_cast'),
+      listByType('recording_performer'),
       listByType('sheet_music_performer'),
-    ]).then(([bookItems, sheetItems, personItems, bandItems, movieItems, recordingItems, crossRefItems]) => {
-      setPersons(personItems);
-      setBands(bandItems);
-      setMovies(movieItems);
-      setRecordings(recordingItems);
-      setCrossRefs(crossRefItems);
-
-      // Check book author → person links
-      const personNames = new Set(personItems.map(p => p.name));
-      setBooks(bookItems.map(b => ({
-        item: b,
-        linked: !!b.author && personNames.has(b.author),
-        linkedTo: b.author && personNames.has(b.author) ? b.author : undefined,
-      })));
-
-      // Check sheet music → performer links
-      const sheetCrossRefIds = new Set(crossRefItems.map(cr => cr.sheetMusicId));
-      setSheets(sheetItems.map(s => ({
-        item: s,
-        linked: sheetCrossRefIds.has(s.id),
-        linkedTo: crossRefItems.find(cr => cr.sheetMusicId === s.id)?.performerName,
-      })));
-
+    ]).then(([p, b, m, r, bk, sh, mc, rp, sp]) => {
+      setPersons(p); setBands(b); setMovies(m); setRecordings(r);
+      setBookItems(bk); setSheetItems(sh); setCastRefs(mc); setPerfRefs(rp); setSheetPerfRefs(sp);
       setLoading(false);
     });
   }, []);
 
   if (loading) return <p>Loading data...</p>;
 
-  const linkedBooks = books.filter(b => b.linked);
-  const unlinkedBooks = books.filter(b => !b.linked);
-  const linkedSheets = sheets.filter(s => s.linked);
-  const unlinkedSheets = sheets.filter(s => !s.linked);
+  // Lookup maps
+  const personById = new Map(persons.map(p => [p.id, p]));
+  const personByName = new Map(persons.map(p => [p.name, p]));
+  const bandByName = new Map(bands.map(b => [b.name, b]));
 
-  // Tag stats — all entity types
-  const allItems = [
-    ...books.map(b => b.item), ...sheets.map(s => s.item),
-    ...persons, ...bands, ...movies, ...recordings,
-  ];
+  // Helper: find person by name (fuzzy — strip diacritics for matching)
+  const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const personByNorm = new Map(persons.map(p => [normalize(p.name || ''), p]));
+  const bandByNorm = new Map(bands.map(b => [normalize(b.name || ''), b]));
+  function findPerson(name: string) {
+    return personByName.get(name) || personByNorm.get(normalize(name));
+  }
+  function findBandOrPerson(name: string) {
+    return bandByName.get(name) || bandByNorm.get(normalize(name))
+      || personByName.get(name) || personByNorm.get(normalize(name));
+  }
+
+  // Tag stats
+  const allItems = [...movies, ...bands, ...persons, ...recordings, ...bookItems, ...sheetItems];
   const taggedItems = allItems.filter(i => i.tags && (i.tags as string[]).length > 0);
   const tagCounts: Record<string, number> = {};
   for (const item of allItems) {
@@ -78,16 +67,15 @@ export function DataManagement() {
     }
   }
 
-  // External link stats — per entity type
+  // External link stats
   const entityGroups = [
-    { label: 'Movies', items: movies, route: 'movies' },
-    { label: 'Bands', items: bands, route: 'bands' },
-    { label: 'People', items: persons, route: 'persons' },
-    { label: 'Recordings', items: recordings, route: 'recordings' },
-    { label: 'Books', items: books.map(b => b.item), route: 'library' },
-    { label: 'Sheet Music', items: sheets.map(s => s.item), route: 'sheet-music' },
+    { label: 'Movies', items: movies },
+    { label: 'Bands', items: bands },
+    { label: 'People', items: persons },
+    { label: 'Recordings', items: recordings },
+    { label: 'Library', items: bookItems },
+    { label: 'Sheet Music', items: sheetItems },
   ];
-
   const linkStats = entityGroups.map(({ label, items }) => {
     const withLinks = items.filter(i => parseLinks(i.externalLinks as string | null).length > 0);
     const typeCounts: Record<string, number> = {};
@@ -98,44 +86,62 @@ export function DataManagement() {
     }
     return { label, total: items.length, withLinks: withLinks.length, typeCounts };
   });
-
   const allLinkTypes = [...new Set(linkStats.flatMap(s => Object.keys(s.typeCounts)))].sort();
   const totalWithLinks = linkStats.reduce((s, r) => s + r.withLinks, 0);
   const totalAll = linkStats.reduce((s, r) => s + r.total, 0);
 
   // Person role stats
-  const authorPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('author'));
-  const artistPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('artist'));
-  const actorPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('actor'));
-  const directorPersons = persons.filter(p => p.roles && (p.roles as string[]).includes('director'));
+  const roleCount = (role: string) => persons.filter(p => (p.roles as string[] | null)?.includes(role)).length;
+
+  // Cast and performer maps for movies/recordings
+  const castByMovie = new Map<string, KnowledgeGraphItem[]>();
+  for (const c of castRefs) {
+    const arr = castByMovie.get(c.movieId as string) || [];
+    arr.push(c);
+    castByMovie.set(c.movieId as string, arr);
+  }
+  const perfByRecording = new Map<string, KnowledgeGraphItem[]>();
+  for (const p of perfRefs) {
+    const arr = perfByRecording.get(p.recordingId as string) || [];
+    arr.push(p);
+    perfByRecording.set(p.recordingId as string, arr);
+  }
+  const sheetPerfBySheet = new Map<string, string>();
+  for (const sp of sheetPerfRefs) {
+    sheetPerfBySheet.set(sp.sheetMusicId as string, sp.performerName as string);
+  }
 
   const tabStyle = (t: string) => ({
-    padding: '8px 16px',
+    padding: '6px 12px',
     background: tab === t ? '#1a1a2e' : '#ddd',
     color: tab === t ? '#fff' : '#333',
     border: 'none',
     borderRadius: '4px 4px 0 0',
     cursor: 'pointer' as const,
     fontWeight: tab === t ? 'bold' as const : 'normal' as const,
+    fontSize: '0.85rem',
   });
 
   return (
     <div>
-      <h1>Data Management</h1>
+      <h1>Data</h1>
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 3, marginBottom: 16, flexWrap: 'wrap' }}>
         <button style={tabStyle('overview')} onClick={() => setTab('overview')}>Overview</button>
-        <button style={tabStyle('links')} onClick={() => setTab('links')}>External Links</button>
-        <button style={tabStyle('books')} onClick={() => setTab('books')}>Books</button>
+        <button style={tabStyle('movies')} onClick={() => setTab('movies')}>Movies</button>
+        <button style={tabStyle('bands')} onClick={() => setTab('bands')}>Bands</button>
+        <button style={tabStyle('people')} onClick={() => setTab('people')}>People</button>
+        <button style={tabStyle('recordings')} onClick={() => setTab('recordings')}>Recordings</button>
+        <button style={tabStyle('library')} onClick={() => setTab('library')}>Library</button>
         <button style={tabStyle('sheets')} onClick={() => setTab('sheets')}>Sheet Music</button>
-        <button style={tabStyle('persons')} onClick={() => setTab('persons')}>Persons</button>
         <button style={tabStyle('tags')} onClick={() => setTab('tags')}>Tags</button>
       </div>
 
+      {/* ========== OVERVIEW ========== */}
       {tab === 'overview' && (
         <div>
-          <h2>Entity Counts</h2>
-          <table style={{ borderCollapse: 'collapse', marginBottom: 24 }}>
+          <h2>Entity Overview</h2>
+          <table style={{ borderCollapse: 'collapse', marginBottom: 24, width: '100%' }}>
             <thead>
               <tr style={{ background: '#1a1a2e', color: '#fff' }}>
                 <th style={cellStyle}>Entity</th>
@@ -152,13 +158,9 @@ export function DataManagement() {
                   <tr key={label}>
                     <td style={cellStyle}>{label}</td>
                     <td style={cellStyle}>{total}</td>
-                    <td style={{
-                      ...cellStyle,
-                      color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626',
-                      fontWeight: 'bold',
-                    }}>
+                    <td style={{ ...cellStyle, color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626', fontWeight: 'bold' }}>
                       {withLinks}/{total} ({pct(withLinks, total)})
-                      <span style={{ fontWeight: 'normal', color: '#888', fontSize: '0.75rem', marginLeft: 6 }}>
+                      <span style={{ fontWeight: 'normal', color: '#888', fontSize: '0.7rem', marginLeft: 6 }}>
                         {Object.entries(typeCounts).map(([t, c]) => `${t}:${c}`).join(' ')}
                       </span>
                     </td>
@@ -166,125 +168,147 @@ export function DataManagement() {
                   </tr>
                 );
               })}
-              <tr style={{ fontWeight: 'bold' }}>
+              <tr style={{ fontWeight: 'bold', background: '#f5f5f5' }}>
                 <td style={cellStyle}>Total</td>
                 <td style={cellStyle}>{totalAll}</td>
-                <td style={{
-                  ...cellStyle,
-                  color: totalWithLinks === totalAll ? '#059669' : '#d97706',
-                }}>
+                <td style={{ ...cellStyle, color: totalWithLinks === totalAll ? '#059669' : '#d97706' }}>
                   {totalWithLinks}/{totalAll} ({pct(totalWithLinks, totalAll)})
                 </td>
                 <td style={cellStyle}>{taggedItems.length}/{totalAll}</td>
               </tr>
-              <tr>
-                <td style={cellStyle}>Cross-refs</td>
-                <td style={cellStyle}>{crossRefs.length}</td>
-                <td style={cellStyle} colSpan={2}>
-                  People roles: authors {authorPersons.length}, artists {artistPersons.length}, actors {actorPersons.length}, directors {directorPersons.length}
-                </td>
-              </tr>
+            </tbody>
+          </table>
+          <p style={{ fontSize: '0.8rem', color: '#888' }}>
+            People roles: authors {roleCount('author')}, artists {roleCount('artist')}, actors {roleCount('actor')}, directors {roleCount('director')}, musicians {roleCount('musician')}
+            &nbsp;|&nbsp; Cross-refs: {castRefs.length} cast, {perfRefs.length} rec. performers, {sheetPerfRefs.length} sheet performers
+          </p>
+        </div>
+      )}
+
+      {/* ========== MOVIES ========== */}
+      {tab === 'movies' && (
+        <div>
+          <SummaryLine items={movies} label="Movies" />
+          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Movie</th>
+              <th style={cellStyle}>Language</th>
+              <th style={cellStyle}>Cast</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
+            <tbody>
+              {movies.map(m => {
+                const cast = castByMovie.get(m.id) || [];
+                return (
+                  <tr key={m.id}>
+                    <td style={cellStyle}><Link to={`/movies/${m.id}`}>{m.name}</Link></td>
+                    <td style={cellStyle}>{m.language || '—'}</td>
+                    <td style={{ ...cellStyle, maxWidth: 200 }}>
+                      {cast.length > 0
+                        ? cast.slice(0, 4).map((c, i) => {
+                            const p = personById.get(c.personId as string);
+                            return <span key={i}>{i > 0 && ', '}{p ? <Link to={`/persons/${p.id}`}>{c.personName}</Link> : c.personName}</span>;
+                          })
+                        : <span style={{ color: '#ccc' }}>—</span>
+                      }
+                      {cast.length > 4 && <span style={{ color: '#888' }}> +{cast.length - 4}</span>}
+                    </td>
+                    <td style={cellStyle}>{renderTags(m.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(parseLinks(m.externalLinks as string | null))}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {tab === 'links' && (
+      {/* ========== BANDS ========== */}
+      {tab === 'bands' && (
         <div>
-          <h2>External Links Coverage</h2>
-          <table style={{ borderCollapse: 'collapse', marginBottom: 24, width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
-                <th style={cellStyle}>Entity Type</th>
-                <th style={cellStyle}>Total</th>
-                <th style={cellStyle}>With Links</th>
-                {allLinkTypes.map(t => (
-                  <th key={t} style={{ ...cellStyle, fontSize: '0.75rem' }}>{t}</th>
-                ))}
-              </tr>
-            </thead>
+          <SummaryLine items={bands} label="Bands" />
+          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Band</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
             <tbody>
-              {linkStats.map(({ label, total, withLinks, typeCounts }) => (
-                <tr key={label}>
-                  <td style={cellStyle}>{label}</td>
-                  <td style={cellStyle}>{total}</td>
-                  <td style={{
-                    ...cellStyle,
-                    color: withLinks === total ? '#059669' : withLinks > 0 ? '#d97706' : '#dc2626',
-                    fontWeight: 'bold',
-                  }}>
-                    {withLinks} ({pct(withLinks, total)})
-                  </td>
-                  {allLinkTypes.map(t => (
-                    <td key={t} style={{
-                      ...cellStyle,
-                      color: typeCounts[t] ? (typeCounts[t] === total ? '#059669' : '#d97706') : '#ddd',
-                    }}>
-                      {typeCounts[t] || 0}
-                    </td>
-                  ))}
+              {bands.map(b => (
+                <tr key={b.id}>
+                  <td style={cellStyle}><Link to={`/bands/${b.id}`}>{b.name}</Link></td>
+                  <td style={cellStyle}>{renderTags(b.tags as string[] | null)}</td>
+                  <td style={cellStyle}>{renderLinkBadges(parseLinks(b.externalLinks as string | null))}</td>
                 </tr>
               ))}
-              <tr style={{ fontWeight: 'bold' }}>
-                <td style={cellStyle}>Total</td>
-                <td style={cellStyle}>{totalAll}</td>
-                <td style={cellStyle}>{totalWithLinks} ({pct(totalWithLinks, totalAll)})</td>
-                {allLinkTypes.map(t => {
-                  const sum = linkStats.reduce((s, r) => s + (r.typeCounts[t] || 0), 0);
-                  return <td key={t} style={cellStyle}>{sum}</td>;
-                })}
-              </tr>
             </tbody>
           </table>
-
-          <h2>Link Sources</h2>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {allLinkTypes.map(t => {
-              const total = linkStats.reduce((s, r) => s + (r.typeCounts[t] || 0), 0);
-              return (
-                <div key={t} style={{
-                  padding: '8px 16px', background: '#f5f5f5', borderRadius: 8,
-                  border: '1px solid #ddd', fontSize: '0.85rem',
-                }}>
-                  <strong>{t}</strong>: {total} links
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
 
-      {tab === 'books' && (
+      {/* ========== PEOPLE ========== */}
+      {tab === 'people' && (
         <div>
-          <h2>Books ({books.length})</h2>
-          <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
-            Author linked: {linkedBooks.length}/{books.length} &nbsp;|&nbsp;
-            External links: {books.filter(b => parseLinks(b.item.externalLinks as string | null).length > 0).length}/{books.length} &nbsp;|&nbsp;
-            Tagged: {books.filter(b => b.item.tags && (b.item.tags as string[]).length > 0).length}/{books.length}
-          </p>
+          <SummaryLine items={persons} label="People" />
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
-                <th style={cellStyle}>Book</th>
-                <th style={cellStyle}>Author</th>
-                <th style={cellStyle}>Tags</th>
-                <th style={cellStyle}>External Links</th>
-              </tr>
-            </thead>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Name</th>
+              <th style={cellStyle}>Roles</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
             <tbody>
-              {books.map(b => {
-                const links = parseLinks(b.item.externalLinks as string | null);
+              {persons.map(p => (
+                <tr key={p.id}>
+                  <td style={cellStyle}><Link to={`/persons/${p.id}`}>{p.name}</Link></td>
+                  <td style={cellStyle}>
+                    {(p.roles as string[] | null)?.map(r => (
+                      <span key={r} style={{
+                        padding: '1px 5px', marginRight: 3, borderRadius: 8, fontSize: '0.7rem',
+                        background: r === 'actor' ? '#3b82f620' : r === 'director' ? '#f59e0b20' : r === 'author' ? '#dc262620' : r === 'artist' ? '#0ea5e920' : '#66666620',
+                        color: r === 'actor' ? '#3b82f6' : r === 'director' ? '#f59e0b' : r === 'author' ? '#dc2626' : r === 'artist' ? '#0ea5e9' : '#666',
+                      }}>{r}</span>
+                    )) || '—'}
+                  </td>
+                  <td style={cellStyle}>{renderTags(p.tags as string[] | null)}</td>
+                  <td style={cellStyle}>{renderLinkBadges(parseLinks(p.externalLinks as string | null))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ========== RECORDINGS ========== */}
+      {tab === 'recordings' && (
+        <div>
+          <SummaryLine items={recordings} label="Recordings" />
+          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Recording</th>
+              <th style={cellStyle}>Performer</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
+            <tbody>
+              {recordings.map(r => {
+                const perfs = perfByRecording.get(r.id) || [];
                 return (
-                  <tr key={b.item.id}>
-                    <td style={cellStyle}><Link to={`/library/${b.item.id}`}>{b.item.name}</Link></td>
+                  <tr key={r.id}>
+                    <td style={cellStyle}><Link to={`/recordings/${r.id}`}>{r.name}</Link></td>
                     <td style={cellStyle}>
-                      {b.linked
-                        ? <span style={{ color: '#059669' }}>{b.linkedTo}</span>
-                        : <span style={{ color: '#888' }}>{b.item.author || '—'}</span>
+                      {perfs.length > 0
+                        ? perfs.map((pf, i) => {
+                            const entity = findBandOrPerson(pf.performerName as string);
+                            const route = entity ? ((entity as KnowledgeGraphItem).entityType === 'band' ? `/bands/${entity.id}` : `/persons/${entity.id}`) : null;
+                            return <span key={i}>{i > 0 && ', '}{route ? <Link to={route}>{pf.performerName}</Link> : pf.performerName}</span>;
+                          })
+                        : <span style={{ color: '#ccc' }}>—</span>
                       }
                     </td>
-                    <td style={cellStyle}>{renderTags(b.item.tags as string[] | null)}</td>
-                    <td style={cellStyle}>{renderLinkBadges(links)}</td>
+                    <td style={cellStyle}>{renderTags(r.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(parseLinks(r.externalLinks as string | null))}</td>
                   </tr>
                 );
               })}
@@ -293,37 +317,66 @@ export function DataManagement() {
         </div>
       )}
 
+      {/* ========== LIBRARY ========== */}
+      {tab === 'library' && (
+        <div>
+          <SummaryLine items={bookItems} label="Library" />
+          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Title</th>
+              <th style={cellStyle}>Author</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
+            <tbody>
+              {bookItems.map(b => {
+                const authorPerson = b.author ? findPerson(b.author) : undefined;
+                return (
+                  <tr key={b.id}>
+                    <td style={cellStyle}><Link to={`/library/${b.id}`}>{b.name}</Link></td>
+                    <td style={cellStyle}>
+                      {authorPerson
+                        ? <Link to={`/persons/${authorPerson.id}`} style={{ color: '#059669' }}>{b.author}</Link>
+                        : <span style={{ color: '#888' }}>{b.author || '—'}</span>
+                      }
+                    </td>
+                    <td style={cellStyle}>{renderTags(b.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(parseLinks(b.externalLinks as string | null))}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ========== SHEET MUSIC ========== */}
       {tab === 'sheets' && (
         <div>
-          <h2>Sheet Music ({sheets.length})</h2>
-          <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
-            Performer linked: {linkedSheets.length}/{sheets.length} &nbsp;|&nbsp;
-            External links: {sheets.filter(s => parseLinks(s.item.externalLinks as string | null).length > 0).length}/{sheets.length} &nbsp;|&nbsp;
-            Tagged: {sheets.filter(s => s.item.tags && (s.item.tags as string[]).length > 0).length}/{sheets.length}
-          </p>
+          <SummaryLine items={sheetItems} label="Sheet Music" />
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead>
-              <tr style={{ background: '#1a1a2e', color: '#fff' }}>
-                <th style={cellStyle}>Title</th>
-                <th style={cellStyle}>Artist</th>
-                <th style={cellStyle}>Tags</th>
-                <th style={cellStyle}>External Links</th>
-              </tr>
-            </thead>
+            <thead><tr style={{ background: '#1a1a2e', color: '#fff' }}>
+              <th style={cellStyle}>Title</th>
+              <th style={cellStyle}>Artist</th>
+              <th style={cellStyle}>Tags</th>
+              <th style={cellStyle}>External Links</th>
+            </tr></thead>
             <tbody>
-              {sheets.map(s => {
-                const links = parseLinks(s.item.externalLinks as string | null);
+              {sheetItems.map(s => {
+                const perfName = sheetPerfBySheet.get(s.id) || s.artistName;
+                const entity = perfName ? findBandOrPerson(perfName as string) : undefined;
+                const route = entity ? ((entity as KnowledgeGraphItem).entityType === 'band' ? `/bands/${entity.id}` : `/persons/${entity.id}`) : null;
                 return (
-                  <tr key={s.item.id}>
-                    <td style={cellStyle}><Link to={`/sheet-music/${s.item.id}`}>{s.item.name}</Link></td>
+                  <tr key={s.id}>
+                    <td style={cellStyle}><Link to={`/sheet-music/${s.id}`}>{s.name}</Link></td>
                     <td style={cellStyle}>
-                      {s.linked
-                        ? <span style={{ color: '#059669' }}>{s.linkedTo}</span>
-                        : <span style={{ color: '#888' }}>{s.item.artistName || '—'}</span>
+                      {route
+                        ? <Link to={route} style={{ color: '#059669' }}>{perfName}</Link>
+                        : <span style={{ color: '#888' }}>{(perfName as string) || '—'}</span>
                       }
                     </td>
-                    <td style={cellStyle}>{renderTags(s.item.tags as string[] | null)}</td>
-                    <td style={cellStyle}>{renderLinkBadges(links)}</td>
+                    <td style={cellStyle}>{renderTags(s.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderLinkBadges(parseLinks(s.externalLinks as string | null))}</td>
                   </tr>
                 );
               })}
@@ -332,42 +385,7 @@ export function DataManagement() {
         </div>
       )}
 
-      {tab === 'persons' && (
-        <div>
-          <h2>Persons by Role</h2>
-          <h3>Authors ({authorPersons.length})</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {authorPersons.sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => (
-              <Link key={p.id} to={`/persons/${p.id}`} style={{
-                padding: '2px 8px', background: '#dc262620', color: '#dc2626',
-                borderRadius: 12, fontSize: '0.8rem', textDecoration: 'none',
-                border: '1px solid #dc262640',
-              }}>{p.name}</Link>
-            ))}
-          </div>
-          <h3>Artists ({artistPersons.length})</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {artistPersons.sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => (
-              <Link key={p.id} to={`/persons/${p.id}`} style={{
-                padding: '2px 8px', background: '#0ea5e920', color: '#0ea5e9',
-                borderRadius: 12, fontSize: '0.8rem', textDecoration: 'none',
-                border: '1px solid #0ea5e940',
-              }}>{p.name}</Link>
-            ))}
-          </div>
-          <h3>Bands ({bands.length})</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {bands.sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(b => (
-              <Link key={b.id} to={`/bands/${b.id}`} style={{
-                padding: '2px 8px', background: '#8b5cf620', color: '#8b5cf6',
-                borderRadius: 12, fontSize: '0.8rem', textDecoration: 'none',
-                border: '1px solid #8b5cf640',
-              }}>{b.name}</Link>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* ========== TAGS ========== */}
       {tab === 'tags' && (
         <div>
           <h2>Tag Dictionary</h2>
@@ -404,14 +422,7 @@ export function DataManagement() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { label: 'Books', items: books.map(b => b.item) },
-                { label: 'Sheet Music', items: sheets.map(s => s.item) },
-                { label: 'People', items: persons },
-                { label: 'Bands', items: bands },
-                { label: 'Movies', items: movies },
-                { label: 'Recordings', items: recordings },
-              ].map(({ label, items }) => {
+              {entityGroups.map(({ label, items }) => {
                 const tagged = items.filter(i => i.tags && (i.tags as string[]).length > 0).length;
                 return (
                   <tr key={label}>
@@ -439,6 +450,23 @@ export function DataManagement() {
     </div>
   );
 }
+
+// --- Shared components ---
+
+function SummaryLine({ items, label }: { items: KnowledgeGraphItem[]; label: string }) {
+  const withLinks = items.filter(i => parseLinks(i.externalLinks as string | null).length > 0).length;
+  const tagged = items.filter(i => i.tags && (i.tags as string[]).length > 0).length;
+  return (
+    <>
+      <h2>{label} ({items.length})</h2>
+      <p style={{ color: '#888', fontSize: '0.85em', marginBottom: 12 }}>
+        External links: {withLinks}/{items.length} &nbsp;|&nbsp; Tagged: {tagged}/{items.length}
+      </p>
+    </>
+  );
+}
+
+// --- Styles & helpers ---
 
 const cellStyle: React.CSSProperties = {
   padding: '6px 12px',
