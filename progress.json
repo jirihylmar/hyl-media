@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-04-02",
-  "last_session_summary": "Phase 10 complete (6 tasks). Dossier-first nav refactor: removed Home page + Editor nav + sidebar entirely. Replaced with minimal top bar. Dossier at /. + New buttons on entity tabs. Breadcrumbs on all pages. All phases 0-10 complete (63 tasks).",
+  "last_session_summary": "Phase 11 complete (7 tasks). Automated CRUD integration tests: 72 assertions across 4 suites (movies, persons, bands+recordings, books+sheets). All pass. npm run test:crud / test:cleanup. Also fixed stale amplify_outputs.json (was missing tags + externalLinks fields). All phases 0-11 complete (70 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -819,6 +819,79 @@
           "verify": "No sidebar visible, top bar shows logo + sign out, content full width",
           "added_reason": "User noted sidebar with single Dossier link was useless",
           "notes": "Removed sidebar, hamburger, overlay. Replaced with top-bar: logo left, user+signout right. 180 lines CSS deleted. Content gets full viewport width."
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_11_crud_tests": {
+      "name": "Automated CRUD Tests",
+      "status": "complete",
+      "started_at": "2026-04-02",
+      "completed_at": "2026-04-02",
+      "description": "Integration tests against real DynamoDB — create, modify, tags, links, delete for each entity type. Traceable _test_* naming.",
+      "tasks": [
+        {
+          "id": "11.1",
+          "name": "Create test helper module — shared auth, CRUD, assert, cleanup",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "scripts/test-helpers.mjs imports and runs",
+          "notes": "Setup, createItem, getItem, updateItem, deleteItem, listByType, assert/assertEqual/assertIncludes, cleanupTestItems. Re-fetches after update to get full item with array fields."
+        },
+        {
+          "id": "11.2",
+          "name": "CRUD test: movies (_test_1_movie) — create, edit, tags, links, delete",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "medium",
+          "verify": "Script exits 0, no _test_ items remain",
+          "notes": "24 assertions: create, read, list, update name, update language, add/modify tags, add/modify links, verify full state, delete, verify gone."
+        },
+        {
+          "id": "11.3",
+          "name": "CRUD test: persons (_test_1_person) — create, edit, tags, links, delete",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Script exits 0, no _test_ items remain",
+          "notes": "15 assertions: tests person-specific fields (givenName, familyName, roles)."
+        },
+        {
+          "id": "11.4",
+          "name": "CRUD test: bands + recordings (_test_1_band, _test_1_recording)",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Script exits 0, no _test_ items remain",
+          "notes": "14 assertions across both entity types."
+        },
+        {
+          "id": "11.5",
+          "name": "CRUD test: books + sheet music (_test_1_book, _test_1_sheet_music)",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Script exits 0, no _test_ items remain",
+          "notes": "19 assertions: tests book-specific fields (author, format) and sheet music fields (artistName)."
+        },
+        {
+          "id": "11.6",
+          "name": "Full test runner — runs all category tests, reports pass/fail summary",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "npm run test:crud exits 0 with summary",
+          "notes": "Pre/post cleanup of orphaned _test_ items. Runs 4 suites sequentially. 72 total assertions, all passing."
+        },
+        {
+          "id": "11.7",
+          "name": "Cleanup script — find and delete any orphaned _test_* items",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "npm run test:cleanup removes all _test_ items",
+          "notes": "Scans all 10 entity types for _test_ prefix items."
         }
       ],
       "artifacts": []
