@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-04-02",
-  "last_session_summary": "Phase 10 complete (5 tasks). Dossier-first nav refactor: removed Home page + Editor nav group + CLASSIFIED banner. Dossier at /. + New buttons on each entity tab. Breadcrumb nav on all detail/list pages. Deleted orphaned Home.tsx + ArtistList.tsx. All phases 0-10 complete (62 tasks).",
+  "last_session_summary": "Phase 10 complete (6 tasks). Dossier-first nav refactor: removed Home page + Editor nav + sidebar entirely. Replaced with minimal top bar. Dossier at /. + New buttons on entity tabs. Breadcrumbs on all pages. All phases 0-10 complete (63 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -809,6 +809,16 @@
           "size": "small",
           "verify": "Build succeeds, no orphaned components",
           "notes": "Deleted Home.tsx and ArtistList.tsx (both orphaned). TypeScript + Vite build clean."
+        },
+        {
+          "id": "10.6",
+          "name": "Replace sidebar with minimal top bar — full-width content",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "No sidebar visible, top bar shows logo + sign out, content full width",
+          "added_reason": "User noted sidebar with single Dossier link was useless",
+          "notes": "Removed sidebar, hamburger, overlay. Replaced with top-bar: logo left, user+signout right. 180 lines CSS deleted. Content gets full viewport width."
         }
       ],
       "artifacts": []

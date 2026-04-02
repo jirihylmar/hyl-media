@@ -17,6 +17,7 @@ This file tracks session history for context continuity between Claude Code sess
 3. **+ New buttons on Dossier tabs** — each entity tab (Movies, Bands, People, etc.) has a `+ New` button linking to the list page with `?create=1`. EntityList, LibraryList, SheetMusicList auto-open create forms from URL param. Dossier supports `?tab=` for deep-linking to tabs.
 4. **Breadcrumb navigation** — new `Breadcrumb` component added to all 6 detail pages and EntityList. Format: `DOSSIER > Movies > [name]`. Links back to Dossier with correct tab param.
 5. **Dead code cleanup** — deleted Home.tsx and ArtistList.tsx (both orphaned). TypeScript + Vite build clean.
+6. **Sidebar → top bar** — user noted sidebar with single link was useless. Replaced with minimal top bar (logo left, user+signout right). 180 lines sidebar CSS deleted. Content gets full viewport width.
 
 **Key decisions**:
 - Entity routes (`/movies`, `/movies/:id`, etc.) preserved — URLs stay addressable
@@ -24,7 +25,7 @@ This file tracks session history for context continuity between Claude Code sess
 - No sideways navigation between entity types — always return to Dossier hub
 - Create forms reached via `+ New` on Dossier tabs or directly on list pages
 
-**Phase 10 complete (5 tasks). All phases 0-10 complete (62 tasks).**
+**Phase 10 complete (6 tasks). All phases 0-10 complete (63 tasks).**
 
 ---
 
