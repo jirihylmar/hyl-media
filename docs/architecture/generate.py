@@ -60,7 +60,7 @@ with Diagram(
 
     with Cluster("Amplify Hosting\nhttps://main.d2r70lavusnzlx.amplifyapp.com"):
         cloudfront = CloudFront("CloudFront\nSPA + custom\nrewrite rules")
-        react = React("React + TypeScript\n+ Amplify UI\n(Vite build)\n\n8 routes: movies, bands,\npersons, recordings,\nlibrary, sheet-music, data")
+        react = React("React + TypeScript\n+ Amplify UI\n(Vite build)\n\nDossier hub at /\nBreadcrumb navigation\n7 entity types")
 
     with Cluster("Amplify Gen 2 Backend (AppSync)"):
         cognito = Cognito("Cognito User Pool\neu-central-1_GJhwO2ww5\nemail/password auth")

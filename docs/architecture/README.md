@@ -22,11 +22,12 @@
 | band | 45 | Music groups |
 | person | 416 | Actors, directors, authors, artists, musicians |
 | recording | 94 | Songs/tracks with performer links |
+| collaboration | 8 | Music collaborations (reuses BandDetail) |
 | book | 306 | Library items with author, S3 file reference |
 | sheet_music | 112 | Chord sheets with artist, S3 file reference |
-| movie_cast | ~400 | Relationship: movie ↔ person (role) |
-| recording_performer | ~160 | Relationship: recording ↔ person/band |
-| sheet_music_performer | ~62 | Relationship: sheet_music ↔ person/band |
+| movie_cast | ~400 | Relationship: movie <> person (role) |
+| recording_performer | ~160 | Relationship: recording <> person/band |
+| sheet_music_performer | ~62 | Relationship: sheet_music <> person/band |
 
 ### Key Fields on All Entities
 
@@ -68,17 +69,34 @@ All 3 buckets are created and managed by the Amplify CloudFormation stack. Do no
 | byPerformer | performerId | recordingName | Find recordings for a performer |
 | byLanguage | language | name | Filter by language |
 
-## Frontend Pages
+## Frontend — Navigation
 
-| Route | Page | Purpose |
-|-------|------|---------|
-| `/movies`, `/movies/:id` | Movie list & detail | Browse/edit movies, cast, links |
-| `/bands`, `/bands/:id` | Band list & detail | Browse/edit bands, discography |
-| `/persons`, `/persons/:id` | People list & detail | Browse/edit persons by role |
-| `/recordings`, `/recordings/:id` | Recording list & detail | Browse/edit recordings, performers |
-| `/library`, `/library/:id` | Library list & detail | Browse/download books, edit metadata |
-| `/sheet-music`, `/sheet-music/:id` | Sheet music list & detail | Browse/download PDFs, edit metadata |
-| `/data` | Data Management | Overview, per-entity tabs with consolidated stats |
+The app uses a **Dossier-first** navigation model:
+
+```
+/                    Dossier (main hub — 8 tabs: Overview, Movies, Bands, People,
+                     Recordings, Library, Sheet Music, Tags)
+  /?tab=movies       Deep-link to specific Dossier tab
+  /movies            Movie list (+ New, filters) — breadcrumb back to Dossier
+  /movies/:id        Movie detail (inline edit, cast, tags, links) — breadcrumb
+  /persons            People list — breadcrumb back to Dossier
+  /persons/:id       Person detail — breadcrumb
+  /bands             Band list — breadcrumb
+  /bands/:id         Band detail — breadcrumb
+  /collaborations    Collaboration list — breadcrumb
+  /collaborations/:id Collaboration detail (reuses BandDetail)
+  /recordings        Recording list — breadcrumb
+  /recordings/:id    Recording detail — breadcrumb
+  /library           Library list (+ Upload Book) — breadcrumb
+  /library/:id       Book detail — breadcrumb
+  /sheet-music       Sheet music list (+ Upload) — breadcrumb
+  /sheet-music/:id   Sheet music detail — breadcrumb
+  /dossier           Alias for / (backward compat)
+```
+
+**Layout**: Minimal top bar (logo + user/sign out). No sidebar. Full-width content.
+
+**Visual theme**: 80s FBI terminal — dark background, green monospace text, CRT scanline overlay.
 
 ## Regenerating Diagram
 

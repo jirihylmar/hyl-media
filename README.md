@@ -1,6 +1,6 @@
 # HYL Media
 
-Personal media catalog — movies, music, books, sheet music.
+Personal media knowledge graph — movies, music, books, sheet music. DynamoDB single-table design with Amplify Gen 2 frontend. 80s FBI terminal aesthetic.
 
 ## Live App
 
@@ -14,25 +14,55 @@ Personal media catalog — movies, music, books, sheet music.
 
 ![HYL Media Architecture](docs/architecture/hyl_media_architecture.png)
 
+See [Architecture Documentation](docs/architecture/README.md) for details.
+
 ## Stack
 
 - **Frontend**: React + TypeScript + Vite + Amplify UI
 - **Backend**: Amplify Gen 2 (AppSync GraphQL + DynamoDB + Cognito + S3)
 - **Hosting**: Amplify Hosting (auto-deploy from GitHub `main`)
 - **Region**: eu-central-1
+- **Account**: 299025166536
 
 ## Data
 
-| Entity Type | Count |
-|-------------|-------|
-| Movies | 94 |
-| Persons | 231 |
-| Bands | 33 |
-| Artists | 3 |
-| Collaborations | 8 |
-| Recordings | 94 |
-| Books | 306 |
-| Sheet Music | 112 |
+| Entity Type | Count | Description |
+|-------------|-------|-------------|
+| Movies | 94 | Films with cast, soundtrack links |
+| People | 416 | Actors, directors, authors, artists, musicians |
+| Bands | 45 | Music groups |
+| Collaborations | 8 | Music collaborations |
+| Recordings | 94 | Songs/tracks with performer links |
+| Books | 306 | PDF/epub library with S3 storage |
+| Sheet Music | 112 | Chord sheet PDFs with S3 storage |
+
+~1,600 total items. 85% have external links (Wikipedia, IMDB, NKP, MusicBrainz, etc.).
+
+## Features
+
+- **Dossier hub** — single-page overview with tabs for all entity types, stats, tag coverage
+- **Inline editing** — click any field to edit (name, language, tags, external links)
+- **Relationship navigation** — movies link to cast, recordings to performers, books to authors
+- **Create forms** — add new entities or upload book/sheet music PDFs
+- **External links** — flexible `{url, type}` system, 10+ source types
+- **Tag system** — controlled vocabulary with genre, role, instrument categories
+- **Breadcrumb navigation** — `DOSSIER > Movies > [name]` on every page
+- **80s FBI terminal theme** — dark background, green monospace, CRT scanlines
+
+## Navigation
+
+```
+/              Dossier (main hub)
+/movies        Movie list + create
+/movies/:id    Movie detail + edit
+/persons       People list + create
+/bands         Band list + create
+/recordings    Recording list + create
+/library       Book list + upload
+/sheet-music   Sheet music list + upload
+```
+
+All pages have breadcrumb navigation back to the Dossier.
 
 ## Development
 
@@ -41,8 +71,16 @@ Personal media catalog — movies, music, books, sheet music.
 npm install
 
 # Generate Amplify outputs (requires AWS profile JiHy__vsb__299)
-AWS_REGION=eu-central-1 npx ampx generate outputs --app-id d2r70lavusnzlx --branch main --profile JiHy__vsb__299
+AWS_REGION=eu-central-1 npx ampx generate outputs \
+  --app-id d2r70lavusnzlx --branch main --profile JiHy__vsb__299
 
 # Run locally
 npm run dev
+
+# Build
+npm run build
 ```
+
+## Project Status
+
+All 63 tasks across 11 phases complete. See [progress.json](progress.json) for full history.
