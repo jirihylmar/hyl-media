@@ -27,6 +27,24 @@ This file tracks session history for context continuity between Claude Code sess
 
 **Phase 10 complete (6 tasks). All phases 0-10 complete (63 tasks).**
 
+### Phase 11 — Automated CRUD Tests:
+7. **Test helper module** — `scripts/test-helpers.mjs`: shared Amplify auth, CRUD functions (createItem, getItem, updateItem, deleteItem, listByType), assert utilities, cleanup function.
+8. **4 test suites** — movies (24 assertions), persons (15), bands+recordings (14), books+sheets (19). Each creates `_test_*` items, exercises create/read/list/update/tags/links/delete, verifies deletion.
+9. **Test runner** — `scripts/test-crud.mjs` (`npm run test:crud`): runs all 4 suites with pre/post cleanup.
+10. **Cleanup script** — `scripts/test-cleanup.mjs` (`npm run test:cleanup`): scans all entity types for orphaned `_test_*` items.
+
+**Issues encountered**:
+- `amplify_outputs.json` was stale — missing `tags` and `externalLinks` fields (added in phases 6/8). Regenerated via `ampx generate outputs`. This also affects local dev — fields invisible to Amplify client until outputs regenerated.
+- Amplify `update()` doesn't return array fields (tags, roles) — fixed by re-fetching item after update in test helper.
+- Amplify `create()` rejects `__typename` and `createdAt` fields — removed from test helper (app's createItem in queries.ts passes them but Amplify client may handle differently in browser vs Node.js).
+
+**Key decisions**:
+- Tests run against real DynamoDB (not mocked) — true integration tests
+- Traceable naming: `_test_1_movie`, `_test_1_person`, etc. for easy lookup/cleanup
+- `amplify_outputs.json` is gitignored — must be regenerated locally
+
+**Phase 11 complete (7 tasks). All phases 0-11 complete (70 tasks).**
+
 ---
 
 ### Session: 2026-03-24 — 80s FBI Terminal Theme + Dossier Rename
