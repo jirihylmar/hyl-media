@@ -895,6 +895,43 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_12_search": {
+      "name": "Full-Text Search",
+      "status": "complete",
+      "started_at": "2026-04-02",
+      "completed_at": "2026-04-02",
+      "description": "Replace Dossier banner with search bar — real-time filtering across all entities by name/author/artist",
+      "tasks": [
+        {
+          "id": "12.1",
+          "name": "Replace banner + heading with search input — filters all loaded entities",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "medium",
+          "verify": "Typing 'angry' shows 12 Angry Men, typing 'kafka' shows Kafka books",
+          "notes": "Search across name, author, artistName, givenName, familyName. Diacritics-insensitive. Min 2 chars. Results grouped by entity type, max 20 per group."
+        },
+        {
+          "id": "12.2",
+          "name": "Search results link to detail pages with entity type badge",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Clicking a result navigates to correct detail page",
+          "notes": "Each result links to detail page. Shows author/artist/roles as metadata. Entity type as group header."
+        },
+        {
+          "id": "12.3",
+          "name": "Clean up fbi-banner CSS",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Build succeeds, no dead CSS",
+          "notes": "Replaced .fbi-banner with .search-bar, .search-input, .search-clear, .search-results, .search-result-item, .search-result-meta CSS."
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": null,

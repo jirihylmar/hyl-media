@@ -21,6 +21,7 @@ export function DataManagement() {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabId) || 'overview';
   const [tab, setTab] = useState<TabId>(initialTab);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -123,10 +124,78 @@ export function DataManagement() {
     { id: 'tags', label: 'Tags' },
   ];
 
+  // Search across all entities
+  const searchNorm = searchQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const SEARCH_ENTITY_GROUPS: { label: string; type: string; items: KnowledgeGraphItem[]; detailPath: string; tab: TabId }[] = [
+    { label: 'Movies', type: 'movie', items: movies, detailPath: '/movies', tab: 'movies' },
+    { label: 'Bands', type: 'band', items: bands, detailPath: '/bands', tab: 'bands' },
+    { label: 'People', type: 'person', items: persons, detailPath: '/persons', tab: 'people' },
+    { label: 'Recordings', type: 'recording', items: recordings, detailPath: '/recordings', tab: 'recordings' },
+    { label: 'Library', type: 'book', items: bookItems, detailPath: '/library', tab: 'library' },
+    { label: 'Sheet Music', type: 'sheet_music', items: sheetItems, detailPath: '/sheet-music', tab: 'sheets' },
+  ];
+
+  function matchesSearch(item: KnowledgeGraphItem): boolean {
+    if (!searchNorm) return false;
+    const fields = [item.name, item.author, item.artistName, item.givenName, item.familyName];
+    return fields.some(f => f && f.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(searchNorm));
+  }
+
+  const searchResults = searchNorm.length >= 2
+    ? SEARCH_ENTITY_GROUPS.map(g => ({
+        ...g,
+        matches: g.items.filter(matchesSearch),
+      })).filter(g => g.matches.length > 0)
+    : [];
+  const totalMatches = searchResults.reduce((s, g) => s + g.matches.length, 0);
+
   return (
     <div>
-      <div className="fbi-banner">Dossier // Personal Media Intelligence</div>
-      <h1>DOSSIER</h1>
+      <div className="search-bar">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search all entities..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          autoFocus
+        />
+        {searchQuery && (
+          <button className="search-clear" onClick={() => setSearchQuery('')}>&times;</button>
+        )}
+      </div>
+
+      {searchNorm.length >= 2 && (
+        <div className="search-results">
+          {totalMatches === 0 ? (
+            <p style={{ color: 'var(--text-muted)' }}>No results for "{searchQuery}"</p>
+          ) : (
+            <>
+              <p className="meta" style={{ marginBottom: 8 }}>{totalMatches} result{totalMatches !== 1 ? 's' : ''}</p>
+              {searchResults.map(group => (
+                <div key={group.type} style={{ marginBottom: 12 }}>
+                  <h3 style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                    {group.label} ({group.matches.length})
+                  </h3>
+                  {group.matches.slice(0, 20).map(item => (
+                    <div key={item.id} className="search-result-item">
+                      <Link to={`${group.detailPath}/${item.id}`}>
+                        {item.name}
+                      </Link>
+                      {item.author && <span className="search-result-meta"> — {item.author}</span>}
+                      {item.artistName && <span className="search-result-meta"> — {item.artistName}</span>}
+                      {item.roles?.length ? <span className="search-result-meta"> ({item.roles.join(', ')})</span> : null}
+                    </div>
+                  ))}
+                  {group.matches.length > 20 && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>+{group.matches.length - 20} more</p>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="tab-bar">
         {TABS.map(t => (

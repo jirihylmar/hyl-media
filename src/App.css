@@ -178,17 +178,80 @@
   color: var(--text-dim);
 }
 
-/* --- FBI-style classification banner (top of Dossier page) --- */
-.fbi-banner {
-  text-align: center;
-  padding: 0.5rem;
-  border: 1px solid var(--amber);
-  color: var(--amber);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 3px;
+/* --- Search bar --- */
+.search-bar {
+  position: relative;
   margin-bottom: 1rem;
-  background: rgba(255, 176, 0, 0.05);
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.6rem 2.5rem 0.6rem 0.8rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: var(--green-dim);
+  box-shadow: 0 0 6px rgba(68, 238, 102, 0.15);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  padding: 0 0.3rem;
+}
+
+.search-clear:hover {
+  color: var(--text-bright);
+}
+
+.search-results {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.search-result-item {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+.search-result-item a:hover {
+  text-shadow: var(--glow);
+}
+
+.search-result-meta {
+  color: var(--text-dim);
+  font-size: 0.8rem;
 }
 
 /* --- Tab bar (Dossier page) --- */
