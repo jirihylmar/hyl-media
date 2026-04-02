@@ -7,6 +7,7 @@ import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -48,6 +49,11 @@ export function LibraryDetail() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=library' },
+        { label: 'Library', to: '/library' },
+        { label: book.name || '' },
+      ]} />
       <InlineEdit value={book.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       {book.author && (
         <p>Author: {authorPerson

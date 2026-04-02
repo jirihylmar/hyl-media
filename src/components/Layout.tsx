@@ -7,22 +7,9 @@ type Props = {
   user?: UseAuthenticator['user'];
 };
 
-const EDITOR_ITEMS = [
-  { label: 'Movies', path: '/movies' },
-  { label: 'People', path: '/persons' },
-  { label: 'Bands', path: '/bands' },
-  { label: 'Collaborations', path: '/collaborations' },
-  { label: 'Recordings', path: '/recordings' },
-  { label: 'Library', path: '/library' },
-  { label: 'Sheet Music', path: '/sheet-music' },
-];
-
 export function Layout({ signOut, user }: Props) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(() =>
-    EDITOR_ITEMS.some(item => location.pathname.startsWith(item.path))
-  );
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -45,38 +32,14 @@ export function Layout({ signOut, user }: Props) {
         <Link to="/" className="sidebar-logo" onClick={closeSidebar}>
           HYL Media
         </Link>
-        <div className="sidebar-classification">
-          classified // personal
-        </div>
         <div className="sidebar-nav">
           <Link
-            to="/dossier"
-            className={location.pathname.startsWith('/dossier') ? 'active' : ''}
+            to="/"
+            className={location.pathname === '/' || location.pathname.startsWith('/dossier') ? 'active' : ''}
             onClick={closeSidebar}
           >
             Dossier
           </Link>
-
-          <button
-            className={`nav-group-toggle${editorOpen ? ' open' : ''}`}
-            onClick={() => setEditorOpen(o => !o)}
-          >
-            Editor
-          </button>
-          {editorOpen && (
-            <div className="nav-group-items">
-              {EDITOR_ITEMS.map(item => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={location.pathname.startsWith(item.path) ? 'active' : ''}
-                  onClick={closeSidebar}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
         <div className="sidebar-user">
           <div className="sidebar-user-id">{user?.signInDetails?.loginId}</div>

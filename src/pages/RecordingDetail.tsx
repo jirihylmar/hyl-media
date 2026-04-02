@@ -7,6 +7,7 @@ import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { PerformerManager } from '../components/PerformerManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 export function RecordingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,11 @@ export function RecordingDetail() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=recordings' },
+        { label: 'Recordings', to: '/recordings' },
+        { label: recording.name || '' },
+      ]} />
       <InlineEdit value={recording.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={recording.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {recording.updatedAt && (

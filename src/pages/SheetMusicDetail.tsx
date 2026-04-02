@@ -7,6 +7,7 @@ import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -84,6 +85,11 @@ export function SheetMusicDetail() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=sheets' },
+        { label: 'Sheet Music', to: '/sheet-music' },
+        { label: sheet.name || '' },
+      ]} />
       <InlineEdit value={sheet.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       {sheet.artistName && (
         <p>Artist: {artistEntity

@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EntityList } from '../components/EntityList';
 import { AssetUpload } from '../components/AssetUpload';
 import type { KnowledgeGraphItem } from '../lib/client';
 
 export function LibraryList() {
   const [langFilter, setLangFilter] = useState('');
-  const [showUpload, setShowUpload] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showUpload, setShowUpload] = useState(searchParams.get('create') === '1');
 
   const filterFn = langFilter
     ? (item: KnowledgeGraphItem) => item.language === langFilter
@@ -25,6 +27,7 @@ export function LibraryList() {
         entityType="book"
         title="Library"
         detailPath="/library"
+        dossierTab="library"
         filterFn={filterFn}
         extraColumns={[
           { label: 'Author', render: item => item.author || '' },

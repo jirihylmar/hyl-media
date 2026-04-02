@@ -6,6 +6,7 @@ import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -49,8 +50,16 @@ export function BandDetail() {
     if (updated) setEntity({ ...entity, ...updated });
   };
 
+  const crumbLabel = entityType === 'collaboration' ? 'Collaborations' : 'Bands';
+  const crumbPath = entityType === 'collaboration' ? '/collaborations' : '/bands';
+
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=bands' },
+        { label: crumbLabel, to: crumbPath },
+        { label: entity.name || '' },
+      ]} />
       <InlineEdit value={entity.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={entity.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {entity.updatedAt && (

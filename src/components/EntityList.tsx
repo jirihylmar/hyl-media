@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { listByType } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { CreateEntityForm } from './CreateEntityForm';
+import { Breadcrumb } from './Breadcrumb';
 
 type FieldDef = {
   name: string;
@@ -19,12 +20,14 @@ type Props = {
   extraColumns?: { label: string; render: (item: KnowledgeGraphItem) => React.ReactNode }[];
   filters?: React.ReactNode;
   createFields?: FieldDef[];
+  dossierTab?: string;
 };
 
-export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters, createFields }: Props) {
+export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters, createFields, dossierTab }: Props) {
   const [items, setItems] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showCreate, setShowCreate] = useState(searchParams.get('create') === '1');
 
   const refresh = () => {
     listByType(entityType).then(data => {
@@ -39,6 +42,10 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: dossierTab ? `/?tab=${dossierTab}` : '/' },
+        { label: title },
+      ]} />
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {title} ({loading ? '...' : filtered.length})
         {createFields && !showCreate && (

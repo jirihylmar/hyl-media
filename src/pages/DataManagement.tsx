@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { listByType } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
@@ -18,7 +18,9 @@ export function DataManagement() {
   const [perfRefs, setPerfRefs] = useState<KnowledgeGraphItem[]>([]);
   const [sheetPerfRefs, setSheetPerfRefs] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<TabId>('overview');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as TabId) || 'overview';
+  const [tab, setTab] = useState<TabId>(initialTab);
 
   useEffect(() => {
     Promise.all([
@@ -187,7 +189,7 @@ export function DataManagement() {
       {/* ========== MOVIES ========== */}
       {tab === 'movies' && (
         <div>
-          <SummaryLine items={movies} label="Movies" />
+          <SummaryLine items={movies} label="Movies" createPath="/movies?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -228,7 +230,7 @@ export function DataManagement() {
       {/* ========== BANDS ========== */}
       {tab === 'bands' && (
         <div>
-          <SummaryLine items={bands} label="Bands" />
+          <SummaryLine items={bands} label="Bands" createPath="/bands?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -253,7 +255,7 @@ export function DataManagement() {
       {/* ========== PEOPLE ========== */}
       {tab === 'people' && (
         <div>
-          <SummaryLine items={persons} label="People" />
+          <SummaryLine items={persons} label="People" createPath="/persons?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -288,7 +290,7 @@ export function DataManagement() {
       {/* ========== RECORDINGS ========== */}
       {tab === 'recordings' && (
         <div>
-          <SummaryLine items={recordings} label="Recordings" />
+          <SummaryLine items={recordings} label="Recordings" createPath="/recordings?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -327,7 +329,7 @@ export function DataManagement() {
       {/* ========== LIBRARY ========== */}
       {tab === 'library' && (
         <div>
-          <SummaryLine items={bookItems} label="Library" />
+          <SummaryLine items={bookItems} label="Library" createPath="/library?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -362,7 +364,7 @@ export function DataManagement() {
       {/* ========== SHEET MUSIC ========== */}
       {tab === 'sheets' && (
         <div>
-          <SummaryLine items={sheetItems} label="Sheet Music" />
+          <SummaryLine items={sheetItems} label="Sheet Music" createPath="/sheet-music?create=1" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -466,12 +468,15 @@ export function DataManagement() {
 
 // --- Shared components ---
 
-function SummaryLine({ items, label }: { items: KnowledgeGraphItem[]; label: string }) {
+function SummaryLine({ items, label, createPath }: { items: KnowledgeGraphItem[]; label: string; createPath?: string }) {
   const withLinks = items.filter(i => parseLinks(i.externalLinks as string | null).length > 0).length;
   const tagged = items.filter(i => i.tags && (i.tags as string[]).length > 0).length;
   return (
     <>
-      <h2>{label} ({items.length})</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {label} ({items.length})
+        {createPath && <Link to={createPath} className="btn btn-primary btn-sm">+ New</Link>}
+      </h2>
       <p className="meta" style={{ marginBottom: 12 }}>
         External links: {withLinks}/{items.length} | Tagged: {tagged}/{items.length}
       </p>

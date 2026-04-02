@@ -6,6 +6,7 @@ import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 function normalize(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -55,6 +56,11 @@ export function PersonDetail() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=people' },
+        { label: 'People', to: '/persons' },
+        { label: person.name || '' },
+      ]} />
       <InlineEdit value={person.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p>
         {person.givenName} {person.familyName}

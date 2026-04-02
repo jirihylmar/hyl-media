@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EntityList } from '../components/EntityList';
 import { AssetUpload } from '../components/AssetUpload';
 
 export function SheetMusicList() {
-  const [showUpload, setShowUpload] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showUpload, setShowUpload] = useState(searchParams.get('create') === '1');
 
   return (
     <>
@@ -19,6 +21,7 @@ export function SheetMusicList() {
         entityType="sheet_music"
         title="Sheet Music"
         detailPath="/sheet-music"
+        dossierTab="sheets"
         extraColumns={[
           { label: 'Artist', render: item => item.artistName || '' },
         ]}

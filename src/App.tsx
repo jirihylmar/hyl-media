@@ -2,7 +2,6 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { UserContext } from './lib/UserContext';
-import { Home } from './pages/Home';
 import { MovieList } from './pages/MovieList';
 import { MovieDetail } from './pages/MovieDetail';
 import { PersonList } from './pages/PersonList';
@@ -30,7 +29,7 @@ function AuthenticatedApp() {
         <BrowserRouter>
           <Routes>
             <Route element={<Layout signOut={signOut} user={user} />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<DataManagement />} />
               <Route path="/movies" element={<MovieList />} />
               <Route path="/movies/:id" element={<MovieDetail />} />
               <Route path="/persons" element={<PersonList />} />
@@ -46,6 +45,7 @@ function AuthenticatedApp() {
               <Route path="/sheet-music" element={<SheetMusicList />} />
               <Route path="/sheet-music/:id" element={<SheetMusicDetail />} />
               <Route path="/dossier" element={<DataManagement />} />
+              {/* /dossier kept as alias for bookmarks */}
             </Route>
           </Routes>
         </BrowserRouter>

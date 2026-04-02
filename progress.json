@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-03-24",
-  "last_session_summary": "Phase 9 complete (4 tasks). 80s FBI terminal theme: dark bg, green monospace, CRT scanlines. Data→Dossier rename. Nav restructured: Dossier top-level, Editor collapsible group. Readability pass: brighter text, larger fonts, lighter scanlines. All phases 0-9 complete (57 tasks).",
+  "last_updated": "2026-04-02",
+  "last_session_summary": "Phase 10 complete (5 tasks). Dossier-first nav refactor: removed Home page + Editor nav group + CLASSIFIED banner. Dossier at /. + New buttons on each entity tab. Breadcrumb nav on all detail/list pages. Deleted orphaned Home.tsx + ArtistList.tsx. All phases 0-10 complete (62 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -754,6 +754,61 @@
           "completed_at": "2026-03-24",
           "added_reason": "User: style is there but not well readable",
           "notes": "Base font 15px (was 14px), brighter green (#44dd55 vs #00dd36), scanline 6% opacity (was 15%), bumped cell/tab/button sizes."
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_10_dossier_first": {
+      "name": "Dossier-First Navigation Refactor",
+      "status": "complete",
+      "started_at": "2026-04-02",
+      "completed_at": "2026-04-02",
+      "description": "Consolidate navigation: Dossier as sole hub, remove Editor nav group and Home page, integrate edit controls into Dossier tabs",
+      "tasks": [
+        {
+          "id": "10.1",
+          "name": "Remove CLASSIFIED banner and Home page — Dossier becomes /",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "/ renders Dossier, Home component removed",
+          "notes": "Dossier now at /. /dossier kept as alias for bookmarks. Home.tsx deleted."
+        },
+        {
+          "id": "10.2",
+          "name": "Remove Editor nav group — sidebar has only Dossier link + sign out",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Sidebar shows no Editor toggle, only > DOSSIER",
+          "notes": "Removed EDITOR_ITEMS, editorOpen state, nav-group-toggle, classified banner. CSS cleaned."
+        },
+        {
+          "id": "10.3",
+          "name": "Add inline edit/create controls to Dossier entity tabs (+ New button, edit links)",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "medium",
+          "verify": "Can click + New on Movies tab, edit links go to detail page",
+          "notes": "+ New button on each Dossier entity tab links to list page with ?create=1. EntityList/LibraryList/SheetMusicList auto-open create form from query param. Dossier supports ?tab= param for deep linking."
+        },
+        {
+          "id": "10.4",
+          "name": "Add breadcrumb nav on detail/list pages back to Dossier tab",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "MovieDetail shows DOSSIER > Movies > [name], clicking DOSSIER returns to Movies tab",
+          "notes": "Breadcrumb component created. Added to all 6 detail pages and EntityList. Links back to Dossier with correct tab param."
+        },
+        {
+          "id": "10.5",
+          "name": "Clean up unused routes and dead code from removed nav paths",
+          "status": "complete",
+          "completed_at": "2026-04-02",
+          "size": "small",
+          "verify": "Build succeeds, no orphaned components",
+          "notes": "Deleted Home.tsx and ArtistList.tsx (both orphaned). TypeScript + Vite build clean."
         }
       ],
       "artifacts": []

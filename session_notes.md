@@ -4,6 +4,30 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-04-02 — Dossier-First Navigation Refactor
+
+**Context**:
+- All 57 tasks (phases 0-9) were complete. User identified nav duplication: Home page, Editor nav group, and Dossier tabs all pointed to similar content.
+
+**What was done**:
+
+**Phase 10 — Dossier-First Nav Refactor (5 tasks)**:
+1. **Dossier becomes /**  — `/` now renders DataManagement (Dossier). `/dossier` kept as alias. Home.tsx deleted.
+2. **Editor nav group removed** — sidebar now shows only `> DOSSIER` + sign out. CLASSIFIED // PERSONAL banner removed. All editor CSS cleaned up.
+3. **+ New buttons on Dossier tabs** — each entity tab (Movies, Bands, People, etc.) has a `+ New` button linking to the list page with `?create=1`. EntityList, LibraryList, SheetMusicList auto-open create forms from URL param. Dossier supports `?tab=` for deep-linking to tabs.
+4. **Breadcrumb navigation** — new `Breadcrumb` component added to all 6 detail pages and EntityList. Format: `DOSSIER > Movies > [name]`. Links back to Dossier with correct tab param.
+5. **Dead code cleanup** — deleted Home.tsx and ArtistList.tsx (both orphaned). TypeScript + Vite build clean.
+
+**Key decisions**:
+- Entity routes (`/movies`, `/movies/:id`, etc.) preserved — URLs stay addressable
+- Navigation flow: Dossier → entity tab → detail/list page → breadcrumb back
+- No sideways navigation between entity types — always return to Dossier hub
+- Create forms reached via `+ New` on Dossier tabs or directly on list pages
+
+**Phase 10 complete (5 tasks). All phases 0-10 complete (62 tasks).**
+
+---
+
 ### Session: 2026-03-24 — 80s FBI Terminal Theme + Dossier Rename
 
 **Context**:

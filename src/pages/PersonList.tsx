@@ -14,6 +14,7 @@ export function PersonList() {
       entityType="person"
       title="Persons"
       detailPath="/persons"
+      dossierTab="people"
       filterFn={filterFn}
       createFields={[
         { name: 'name', label: 'Display Name', required: true },

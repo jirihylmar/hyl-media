@@ -7,6 +7,7 @@ import { CastManager } from '../components/CastManager';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +39,11 @@ export function MovieDetail() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: 'Dossier', to: '/?tab=movies' },
+        { label: 'Movies', to: '/movies' },
+        { label: movie.name || '' },
+      ]} />
       <InlineEdit value={movie.name || ''} onSave={v => handleSave('name', v)} as="h1" />
       <p><InlineEdit value={movie.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
       {movie.updatedAt && (

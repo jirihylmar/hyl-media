@@ -14,6 +14,7 @@ export function MovieList() {
       entityType="movie"
       title="Movies"
       detailPath="/movies"
+      dossierTab="movies"
       filterFn={filterFn}
       createFields={[
         { name: 'name', label: 'Movie Name', required: true },

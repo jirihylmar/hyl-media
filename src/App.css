@@ -1,5 +1,29 @@
 /* === LAYOUT — FBI TERMINAL === */
 
+/* --- Breadcrumb --- */
+.breadcrumb {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+  color: var(--green-dim);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--green);
+  text-shadow: var(--glow);
+}
+
+.breadcrumb-sep {
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
 .app-layout {
   display: flex;
   min-height: 100vh;
@@ -38,17 +62,6 @@
 .sidebar-logo::before {
   content: '> ';
   color: var(--green-dim);
-}
-
-.sidebar-classification {
-  padding: 0.4rem 1rem;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--amber);
-  border-bottom: 1px solid var(--border);
-  text-align: center;
-  background: rgba(255, 176, 0, 0.05);
 }
 
 .sidebar-nav {
@@ -91,63 +104,6 @@
   color: var(--green);
 }
 
-/* Editor group toggle */
-.nav-group-toggle {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  text-align: left;
-  background: none;
-  border: none;
-  border-left: 2px solid transparent;
-  border-top: 1px solid var(--border);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  margin-top: 0.3rem;
-  transition: color 0.15s;
-}
-
-.nav-group-toggle::before {
-  content: '\25b6 ';
-  font-size: 0.6rem;
-  vertical-align: middle;
-}
-
-.nav-group-toggle.open::before {
-  content: '\25bc ';
-}
-
-.nav-group-toggle:hover {
-  color: var(--text-dim);
-}
-
-/* Editor sub-items */
-.nav-group-items a {
-  display: block;
-  padding: 0.3rem 1rem 0.3rem 1.8rem;
-  text-decoration: none;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: color 0.15s, background 0.15s;
-  border-left: 2px solid transparent;
-}
-
-.nav-group-items a:hover {
-  color: var(--text);
-  background: rgba(68, 238, 102, 0.03);
-}
-
-.nav-group-items a.active {
-  color: var(--green);
-  background: rgba(68, 238, 102, 0.06);
-  border-left-color: var(--green-dim);
-}
 
 .sidebar-user {
   padding: 0.5rem 1rem;
