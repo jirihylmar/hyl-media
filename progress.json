@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-04-02",
-  "last_session_summary": "Phase 11 complete (7 tasks). Automated CRUD integration tests: 72 assertions across 4 suites (movies, persons, bands+recordings, books+sheets). All pass. npm run test:crud / test:cleanup. Also fixed stale amplify_outputs.json (was missing tags + externalLinks fields). All phases 0-11 complete (70 tasks).",
+  "last_session_summary": "Session 2026-04-02: Phase 10 (dossier-first nav, 6 tasks), Phase 11 (CRUD tests, 7 tasks), Phase 12 (full-text search, 3 tasks). Sidebar removed, top bar added. 72-assertion test suite. Search bar replaces banner. Stale amplify_outputs.json fixed. All phases 0-12 complete (73 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",

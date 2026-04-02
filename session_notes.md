@@ -43,7 +43,14 @@ This file tracks session history for context continuity between Claude Code sess
 - Traceable naming: `_test_1_movie`, `_test_1_person`, etc. for easy lookup/cleanup
 - `amplify_outputs.json` is gitignored — must be regenerated locally
 
-**Phase 11 complete (7 tasks). All phases 0-11 complete (70 tasks).**
+**Phase 11 complete (7 tasks).**
+
+### Phase 12 — Full-Text Search:
+11. **Search bar replaces banner** — removed "Dossier // Personal Media Intelligence" banner and "DOSSIER" heading. Replaced with full-width search input.
+12. **Real-time search** — filters across all ~1,600 entities by name, author, artistName, givenName, familyName. Diacritics-insensitive. Min 2 chars. Results grouped by entity type (Movies, Bands, People, etc.), max 20 per group.
+13. **Search results link to detail pages** — each result is a clickable link with author/artist/roles metadata. fbi-banner CSS replaced with search-bar/results styles.
+
+**Phase 12 complete (3 tasks). All phases 0-12 complete (73 tasks).**
 
 ---
 
