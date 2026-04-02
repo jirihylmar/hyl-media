@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import type { UseAuthenticator } from '@aws-amplify/ui-react';
 
 type Props = {
@@ -8,47 +7,15 @@ type Props = {
 };
 
 export function Layout({ signOut, user }: Props) {
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const closeSidebar = () => setSidebarOpen(false);
-
   return (
     <div className="app-layout">
-      <button
-        className="hamburger"
-        onClick={() => setSidebarOpen(o => !o)}
-        aria-label="Toggle navigation"
-      >
-        {sidebarOpen ? '\u2715' : '\u2630'}
-      </button>
-
-      <div
-        className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`}
-        onClick={closeSidebar}
-      />
-
-      <nav className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-        <Link to="/" className="sidebar-logo" onClick={closeSidebar}>
-          HYL Media
-        </Link>
-        <div className="sidebar-nav">
-          <Link
-            to="/"
-            className={location.pathname === '/' || location.pathname.startsWith('/dossier') ? 'active' : ''}
-            onClick={closeSidebar}
-          >
-            Dossier
-          </Link>
+      <header className="top-bar">
+        <Link to="/" className="top-bar-logo">HYL Media</Link>
+        <div className="top-bar-user">
+          <span className="top-bar-user-id">{user?.signInDetails?.loginId}</span>
+          <button onClick={signOut} className="btn btn-secondary btn-sm">Sign out</button>
         </div>
-        <div className="sidebar-user">
-          <div className="sidebar-user-id">{user?.signInDetails?.loginId}</div>
-          <button onClick={signOut} className="btn btn-secondary btn-sm">
-            Sign out
-          </button>
-        </div>
-      </nav>
-
+      </header>
       <main className="main-content">
         <Outlet />
       </main>
