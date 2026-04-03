@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-04-02",
-  "last_session_summary": "Session 2026-04-02: Phase 10 (dossier-first nav, 6 tasks), Phase 11 (CRUD tests, 7 tasks), Phase 12 (full-text search, 3 tasks). Sidebar removed, top bar added. 72-assertion test suite. Search bar replaces banner. Stale amplify_outputs.json fixed. All phases 0-12 complete (73 tasks).",
+  "last_updated": "2026-04-03",
+  "last_session_summary": "Session 2026-04-03: Phase 13 (recording enrichment from YouTube playlist, 4 tasks). Parsed 115 entries from TSV, created 13 bands, 21 persons, 18 recordings, 61 cross-refs. Tagged remaining 18 untagged entities. 100% tag coverage across all 1,148 entities. All phases 0-13 complete (77 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -977,7 +977,7 @@
           "size": "small",
           "verify": "Recordings visible in Dossier with linked performers, spot-check 10 entries",
           "depends_on": ["13.3"],
-          "notes": "Created: 13 bands, 21 persons, 18 recordings, 61 cross-refs. Updated 20 tags. Totals: 141 recordings, 58 bands, 437 persons, 157 recording_performer links."
+          "notes": "Created: 13 bands, 21 persons, 18 recordings, 61 cross-refs. Updated 20 tags + patched 18 remaining untagged (9 recordings, 9 persons). Final: 100% tag coverage across all 1,148 entities."
         }
       ],
       "artifacts": []
@@ -988,7 +988,7 @@
     "orchestration": {
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
-      "status": "pushed",
+      "status": "needs_push",
       "notes": "Must be git repo from start. Commit after each task."
     }
   },
