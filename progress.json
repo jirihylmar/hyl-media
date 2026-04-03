@@ -932,6 +932,55 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_13_recording_enrichment": {
+      "name": "Recording Enrichment from YouTube Playlist",
+      "status": "complete",
+      "started_at": "2026-04-03",
+      "completed_at": "2026-04-03",
+      "description": "Parse YouTube playlist TSV, standardize recording entries, create missing bands/persons, link recording_performer relations",
+      "tasks": [
+        {
+          "id": "13.1",
+          "name": "Parse TSV into structured JSON — extract artist, song, YouTube URL per entry",
+          "status": "complete",
+          "completed_at": "2026-04-03",
+          "size": "small",
+          "verify": "Parsed JSON has entries for all non-private rows with artist/song/url fields",
+          "notes": "115 unique entries parsed from 132 lines (9 private, 8 duplicates). All entries have resolved artist type (band/person/compilation). Manual overrides for 51 ambiguous titles."
+        },
+        {
+          "id": "13.2",
+          "name": "Audit existing DynamoDB recordings — match against parsed data, identify gaps",
+          "status": "complete",
+          "completed_at": "2026-04-03",
+          "size": "small",
+          "verify": "Audit report shows matched vs missing recordings, bands, persons",
+          "depends_on": ["13.1"],
+          "notes": "94 recordings matched, 18 to create. 13 bands and 21 persons to create. 61 cross-refs to create. 20 tags to update."
+        },
+        {
+          "id": "13.3",
+          "name": "Create enrichment script — upsert recordings, create missing bands/persons, link recording_performer",
+          "status": "complete",
+          "completed_at": "2026-04-03",
+          "size": "medium",
+          "verify": "Script runs without errors, creates entities with correct relations",
+          "depends_on": ["13.2"],
+          "notes": "Combined audit + enrichment in scripts/enrich-recordings.mjs. Supports --audit-only and --dry-run modes."
+        },
+        {
+          "id": "13.4",
+          "name": "Run enrichment against real DynamoDB + verify in Dossier",
+          "status": "complete",
+          "completed_at": "2026-04-03",
+          "size": "small",
+          "verify": "Recordings visible in Dossier with linked performers, spot-check 10 entries",
+          "depends_on": ["13.3"],
+          "notes": "Created: 13 bands, 21 persons, 18 recordings, 61 cross-refs. Updated 20 tags. Totals: 141 recordings, 58 bands, 437 persons, 157 recording_performer links."
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": null,

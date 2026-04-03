@@ -4,6 +4,29 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-04-03 — Recording Enrichment from YouTube Playlist
+
+**Context**:
+- All phases 0-12 complete (73 tasks). User provided YouTube playlist TSV (132 lines) with recordings to import/enrich.
+
+**What was done**:
+
+**Phase 13 — Recording Enrichment (4 tasks)**:
+1. **Parse TSV** — `scripts/parse-youtube-playlist.mjs` parses YouTube titles into structured JSON. 115 unique entries from 132 lines (9 private, 8 duplicates). Manual overrides for 51 ambiguous titles. All entries have resolved artist type.
+2. **Audit DynamoDB** — `scripts/enrich-recordings.mjs --audit-only` queries existing data: 94 recordings matched, 18 to create, 13 bands + 21 persons to create, 61 cross-refs needed.
+3. **Enrichment script** — Combined audit + enrichment in single script. Supports `--audit-only` and `--dry-run` modes. Follows existing `create-missing-entities.mjs` patterns.
+4. **Execution** — Created 13 bands, 21 persons, 18 recordings, 61 recording_performer cross-refs. Updated 20 recording tags.
+
+**Key decisions**:
+- Compilations (Various Artists, Amy Winehouse Greatest Hits, Sade Best Of) skipped — not single recordings
+- "Precedens" treated as person (solo project) rather than band
+- Artist name normalization: P!NK→Pink, ELÁN→Elán, Prodigy→The Prodigy, etc.
+- Featured artists tracked separately and linked via cross-refs (e.g., Scorpions + Vanessa-Mae)
+
+**Phase 13 complete (4 tasks). All phases 0-13 complete (77 tasks).**
+
+---
+
 ### Session: 2026-04-02 — Dossier-First Navigation Refactor
 
 **Context**:
