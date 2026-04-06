@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-04-03",
-  "last_session_summary": "Session 2026-04-03: Phase 13 (recording enrichment from YouTube playlist, 4 tasks). Parsed 115 entries from TSV, created 13 bands, 21 persons, 18 recordings, 61 cross-refs. Tagged remaining 18 untagged entities. 100% tag coverage across all 1,148 entities. All phases 0-13 complete (77 tasks).",
+  "last_updated": "2026-04-06",
+  "last_session_summary": "Session 2026-04-03: Phase 13 (recording enrichment, 4+1 tasks). Parsed 115 YouTube playlist entries, created 13 bands, 21 persons, 18 recordings, 61 cross-refs. Fix: propagated 95 YouTube links to band/person entities, corrected 100 genre tags with LLM knowledge. All phases 0-13 complete (78 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -978,6 +978,16 @@
           "verify": "Recordings visible in Dossier with linked performers, spot-check 10 entries",
           "depends_on": ["13.3"],
           "notes": "Created: 13 bands, 21 persons, 18 recordings, 61 cross-refs. Updated 20 tags + patched 18 remaining untagged (9 recordings, 9 persons). Final: 100% tag coverage across all 1,148 entities."
+        },
+        {
+          "id": "13.4a",
+          "name": "Fix: propagate YouTube links to band/person entities, correct 100 genre tags",
+          "status": "complete",
+          "completed_at": "2026-04-03",
+          "size": "small",
+          "verify": "Puding Pani Elvisovej band page shows YouTube link and pop/rock tags",
+          "added_reason": "User reported band pages missing YouTube links — links were only on recordings, not on band/person entities. Also old bulk-tag genres were wrong (e.g. 'world' for Slovak pop/rock bands, 'artist' for persons).",
+          "notes": "scripts/fix-enrichment.mjs: LLM-informed correct tags for all bands/persons/recordings from playlist. 100 tags fixed, 95 YouTube links propagated to band/person entities."
         }
       ],
       "artifacts": []
@@ -988,7 +998,7 @@
     "orchestration": {
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
-      "status": "needs_push",
+      "status": "pushed",
       "notes": "Must be git repo from start. Commit after each task."
     }
   },

@@ -23,7 +23,15 @@ This file tracks session history for context continuity between Claude Code sess
 - Artist name normalization: P!NK→Pink, ELÁN→Elán, Prodigy→The Prodigy, etc.
 - Featured artists tracked separately and linked via cross-refs (e.g., Scorpions + Vanessa-Mae)
 
-**Phase 13 complete (4 tasks). All phases 0-13 complete (77 tasks).**
+**Fix — Task 13.4a (user-reported)**:
+5. **YouTube links + tag fix** — User reported band pages (e.g., Puding pani Elvisovej) missing YouTube links. Root cause: enrichment only added links to recording entities, but BandDetail/PersonDetail pages only show their own externalLinks. `scripts/fix-enrichment.mjs` propagated 95 YouTube links to band/person entities and corrected 100 genre tags using LLM knowledge (e.g., "world"→"pop, rock" for Slovak bands, "artist"→genre-specific for persons).
+
+**Issues encountered**:
+- Initial enrichment did not propagate YouTube links to band/person entities — only to recordings
+- Old bulk-tag script had assigned generic/wrong genres (e.g., "world" for all non-English, "artist" for all persons)
+- Fix required LLM knowledge to assign correct genres per artist
+
+**Phase 13 complete (5 tasks). All phases 0-13 complete (78 tasks).**
 
 ---
 
