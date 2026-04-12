@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getItem, listByRecording, updateItem } from '../lib/queries';
+import { useParams } from 'react-router-dom';
+import { getItem, listByRecording, listByType, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { PerformerManager } from '../components/PerformerManager';
+import { SoundtrackManager } from '../components/SoundtrackManager';
 import { useUserId } from '../lib/UserContext';
 import { Breadcrumb } from '../components/Breadcrumb';
 
@@ -14,17 +15,26 @@ export function RecordingDetail() {
   const userId = useUserId();
   const [recording, setRecording] = useState<KnowledgeGraphItem | null>(null);
   const [performers, setPerformers] = useState<KnowledgeGraphItem[]>([]);
+  const [movieLinks, setMovieLinks] = useState<KnowledgeGraphItem[]>([]);
 
   const refreshPerformers = useCallback(() => {
     if (!id) return;
     listByRecording(id).then(setPerformers);
   }, [id]);
 
+  const refreshMovieLinks = useCallback(() => {
+    if (!id) return;
+    listByType('recording_movie').then(items => {
+      setMovieLinks(items.filter(i => i.recordingId === id));
+    });
+  }, [id]);
+
   useEffect(() => {
     if (!id) return;
     getItem(id, 'recording').then(setRecording);
     refreshPerformers();
-  }, [id, refreshPerformers]);
+    refreshMovieLinks();
+  }, [id, refreshPerformers, refreshMovieLinks]);
 
   if (!recording) return <p>Loading...</p>;
 
@@ -32,8 +42,6 @@ export function RecordingDetail() {
     const updated = await updateItem(id!, 'recording', { [field]: value }, userId);
     if (updated) setRecording({ ...recording, ...updated });
   };
-
-  const movieLinks = performers.filter(p => p.entityType === 'recording_movie');
 
   return (
     <div>
@@ -69,18 +77,13 @@ export function RecordingDetail() {
         onUpdate={refreshPerformers}
       />
 
-      {movieLinks.length > 0 && (
-        <>
-          <h2>Featured in</h2>
-          <ul>
-            {movieLinks.map(m => (
-              <li key={m.id}>
-                <Link to={`/movies/${m.movieId}`}>{m.movieName}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <SoundtrackManager
+        side="recording"
+        recordingId={id!}
+        recordingName={recording.name || ''}
+        movieLinks={movieLinks}
+        onUpdate={refreshMovieLinks}
+      />
     </div>
   );
 }

@@ -22,6 +22,11 @@ export function DataManagement() {
   const initialTab = (searchParams.get('tab') as TabId) || 'overview';
   const [tab, setTab] = useState<TabId>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const handleTagClick = (tag: string) => {
+    setActiveTagFilter(tag);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     Promise.all([
@@ -138,7 +143,11 @@ export function DataManagement() {
   function matchesSearch(item: KnowledgeGraphItem): boolean {
     if (!searchNorm) return false;
     const fields = [item.name, item.author, item.artistName, item.givenName, item.familyName];
-    return fields.some(f => f && f.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(searchNorm));
+    const fieldMatch = fields.some(f => f && f.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(searchNorm));
+    if (fieldMatch) return true;
+    // Also search tags
+    const itemTags = (item.tags as string[] | null) || [];
+    return itemTags.some(tag => tag.toLowerCase().includes(searchNorm));
   }
 
   const searchResults = searchNorm.length >= 2
@@ -194,6 +203,56 @@ export function DataManagement() {
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {activeTagFilter && (
+        <div className="search-results" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+              Filtering by tag:
+            </span>
+            <span style={{
+              padding: '2px 8px', fontSize: '0.8rem', fontWeight: 500,
+              background: `${TAG_COLORS[getTagCategory(activeTagFilter) || ''] || '#666'}20`,
+              color: TAG_COLORS[getTagCategory(activeTagFilter) || ''] || '#666',
+              border: `1px solid ${TAG_COLORS[getTagCategory(activeTagFilter) || ''] || '#666'}40`,
+            }}>{activeTagFilter}</span>
+            <button onClick={() => setActiveTagFilter(null)}
+              style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
+              {'\u00d7'} clear
+            </button>
+          </div>
+          {(() => {
+            const tagResults = SEARCH_ENTITY_GROUPS.map(g => ({
+              ...g,
+              matches: g.items.filter(item => {
+                const itemTags = (item.tags as string[] | null) || [];
+                return itemTags.includes(activeTagFilter!);
+              }),
+            })).filter(g => g.matches.length > 0);
+            const totalTagMatches = tagResults.reduce((s, g) => s + g.matches.length, 0);
+            if (totalTagMatches === 0) return <p style={{ color: 'var(--text-muted)' }}>No items with tag "{activeTagFilter}"</p>;
+            return (
+              <>
+                <p className="meta" style={{ marginBottom: 8 }}>{totalTagMatches} item{totalTagMatches !== 1 ? 's' : ''} tagged "{activeTagFilter}"</p>
+                {tagResults.map(group => (
+                  <div key={group.type} style={{ marginBottom: 12 }}>
+                    <h3 style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                      {group.label} ({group.matches.length})
+                    </h3>
+                    {group.matches.map(item => (
+                      <div key={item.id} className="search-result-item">
+                        <Link to={`${group.detailPath}/${item.id}`}>{item.name}</Link>
+                        {item.author && <span className="search-result-meta"> — {item.author}</span>}
+                        {item.artistName && <span className="search-result-meta"> — {item.artistName}</span>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -285,7 +344,7 @@ export function DataManagement() {
                       }
                       {cast.length > 4 && <span style={{ color: 'var(--text-dim)' }}> +{cast.length - 4}</span>}
                     </td>
-                    <td style={cellStyle}>{renderTags(m.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderTags(m.tags as string[] | null, handleTagClick)}</td>
                     <td style={cellStyle}>{renderLinkBadges(parseLinks(m.externalLinks as string | null))}</td>
                   </tr>
                 );
@@ -311,7 +370,7 @@ export function DataManagement() {
               {bands.map(b => (
                 <tr key={b.id}>
                   <td style={cellStyle}><Link to={`/bands/${b.id}`}>{b.name}</Link></td>
-                  <td style={cellStyle}>{renderTags(b.tags as string[] | null)}</td>
+                  <td style={cellStyle}>{renderTags(b.tags as string[] | null, handleTagClick)}</td>
                   <td style={cellStyle}>{renderLinkBadges(parseLinks(b.externalLinks as string | null))}</td>
                 </tr>
               ))}
@@ -346,7 +405,7 @@ export function DataManagement() {
                       }}>{r}</span>
                     )) || '—'}
                   </td>
-                  <td style={cellStyle}>{renderTags(p.tags as string[] | null)}</td>
+                  <td style={cellStyle}>{renderTags(p.tags as string[] | null, handleTagClick)}</td>
                   <td style={cellStyle}>{renderLinkBadges(parseLinks(p.externalLinks as string | null))}</td>
                 </tr>
               ))}
@@ -384,7 +443,7 @@ export function DataManagement() {
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
                     </td>
-                    <td style={cellStyle}>{renderTags(r.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderTags(r.tags as string[] | null, handleTagClick)}</td>
                     <td style={cellStyle}>{renderLinkBadges(parseLinks(r.externalLinks as string | null))}</td>
                   </tr>
                 );
@@ -419,7 +478,7 @@ export function DataManagement() {
                         : <span style={{ color: 'var(--text-dim)' }}>{b.author || '—'}</span>
                       }
                     </td>
-                    <td style={cellStyle}>{renderTags(b.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderTags(b.tags as string[] | null, handleTagClick)}</td>
                     <td style={cellStyle}>{renderLinkBadges(parseLinks(b.externalLinks as string | null))}</td>
                   </tr>
                 );
@@ -456,7 +515,7 @@ export function DataManagement() {
                         : <span style={{ color: 'var(--text-dim)' }}>{(perfName as string) || '—'}</span>
                       }
                     </td>
-                    <td style={cellStyle}>{renderTags(s.tags as string[] | null)}</td>
+                    <td style={cellStyle}>{renderTags(s.tags as string[] | null, handleTagClick)}</td>
                     <td style={cellStyle}>{renderLinkBadges(parseLinks(s.externalLinks as string | null))}</td>
                   </tr>
                 );
@@ -479,15 +538,18 @@ export function DataManagement() {
               </p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {cat.tags.map(tag => (
-                  <span key={tag} style={{
-                    padding: '3px 10px',
-                    background: `${TAG_COLORS[catKey]}20`,
-                    color: TAG_COLORS[catKey],
-                    borderRadius: 12, fontSize: '0.85rem',
-                    border: `1px solid ${TAG_COLORS[catKey]}40`,
-                  }}>
+                  <button key={tag}
+                    onClick={() => { setActiveTagFilter(tag); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    style={{
+                      padding: '3px 10px',
+                      background: activeTagFilter === tag ? `${TAG_COLORS[catKey]}40` : `${TAG_COLORS[catKey]}20`,
+                      color: TAG_COLORS[catKey],
+                      borderRadius: 12, fontSize: '0.85rem',
+                      border: `1px solid ${activeTagFilter === tag ? TAG_COLORS[catKey] : `${TAG_COLORS[catKey]}40`}`,
+                      cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                    }}>
                     {tag} <span style={{ opacity: 0.6 }}>({tagCounts[tag] || 0})</span>
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -589,7 +651,7 @@ function renderLinkBadges(links: { url: string; type: string }[]) {
   );
 }
 
-function renderTags(tags: string[] | null) {
+function renderTags(tags: string[] | null, onTagClick?: (tag: string) => void) {
   if (!tags || tags.length === 0) return <span style={{ color: 'var(--text-muted)' }}>--</span>;
   return (
     <span style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
@@ -597,10 +659,14 @@ function renderTags(tags: string[] | null) {
         const cat = getTagCategory(tag);
         const color = cat ? TAG_COLORS[cat] : 'var(--text-dim)';
         return (
-          <span key={tag} style={{
-            padding: '1px 5px', background: `${color}15`, color,
-            fontSize: '0.7rem', border: `1px solid ${color}30`,
-          }}>{tag}</span>
+          <button key={tag}
+            onClick={() => onTagClick?.(tag)}
+            style={{
+              padding: '1px 5px', background: `${color}15`, color,
+              fontSize: '0.7rem', border: `1px solid ${color}30`,
+              cursor: onTagClick ? 'pointer' : 'default',
+              fontFamily: 'var(--font-mono)',
+            }}>{tag}</button>
         );
       })}
     </span>

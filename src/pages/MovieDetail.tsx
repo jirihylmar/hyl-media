@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getItem, listByCastMovie, listByType, updateItem } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { InlineEdit } from '../components/InlineEdit';
 import { CastManager } from '../components/CastManager';
+import { SoundtrackManager } from '../components/SoundtrackManager';
 import { ExternalLinks } from '../components/ExternalLinks';
 import { TagManager } from '../components/TagManager';
 import { useUserId } from '../lib/UserContext';
@@ -21,14 +22,19 @@ export function MovieDetail() {
     listByCastMovie(id).then(setCast);
   }, [id]);
 
+  const refreshSoundtracks = useCallback(() => {
+    if (!id) return;
+    listByType('recording_movie').then(items => {
+      setSoundtracks(items.filter(i => i.movieId === id));
+    });
+  }, [id]);
+
   useEffect(() => {
     if (!id) return;
     getItem(id, 'movie').then(setMovie);
     refreshCast();
-    listByType('recording_movie').then(items => {
-      setSoundtracks(items.filter(i => i.movieId === id));
-    });
-  }, [id, refreshCast]);
+    refreshSoundtracks();
+  }, [id, refreshCast, refreshSoundtracks]);
 
   if (!movie) return <p>Loading...</p>;
 
@@ -71,18 +77,13 @@ export function MovieDetail() {
         onUpdate={refreshCast}
       />
 
-      {soundtracks.length > 0 && (
-        <>
-          <h2>Soundtrack</h2>
-          <ul>
-            {soundtracks.map(s => (
-              <li key={s.id}>
-                <Link to={`/recordings/${s.recordingId}`}>{s.recordingName}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <SoundtrackManager
+        side="movie"
+        movieId={id!}
+        movieName={movie.name || ''}
+        soundtracks={soundtracks}
+        onUpdate={refreshSoundtracks}
+      />
     </div>
   );
 }

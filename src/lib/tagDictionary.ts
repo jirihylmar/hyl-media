@@ -46,6 +46,13 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
     ],
     method: 'Persons: copied from existing roles[] field in DynamoDB. Bands: not applicable.',
   },
+  curation: {
+    label: 'Curation',
+    tags: [
+      'recommended', 'favorite', 'hidden-gem',
+    ],
+    method: 'Recommended: auto-assigned to new entries. Favorite/hidden-gem: manual assignment for personal curation.',
+  },
 };
 
 export function getAllTags(): string[] {
@@ -65,4 +72,5 @@ export const TAG_COLORS: Record<string, string> = {
   library_type: '#059669',
   content: '#d97706',
   role: '#dc2626',
+  curation: '#ec4899',
 };

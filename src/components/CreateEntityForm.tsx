@@ -48,7 +48,7 @@ export function CreateEntityForm({ entityType, title, fields, detailPath, onCanc
     const id = `${slugify(name)}_${shortHash()}`;
     setSaving(true);
     try {
-      const item: Record<string, unknown> = { id, entityType };
+      const item: Record<string, unknown> = { id, entityType, tags: ['recommended'] };
       for (const field of fields) {
         const val = values[field.name]?.trim();
         if (val) item[field.name] = val;
