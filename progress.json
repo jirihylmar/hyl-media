@@ -1060,9 +1060,56 @@
     "artifacts": [
       "src/components/SoundtrackManager.tsx"
     ]
-  }
   },
-  "current_task": null,
+    "phase_15_verify_and_tag": {
+      "name": "Verify Knowledge Graph Features + Tag Recommended Items",
+      "status": "pending",
+      "description": "Run tagging script against real DynamoDB, verify all Phase 14 UI features against live app, fix any issues found",
+      "tasks": [
+        {
+          "id": "15.1",
+          "name": "Run tag-recommended script — tag ~60 curated items in DynamoDB",
+          "status": "pending",
+          "size": "small",
+          "verify": "Search 'recommended' in Dossier returns results",
+          "added_reason": "Phase 14 code was written but never executed against real data"
+        },
+        {
+          "id": "15.2",
+          "name": "Verify SoundtrackManager on live app — add a recording to a movie soundtrack, confirm bidirectional",
+          "status": "pending",
+          "size": "small",
+          "verify": "Movie detail shows added recording, recording detail shows Featured in movie",
+          "depends_on": ["15.1"]
+        },
+        {
+          "id": "15.3",
+          "name": "Verify tag search + filter on live app — search recommended, click tag badges",
+          "status": "pending",
+          "size": "small",
+          "verify": "Search returns tagged items, clicking tag badge filters correctly",
+          "depends_on": ["15.1"]
+        },
+        {
+          "id": "15.4",
+          "name": "Create a new entity via UI and confirm auto-tagged recommended",
+          "status": "pending",
+          "size": "small",
+          "verify": "New entity appears with recommended tag badge"
+        },
+        {
+          "id": "15.5",
+          "name": "Fix any issues found during live verification",
+          "status": "pending",
+          "size": "small",
+          "verify": "All features work end-to-end on deployed app",
+          "depends_on": ["15.2", "15.3", "15.4"]
+        }
+      ],
+      "artifacts": []
+    }
+  },
+  "current_task": "15.1",
   "git_repos": {
     "orchestration": {
       "local": ".",

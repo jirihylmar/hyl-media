@@ -41,7 +41,13 @@ This file tracks session history for context continuity between Claude Code sess
 - `src/test/setup.ts` — jest-dom matchers
 - `src/test/mocks.ts` — data factories
 
-**Phase 14 complete (5 tasks). All phases 0-14 complete (83 tasks).**
+**Phase 14 complete (5 tasks, code only). All phases 0-14 complete (83 tasks).**
+
+**Work added — Phase 15 (5 tasks)**:
+- Source: Phase 14 code was never executed against real data or verified in browser
+- Reason: No AWS access in this session — tagging script not run, UI not tested live
+- Tasks: Run tag script, verify SoundtrackManager, verify tag search, verify auto-tag, fix issues
+- Requires: AWS access (MCP tool or local profile)
 
 ---
 
