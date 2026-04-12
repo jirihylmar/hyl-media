@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import type { UseAuthenticator } from '@aws-amplify/ui-react';
+import { GlobalSearch } from './GlobalSearch';
 
 type Props = {
   signOut?: UseAuthenticator['signOut'];
@@ -11,6 +12,7 @@ export function Layout({ signOut, user }: Props) {
     <div className="app-layout">
       <header className="top-bar">
         <Link to="/" className="top-bar-logo">HYL Media</Link>
+        <GlobalSearch />
         <div className="top-bar-user">
           <span className="top-bar-user-id">{user?.signInDetails?.loginId}</span>
           <button onClick={signOut} className="btn btn-secondary btn-sm">Sign out</button>

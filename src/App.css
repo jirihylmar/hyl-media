@@ -254,6 +254,136 @@
   font-size: 0.8rem;
 }
 
+/* --- Global search (top bar) --- */
+.global-search {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 1rem;
+}
+
+.global-search-input {
+  width: 100%;
+  padding: 0.35rem 2rem 0.35rem 0.6rem;
+  background: var(--bg-black);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.global-search-input:focus {
+  border-color: var(--green-dim);
+  box-shadow: 0 0 6px rgba(68, 238, 102, 0.15);
+}
+
+.global-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.global-search-clear {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  padding: 0 0.2rem;
+}
+
+.global-search-clear:hover {
+  color: var(--text-bright);
+}
+
+.global-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-top: none;
+  z-index: 1000;
+  padding: 0.5rem;
+}
+
+.global-search-msg {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+  padding: 0.3rem 0;
+}
+
+.global-search-count {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin: 0 0 0.3rem;
+}
+
+.global-search-group {
+  margin-bottom: 0.5rem;
+}
+
+.global-search-group-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.global-search-result {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.4rem;
+  color: var(--green);
+  text-decoration: none;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.global-search-result:hover {
+  background: var(--bg-black);
+  text-shadow: var(--glow);
+}
+
+.global-search-result:last-child {
+  border-bottom: none;
+}
+
+.global-search-result-name {
+  color: var(--green);
+}
+
+.global-search-result-meta {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.global-search-tags {
+  margin-left: auto;
+}
+
+.global-search-overflow {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin: 2px 0 0;
+}
+
+@media (max-width: 768px) {
+  .global-search {
+    max-width: 200px;
+  }
+}
+
 /* --- Tab bar (Dossier page) --- */
 .tab-bar {
   display: flex;
