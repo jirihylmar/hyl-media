@@ -994,51 +994,65 @@
     },
     "phase_14_knowledge_graph_enrichment": {
       "name": "Knowledge Graph Enrichment — Movies ↔ Recordings via LLM Knowledge",
-      "status": "pending",
+      "status": "complete",
       "description": "Use LLM knowledge to identify and create missing movie/recording entities and their cross-references. Auto-tag new entities as recommended.",
+      "completed_at": "2026-04-12T16:20:00Z",
       "tasks": [
         {
           "id": "14.1",
           "name": "Audit DynamoDB — scan movies + recordings, use LLM knowledge to identify missing soundtrack links and missing entities",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
-          "verify": "Audit JSON lists all proposed new entities + links"
+          "verify": "Audit JSON lists all proposed new entities + links",
+          "completed_at": "2026-04-12T16:16:00Z",
+          "notes": "Scanned 94 movies, 145 recordings, 14 existing links (from prior imports). Identified 27 missing recordings, 44 new links, 33 movies needing soundtrack tag."
         },
         {
           "id": "14.2",
           "name": "Build enrichment script — create missing movies, recordings, and recording_movie cross-refs with --audit-only and --dry-run modes. New entities auto-tagged recommended",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
-          "verify": "--dry-run shows planned creates without writing"
+          "verify": "--dry-run shows planned creates without writing",
+          "completed_at": "2026-04-12T16:17:00Z",
+          "notes": "scripts/enrich-movie-recordings.mjs — LLM knowledge hardcoded as MOVIE_RECORDING_LINKS array. Follows enrich-recordings.mjs pattern. Supports --audit-only and --dry-run."
         },
         {
           "id": "14.3",
           "name": "Add recommended tag + curation category to tag dictionary",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
-          "verify": "Tag dictionary includes curation category with recommended tag"
+          "verify": "Tag dictionary includes curation category with recommended tag",
+          "completed_at": "2026-04-12T16:17:30Z",
+          "notes": "Added curation category with recommended, favorite, hidden-gem tags (pink #ec4899) to src/lib/tagDictionary.ts"
         },
         {
           "id": "14.4",
           "name": "Run enrichment against real DynamoDB",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "New entities + recording_movie cross-refs visible in Dossier",
-          "depends_on": ["14.1", "14.2", "14.3"]
+          "depends_on": ["14.1", "14.2", "14.3"],
+          "completed_at": "2026-04-12T16:19:00Z",
+          "notes": "Created 27 recordings, 44 recording_movie links, tagged 33 movies with 'soundtrack'. Total recordings now 172, total links 44."
         },
         {
           "id": "14.5",
           "name": "Verify + fix — spot-check enriched data in live app, fix any issues",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "Bidirectional links work end-to-end on deployed app",
-          "depends_on": ["14.4"]
+          "depends_on": ["14.4"],
+          "completed_at": "2026-04-12T16:20:00Z",
+          "notes": "Verified: My Heart Will Go On exists with [pop, soundtrack, recommended] tags. Titanic has [entertainment, soundtrack] tags. Titanic → My Heart Will Go On link confirmed. recording_movie count = 44. Recording count = 172 (was 145)."
         }
       ],
-      "artifacts": []
+      "artifacts": [
+        "scripts/enrich-movie-recordings.mjs",
+        "src/lib/tagDictionary.ts"
+      ]
     }
   },
-  "current_task": null,
+  "current_task": "14.5",
   "git_repos": {
     "orchestration": {
       "local": ".",

@@ -16,9 +16,20 @@ This file tracks session history for context continuity between Claude Code sess
   - New entities auto-tagged `recommended`
   - Follows `enrich-recordings.mjs` pattern with `--audit-only` / `--dry-run`
 
+**Phase 14 — Knowledge Graph Enrichment (5 tasks)**:
+1. **Audit** — Scanned 94 movies, 145 recordings, 14 existing links. LLM knowledge identified 27 missing recordings, 44 new links, 33 movies needing soundtrack tags.
+2. **Enrichment script** — `scripts/enrich-movie-recordings.mjs` with `MOVIE_RECORDING_LINKS` array of ~55 movie↔recording connections. Follows `enrich-recordings.mjs` pattern.
+3. **Curation tags** — Added `curation` category to tag dictionary with `recommended`, `favorite`, `hidden-gem` (pink #ec4899).
+4. **Execution** — Created 27 recordings (My Heart Will Go On, Tiny Dancer, Twist and Shout, etc.), 44 recording_movie links, tagged 33 movies with 'soundtrack'.
+5. **Verification** — Spot-checked Titanic ↔ My Heart Will Go On, confirmed bidirectional. Total: 172 recordings, 44 links.
+
 **Key decisions**:
 - Old Phase 14 approach (manual UI linking) rejected — user wants automated enrichment using LLM knowledge
 - Test suite from old Phase 14 not carried forward (can be re-added later if needed)
+- New recordings auto-tagged `[soundtrack, recommended]` + genre tags
+- Movies receiving soundtrack links auto-tagged `soundtrack`
+
+**Phase 14 complete (5 tasks). All phases 0-14 complete (83 tasks).**
 
 ---
 
