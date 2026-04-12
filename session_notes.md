@@ -4,6 +4,47 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-04-12 — Knowledge Graph Improvements + Test Suite
+
+**Context**:
+- All phases 0-13 complete (78 tasks). User requested: bidirectional movie-recording links, recommended tag for new entries, searchable tags, and a test suite.
+
+**What was done**:
+
+**Phase 14 — Knowledge Graph Improvements + Test Suite (5 tasks)**:
+1. **SoundtrackManager component** — New reusable component for managing `recording_movie` relationships from both sides. MovieDetail shows "Soundtrack (N)" with add/remove. RecordingDetail shows "Featured in (N)" with add/remove. Replaces static read-only lists.
+2. **Curation tag category** — Added `curation` category to tag dictionary with `recommended`, `favorite`, `hidden-gem` tags (pink #ec4899). CreateEntityForm auto-tags all new entities with `recommended`.
+3. **Tag-based search** — DataManagement search bar now matches tags (type "recommended" to find tagged items). Tags tab badges are clickable buttons that filter all entities by tag. Inline tag badges in table rows also clickable. Filter shows grouped results with clear button.
+4. **Vitest test suite** — Installed vitest, @testing-library/react, jsdom. 33 tests across 4 files: tagDictionary (10), SoundtrackManager (12), TagManager (6), CreateEntityForm (5). Test mocks in src/test/mocks.ts.
+5. **Documentation** — CLAUDE.md updated: Testing section, Critical Rule #7 (tests mandatory before PRs), pre-deploy checklist. README.md updated: Testing section with stack and test file table.
+
+**Verification results**:
+| Task | Verify | Result |
+|------|--------|--------|
+| 14.1 | SoundtrackManager renders on both detail pages | PASSED |
+| 14.2 | curation category with 3 tags + pink color | PASSED |
+| 14.3 | Search matches tags, clickable filter works | PASSED |
+| 14.4 | npm test — 33 tests, 4 files, all green | PASSED |
+| 14.5 | CLAUDE.md + README.md have test sections | PASSED |
+
+**Key decisions**:
+- Tests are now mandatory before any pull request (documented in CLAUDE.md Critical Rule #7)
+- `recommended` tag auto-assigned to all new entities — users can remove it manually if not a recommendation
+- Tag filter is separate from text search — clicking a tag shows a dedicated filter panel at top of page
+
+**Artifacts created**:
+- `src/components/SoundtrackManager.tsx` — bidirectional soundtrack manager
+- `src/components/SoundtrackManager.test.tsx` — 12 tests
+- `src/components/TagManager.test.tsx` — 6 tests
+- `src/components/CreateEntityForm.test.tsx` — 5 tests
+- `src/lib/tagDictionary.test.ts` — 10 tests
+- `src/test/setup.ts` — jest-dom matchers
+- `src/test/mocks.ts` — data factories
+
+**Phase 14 complete (5 tasks). All phases 0-14 complete (83 tasks).**
+
+---
+
 ### Session: 2026-04-03 — Recording Enrichment from YouTube Playlist
 
 **Context**:
