@@ -81,6 +81,24 @@ npm run dev
 npm run build
 ```
 
+## Testing
+
+Tests are **mandatory** before creating any pull request.
+
+```bash
+npm test            # Run all tests (must pass before PR)
+npm run test:watch  # Watch mode during development
+```
+
+**Stack**: Vitest + React Testing Library + jsdom
+
+| Test File | What it covers |
+|-----------|---------------|
+| `src/lib/tagDictionary.test.ts` | Tag dictionary, categories, recommended tag |
+| `src/components/SoundtrackManager.test.tsx` | Bidirectional movie-recording linking |
+| `src/components/TagManager.test.tsx` | Tag picker, toggle, remove |
+| `src/components/CreateEntityForm.test.tsx` | Entity creation, auto-tagging with recommended |
+
 ## Project Status
 
 All 63 tasks across 11 phases complete. See [progress.json](progress.json) for full history.

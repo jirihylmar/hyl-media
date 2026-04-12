@@ -83,9 +83,26 @@ hyl-media/
 └── session_notes.md
 ```
 
+## Testing
+
+**Tests are mandatory before any pull request.**
+
+```bash
+npm test          # Run all tests (must pass before PR)
+npm run test:watch  # Watch mode during development
+```
+
+- **Framework**: Vitest + React Testing Library + jsdom
+- **Test files**: Co-located with source (`*.test.ts`, `*.test.tsx`)
+- **Setup**: `src/test/setup.ts` (jest-dom matchers), `src/test/mocks.ts` (data factories)
+- **Coverage**: Tag dictionary, SoundtrackManager, TagManager, CreateEntityForm
+
+When adding new features or components, add corresponding tests.
+
 ## Deployment
 - **Auto-deploy**: Push to `main` triggers Amplify Hosting build
 - **Build**: `npx ampx pipeline-deploy` (backend) + `npm run build` (frontend)
+- **Pre-deploy checklist**: Run `npm test` — all tests must pass
 - **URL**: https://main.d2r70lavusnzlx.amplifyapp.com
 - **Test account**: jiri.hylmar@gmail.com / HylMedia123!
 
@@ -133,6 +150,12 @@ Check with `/context`:
 
 **Commits**: After completing each task.
 **Pushes**: At meaningful boundaries (triggers auto-deploy).
+
+### 7. Tests MUST Pass Before Pull Requests
+**Run `npm test` before creating any pull request.** All tests must pass.
+- If tests fail, fix the issue before pushing or creating a PR.
+- Never skip tests or merge with failing tests.
+- When adding new features or components, add corresponding tests.
 
 ---
 
