@@ -29,7 +29,24 @@ This file tracks session history for context continuity between Claude Code sess
 - New recordings auto-tagged `[soundtrack, recommended]` + genre tags
 - Movies receiving soundtrack links auto-tagged `soundtrack`
 
-**Phase 14 complete (5 tasks). All phases 0-14 complete (83 tasks).**
+**Phase 14 complete (5 tasks).**
+
+**Additional work (Phase 14a — 2 tasks)**:
+1. **Global search** — `src/components/GlobalSearch.tsx` in Layout top bar. Available on every screen. Searches entity names AND tags. Ctrl+K shortcut. Lazy-loads data on first focus. Dropdown with grouped results + tag badges.
+2. **/enrich-connections skill** — `.claude/commands/enrich-connections.md`. Run after adding new entries to auto-detect missing connections using LLM knowledge.
+
+**Verification results**:
+| Task | Verify | Result |
+|------|--------|--------|
+| 14.1 | Audit lists entities + links | PASSED — 27 recordings, 44 links, 33 tags |
+| 14.2 | --dry-run shows plans | PASSED |
+| 14.3 | Curation category in tag dictionary | PASSED |
+| 14.4 | Entities visible in DynamoDB | PASSED — 172 recordings, 44 links |
+| 14.5 | Spot-check Titanic ↔ My Heart Will Go On | PASSED |
+| 14a.1 | Build passes, search in top bar | PASSED |
+| 14a.2 | Skill file exists | PASSED |
+
+**All phases 0-14a complete (90 tasks). Pushed + deploying.**
 
 ---
 

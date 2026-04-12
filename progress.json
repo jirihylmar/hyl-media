@@ -1050,15 +1050,46 @@
         "scripts/enrich-movie-recordings.mjs",
         "src/lib/tagDictionary.ts"
       ]
+    },
+    "phase_14a_global_search_and_skill": {
+      "name": "Global Search + Enrich Connections Skill",
+      "status": "complete",
+      "description": "Add global tag-aware search to top bar (available on every screen) and /enrich-connections skill for automated knowledge graph linking.",
+      "completed_at": "2026-04-12T16:30:00Z",
+      "tasks": [
+        {
+          "id": "14a.1",
+          "name": "Create GlobalSearch component — search names + tags from top bar on every screen",
+          "status": "complete",
+          "size": "small",
+          "verify": "Build passes, search bar visible in top bar on all pages",
+          "completed_at": "2026-04-12T16:28:00Z",
+          "notes": "src/components/GlobalSearch.tsx — lazy-loads data on focus, matches entity names and tags, Ctrl+K shortcut, dropdown with grouped results and tag badges."
+        },
+        {
+          "id": "14a.2",
+          "name": "Create /enrich-connections skill for automated knowledge graph linking",
+          "status": "complete",
+          "size": "small",
+          "verify": "Skill file exists in .claude/commands/enrich-connections.md",
+          "completed_at": "2026-04-12T16:25:00Z",
+          "notes": ".claude/commands/enrich-connections.md — scans DB, uses LLM knowledge to find missing connections, asks approval before writing."
+        }
+      ],
+      "artifacts": [
+        "src/components/GlobalSearch.tsx",
+        ".claude/commands/enrich-connections.md",
+        "src/App.css"
+      ]
     }
   },
-  "current_task": "14.5",
+  "current_task": null,
   "git_repos": {
     "orchestration": {
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
       "status": "pushed",
-      "notes": "Must be git repo from start. Commit after each task."
+      "notes": "Force-pushed after reverting old Phase 14/15. Must be git repo from start. Commit after each task."
     }
   },
   "context_hints": {
