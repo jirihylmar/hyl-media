@@ -4,6 +4,24 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-04-12 — Revert Phase 14/15, Add Real Enrichment Work
+
+**Context**:
+- All phases 0-13 complete (78 tasks). Previous Phase 14 (knowledge graph improvements) was reverted — it only built a manual UI component (SoundtrackManager) instead of the automated enrichment the user wanted.
+
+**What was done**:
+- Reverted 7 commits (`git reset --hard c223fa3`) removing Phase 14 (SoundtrackManager, tag-recommended script, test suite, tag search) and Phase 15 (verification tasks)
+- Added new Phase 14: Knowledge Graph Enrichment via LLM Knowledge (5 tasks)
+  - Goal: Use Claude's knowledge to create missing movie/recording entities and link them automatically
+  - New entities auto-tagged `recommended`
+  - Follows `enrich-recordings.mjs` pattern with `--audit-only` / `--dry-run`
+
+**Key decisions**:
+- Old Phase 14 approach (manual UI linking) rejected — user wants automated enrichment using LLM knowledge
+- Test suite from old Phase 14 not carried forward (can be re-added later if needed)
+
+---
+
 ### Session: 2026-04-03 — Recording Enrichment from YouTube Playlist
 
 **Context**:

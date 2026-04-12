@@ -991,6 +991,51 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_14_knowledge_graph_enrichment": {
+      "name": "Knowledge Graph Enrichment — Movies ↔ Recordings via LLM Knowledge",
+      "status": "pending",
+      "description": "Use LLM knowledge to identify and create missing movie/recording entities and their cross-references. Auto-tag new entities as recommended.",
+      "tasks": [
+        {
+          "id": "14.1",
+          "name": "Audit DynamoDB — scan movies + recordings, use LLM knowledge to identify missing soundtrack links and missing entities",
+          "status": "pending",
+          "size": "small",
+          "verify": "Audit JSON lists all proposed new entities + links"
+        },
+        {
+          "id": "14.2",
+          "name": "Build enrichment script — create missing movies, recordings, and recording_movie cross-refs with --audit-only and --dry-run modes. New entities auto-tagged recommended",
+          "status": "pending",
+          "size": "medium",
+          "verify": "--dry-run shows planned creates without writing"
+        },
+        {
+          "id": "14.3",
+          "name": "Add recommended tag + curation category to tag dictionary",
+          "status": "pending",
+          "size": "small",
+          "verify": "Tag dictionary includes curation category with recommended tag"
+        },
+        {
+          "id": "14.4",
+          "name": "Run enrichment against real DynamoDB",
+          "status": "pending",
+          "size": "small",
+          "verify": "New entities + recording_movie cross-refs visible in Dossier",
+          "depends_on": ["14.1", "14.2", "14.3"]
+        },
+        {
+          "id": "14.5",
+          "name": "Verify + fix — spot-check enriched data in live app, fix any issues",
+          "status": "pending",
+          "size": "small",
+          "verify": "Bidirectional links work end-to-end on deployed app",
+          "depends_on": ["14.4"]
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": null,
