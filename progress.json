@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-06-14",
-  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Foundation, 7) + Phase 16 (DC Migration, 6) autonomously with independent verification; fixed GlobalSearch build error; stored Anthropic API key in Secrets Manager (hyl-media/anthropic-api-key); DEFINED Phase 17 (frontend DC cutover, 6) + Phase 18 (DC lifecycle/enrichment, 6). Pushed (commit 640fb09) → Amplify deploy. All phases 0-16 complete (103 tasks); 17-18 defined (12 pending). Checkpointed before 17.1 (sizable AppSync custom-resolver deploy) due to session length. Next: Phase 17.1 — custom AppSync resolvers over hyl-media-metadata-repository.",
+  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Foundation, 7) + Phase 16 (DC Migration, 6) autonomously with independent verification; fixed GlobalSearch build error; stored Anthropic API key in Secrets Manager (hyl-media/anthropic-api-key); DEFINED Phase 17 (frontend DC cutover, 6) + Phase 18 (DC lifecycle/enrichment, 6). Pushed (commit fe05547). IMPORTANT: Amplify deploy is BROKEN since job 50 (pre-session) on a backend CDK 'docker ENOENT' error — see blockers. Frontend tsc passes; live site = last good build (job 49). DC data work is live + unaffected. All phases 0-16 complete (103 tasks); 17-18 defined (12 pending). Checkpointed before 17.1 (sizable AppSync custom-resolver deploy) due to session length. Next: Phase 17.1 — custom AppSync resolvers over hyl-media-metadata-repository.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1412,5 +1412,13 @@
     "amplify_app_id": "d2r70lavusnzlx",
     "amplify_url": "https://main.d2r70lavusnzlx.amplifyapp.com"
   },
-  "blockers": []
+  "blockers": [
+    {
+      "id": "deploy-docker-cdk",
+      "summary": "Amplify Hosting backend deploy fails at CDK assembly with 'spawnSync docker ENOENT'. Pre-existing since job 50 (commit 7af20a9), BEFORE this session — NOT caused by Phase 15/16 or the navigate fix. Frontend type checks pass. Live site serves the last good build (job 49). Likely a transitive dependency version drift (caret-ranged @aws-amplify/backend ^1.21.1 / aws-cdk-lib resolving to a version that bundles a custom-resource Lambda via Docker, which the build image lacks). Backend (amplify/) code unchanged since job 49.",
+      "impact": "Blocks React frontend redeploys only. Phase 15/16 DC migration is data/CLI-driven and already live in AWS — unaffected. Phase 17 (frontend cutover) will need this resolved before it can deploy.",
+      "status": "open",
+      "next": "Diagnose which asset needs Docker; likely fix = pin lockfile to job-49 versions, or enable a Docker-capable Amplify build image, or pin @aws-amplify/backend/aws-cdk-lib."
+    }
+  ]
 }
