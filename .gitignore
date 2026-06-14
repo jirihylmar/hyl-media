@@ -39,3 +39,4 @@ __pycache__/
 # Amplify generated
 amplify_outputs.json
 .amplify/
+.dc-audit/

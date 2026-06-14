@@ -1133,7 +1133,7 @@
           "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "scripts/lib/entity-to-dc.mjs: a recording with performer + movie cross-refs yields a JSON descriptor + correct dc_creator/dc_isPartOf/dc_relation in the sidecar",
-          "verified": "node scripts/lib/entity-to-dc.mjs --selftest → ALL PASS (29 checks): recording→dc_creator[performer]+dc_is_part_of[movie URI]+_performer_uris; reverse person→dc_relation[recording URI]; book→dc_creator+dc_rights_holder+documents/<uuid>/<pdf basename>; movie→dc_has_part[recording URI]; dc_subject excludes role/curation tags, _tags lossless. Surfaced DH-fidelity detail: dc_creator is NOT in DH's default template (DH adds it only via Phase 28.5 editor) — resolver adds it explicitly.",
+          "verified": "node scripts/lib/entity-to-dc.mjs --selftest → ALL PASS: recording→dc_creator[performer]+dc_is_part_of[movie URI]+_performer_uris; reverse person→dc_relation[recording URI]; book→dc_creator+dc_rights_holder+documents/<uuid>/<pdf basename>; movie→dc_has_part; movie_cast director→dc_creator, actor→dc_contributor, +_cast_uris, reverse person filmography→dc_relation; dc_subject excludes role/curation tags, _tags lossless. Surfaced DH-fidelity detail: dc_creator/dc_contributor NOT in DH default template (DH adds dc_creator only via Phase 28.5 editor) — resolver adds them explicitly. movie_cast support added in 15.7 after audit discovered it.",
           "notes": "Maps a hyl-media KnowledgeGraphItem (+ its recording_performer/recording_movie/sheet_music_performer cross-refs) into (a) the descriptor content object and (b) sidecar dc_* relationship fields. Uses 15.4 builder + 15.2 paths. depends_on 15.2, 15.4."
         },
         {
@@ -1147,9 +1147,12 @@
         {
           "id": "15.7",
           "name": "Read-only dry-run migration audit",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "scripts/audit-dc-migration.mjs writes would-be sidecars to a local dir (no S3/DDB writes), reports counts per dc_type/category, flags SK collisions + unmapped fields; sample sidecars validate against the conformant shape",
+          "verified": "Ran read-only over 1830 items (1194 core, 631 rel, 5 excluded). Emitted 1193 sidecars + 775 descriptors to .dc-audit/. dc_type: Text 418, Dataset 509, Sound 172, MovingImage 94. 0 content-key collisions, 0 (PK,SK) collisions. Emitted sidecar validated: first 28 Attributes == DH template+order, PK==id, sort_key==SK. Surfaced for Phase 16: movie_cast (327 items) was a MISSED 4th relationship type (sparse GSI hid it) — now mapped; 1 book w/o s3Key; 6 items w/ leftover youtubeUrl/wikiUrl; 5 junk 'tag' items; 34 benign cross-PK SK shares.",
+          "added_findings": "movie_cast relationship type discovered via audit (absent from byType GSI because it lacks a name attribute). Resolver + mapping spec updated to handle it (director->dc_creator, actor->dc_contributor)."
           "notes": "Reads real DynamoDB via mcp__aws-vsb-299__call_aws (read-only). Runs builder (15.4) + resolver (15.5) across all entities. Surfaces SK collisions (same #lang#slug) and any source fields not mapped to a DC field. depends_on 15.4, 15.5."
         }
       ],

@@ -46,15 +46,21 @@ function basename(s3Key) {
   return String(s3Key || '').split('/').pop();
 }
 
-function descriptorFilename(name) {
-  return `${sortKeySlug(name) || 'item'}.json`;
+function descriptorFilename(name, fallbackId) {
+  return `${sortKeySlug(name) || sortKeySlug(fallbackId) || 'item'}.json`;
 }
 
-/** Content key for an entity, given its raw item. */
+/** Content key for an entity, given its raw item. Throws for a file-backed entity missing its s3Key. */
 export function entityContentKey(entity) {
   const cat = categoryForEntityType(entity.entityType);
   const uuid = entityUuid(entity.id, entity.entityType);
-  const filename = cat === 'documents' ? basename(entity.s3Key) : descriptorFilename(entity.name);
+  let filename;
+  if (cat === 'documents') {
+    filename = basename(entity.s3Key);
+    if (!filename) throw new Error(`${entity.entityType} '${entity.id}' has no s3Key (cannot form document content key)`);
+  } else {
+    filename = descriptorFilename(entity.name, entity.id);
+  }
   return contentKey(cat, uuid, filename);
 }
 
@@ -96,9 +102,11 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   const cKey = contentKey(cat, uuid, filename);
   const sKey = sidecarKey(cat, uuid, filename);
 
-  // dc_creator (names) + relationship URI buckets.
+  // dc_creator / dc_contributor (names) + relationship URI buckets.
   const dcCreator = [];
+  const dcContributor = [];
   const performerUris = [];
+  const castUris = [];
   let dcIsPartOf = null;
   const dcHasPart = [];
   const dcRelation = [];
@@ -129,6 +137,15 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
         else dcRelation.push(movieUri);             // additional movies
       } else if (entity.id === xr.movieId) {
         dcHasPart.push(uriFor(xr.recordingId, 'recording', xr.recordingName));
+      }
+    } else if (xr.entityType === 'movie_cast') {
+      // role ∈ {actor, director}: director is a primary creator, actor a contributor.
+      if (entity.id === xr.movieId) {
+        if (xr.role === 'director') dcCreator.push(xr.personName);
+        else dcContributor.push(xr.personName);
+        castUris.push(uriFor(xr.personId, 'person', xr.personName));
+      } else if (entity.id === xr.personId) {
+        dcRelation.push(uriFor(xr.movieId, 'movie', xr.movieName)); // filmography
       }
     }
   }
@@ -163,9 +180,11 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
     now, REGION, undefined, links,
   );
 
-  // dc_creator is a recognized DC term but NOT in DH's default template (DH adds it only via its
-  // Phase 28.5 operator editor). We add it explicitly — it's the natural term for performers/authors.
+  // dc_creator / dc_contributor are recognized DC terms but NOT in DH's default template (DH adds
+  // dc_creator only via its Phase 28.5 editor). We add them explicitly — natural for performers,
+  // authors, directors (creator) and actors (contributor).
   sidecar.Attributes.dc_creator = dcCreator.length ? dcCreator : null;
+  sidecar.Attributes.dc_contributor = dcContributor.length ? dcContributor : null;
   // dc_rights_holder: builder sets it to authors[0]; for agents/no-author keep null.
   if (author) sidecar.Attributes.dc_rights_holder = author;
 
@@ -175,6 +194,7 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   sidecar.Attributes._tags = tagsAll;
   sidecar.Attributes._external_links = externalLinks;
   if (performerUris.length) sidecar.Attributes._performer_uris = performerUris;
+  if (castUris.length) sidecar.Attributes._cast_uris = castUris;
   if (entity.givenName) sidecar.Attributes._given_name = entity.givenName;
   if (entity.familyName) sidecar.Attributes._family_name = entity.familyName;
   if (Array.isArray(entity.roles) && entity.roles.length) sidecar.Attributes._roles = entity.roles;
@@ -192,7 +212,9 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
     tags: tagsAll,
     external_links: externalLinks,
     creators: dcCreator,
+    contributors: dcContributor,
     performer_uris: performerUris,
+    cast_uris: castUris,
     is_part_of: dcIsPartOf,
     has_part: dcHasPart,
     relation: dcRelation,
@@ -264,11 +286,21 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   eq('book contentKey keeps PDF basename', bout.contentKey, `documents/${entityUuid(book.id, 'book')}/100+1 otázek by Eliška Sovová.pdf`);
   check('book descriptor is null (uses PDF)', bout.descriptor === null);
 
-  // Movie reverse: has_part includes the recording.
-  const movie = { id: 'dirty-dancing_e9cg', entityType: 'movie', name: 'Dirty Dancing', language: 'en', tags: ['entertainment', 'soundtrack'] };
-  const mout = entityToDc(movie, [xrMovie], { now: NOW });
-  eq('movie dc_has_part has recording URI', mout.sidecar.Attributes.dc_has_part, [recUri]);
+  // Movie reverse: has_part includes the recording; movie_cast → dc_creator(director)+dc_contributor(actor).
+  const movie = { id: 'the-graduate_nsvc', entityType: 'movie', name: 'The Graduate', language: 'en', tags: ['entertainment'] };
+  const castDirector = { entityType: 'movie_cast', movieId: movie.id, movieName: movie.name, personId: 'mike-nichols_oa5z', personName: 'Mike Nichols', role: 'director' };
+  const castActor = { entityType: 'movie_cast', movieId: movie.id, movieName: movie.name, personId: 'dustin-hoffman_x1', personName: 'Dustin Hoffman', role: 'actor' };
+  const mout = entityToDc(movie, [xrMovie, castDirector, castActor], { now: NOW });
+  // xrMovie references a different recording/movie pair, so dc_has_part stays null here; assert cast instead.
   eq('movie dc_type MovingImage', mout.sidecar.Attributes.dc_type, 'MovingImage');
+  eq('movie_cast director → dc_creator', mout.sidecar.Attributes.dc_creator, ['Mike Nichols']);
+  eq('movie_cast actor → dc_contributor', mout.sidecar.Attributes.dc_contributor, ['Dustin Hoffman']);
+  check('movie _cast_uris present', Array.isArray(mout.sidecar.Attributes._cast_uris) && mout.sidecar.Attributes._cast_uris.length === 2);
+
+  // Person filmography: movie_cast reverse → dc_relation has movie URI.
+  const director = { id: 'mike-nichols_oa5z', entityType: 'person', name: 'Mike Nichols', language: 'en', roles: ['director'], tags: ['director'] };
+  const dout = entityToDc(director, [castDirector], { now: NOW });
+  eq('person filmography dc_relation', dout.sidecar.Attributes.dc_relation, [defaultUriFor(movie.id, 'movie', movie.name)]);
 
   console.log(fail === 0 ? '\nALL PASS' : `\n${fail} FAILURES`);
   process.exit(fail === 0 ? 0 : 1);

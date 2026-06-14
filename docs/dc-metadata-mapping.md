@@ -106,7 +106,14 @@ Relationship items (`recording_performer` 61, `recording_movie` 44, `sheet_music
 | `recording_performer` (recording → performer) | recording.`dc_creator` += performerName; recording.`_performer_uris` += performer URI | performer.`dc_relation` += recording URI |
 | `recording_movie` (recording → movie, "soundtrack") | recording.`dc_is_part_of` = movie URI | movie.`dc_has_part` += recording URI |
 | `sheet_music_performer` (sheet → performer) | sheet.`dc_creator` += performerName; sheet.`_performer_uris` += performer URI | performer.`dc_relation` += sheet URI |
+| `movie_cast` (movie → person, role actor/director) | director → movie.`dc_creator` += personName; actor → movie.`dc_contributor` += personName; movie.`_cast_uris` += person URI | person.`dc_relation` += movie URI (filmography) |
 | book.`author` (derived, not an item) | book.`dc_creator` += author; `dc_rights_holder` = author | author person.`dc_relation` += book URI (when a matching person exists) |
+
+> **Correction (15.7 audit):** `movie_cast` (327 items) is a **4th relationship type** that the
+> initial study missed — it has no `name` attribute so it is absent from the sparse `byType` GSI
+> and only appears in a full table scan. It is now mapped above. `dc_creator`/`dc_contributor`
+> are recognized DC terms but are **not** in DH's default 28-field template (DH adds `dc_creator`
+> only via its Phase 28.5 editor); the resolver appends them after the DH fields.
 
 `dc_creator` carries **names** (DH convention: array of strings). Internal graph edges
 (`dc_relation`, `dc_has_part`, `dc_is_part_of`) carry **`dc_source_uri` URIs** (DH convention).
@@ -151,6 +158,22 @@ exactly as DH allows.
 refines `dc_subject`; approve/regenerate/edit mutations mirror DH. Not implemented in Phase 15.
 
 ---
+
+## 5b. Data-quality findings from the 15.7 dry-run audit (for Phase 16)
+
+Real-data audit over 1,830 items (1,194 core, 631 relationship, 5 excluded). Would-be output:
+1,193 sidecars + 775 descriptors. **0 content-key collisions, 0 (PK,SK) collisions.** dc_type
+counts: Text 418, Dataset 509, Sound 172, MovingImage 94. Phase 16 must handle:
+
+- **1 book without `s3Key`** (`syndikat_synd`) — cannot form a `documents/` content key. Fix the
+  S3 key or drop the row before migration.
+- **6 items with leftover legacy link fields** (3 `youtubeUrl`, 3 `wikiUrl`) outside
+  `externalLinks` — migration must fold these into `_external_links`.
+- **5 `tag` entityType items** holding stray movie/recording names (e.g. "Pride and Prejudice",
+  "Pure Shores") — legacy junk, **excluded** from migration; consider deleting.
+- **34 SK values shared across distinct PKs** (e.g. `#en#diamond-sutra`) — benign (DH dedupes by
+  `(PK,SK)`, and PKs differ since `PK = derivedArtifactId(id, entityType)`), recorded for awareness.
+- **`updatedBy`** (1,094 items) intentionally dropped (provenance, not a DC concept).
 
 ## 6. Open items resolved
 - **Agents have no DCMI type** → use `Dataset` + `_entity_kind` (above).
