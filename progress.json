@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-06-14",
-  "last_session_summary": "Session 2026-06-14: Added AND COMPLETED Phase 15 (DC Metadata Model — Design & Foundation, 7 tasks) autonomously, verifying each against the reference solution + real data. Delivered: docs/dc-metadata-mapping.md (mapping spec), scripts/lib/{dc-paths,build-dc-sidecar,entity-to-dc}.mjs (faithful DH port + resolver, all self-tested), IMPLEMENTATION_PLAN.md §10, scripts/audit-dc-migration.mjs (read-only dry-run: 1193 sidecars/775 descriptors, 0 collisions), and created the hyl-media-metadata-repository table via the reused DH Python CLI. Audit discovered movie_cast (327 items, hidden from sparse GSI) — added to mapping. Flagged for Phase 16: 1 book w/o s3Key, 6 leftover legacy links, 5 junk tag items. All phases 0-15 complete (97 tasks). Next: Phase 16 migration (add via /add-work).",
+  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Metadata Foundation, 7 tasks) AND Phase 16 (DC Migration, 6 tasks) autonomously, verifying each against the reference solution + real data. Phase 16: cleaned 3 data issues (file-less book→descriptor fallback, removed 6 redundant legacy link attrs, deleted 5 junk tag items); emitted 1194 sidecars + 776 descriptors + 418 PDF copies to S3 in the DH layout; synced via the reused DH Python CLI into hyl-media-metadata-repository (1194 items, 0 failures); verified ALL PASS (counts match, conformant shape, 7 relationship spot-checks across all dc_types). Migration is additive + reversible (old KnowledgeGraphItem table + library//sheet-music/ prefixes intact for Phase 17 cutover). Also fixed pre-existing GlobalSearch navigate build error. All phases 0-16 complete (103 tasks). Next: Phase 17 (frontend on DC store) + Phase 18 (full lifecycle) via /add-work.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1165,7 +1165,8 @@
     },
     "phase_16_dc_migration": {
       "name": "Dublin Core Migration — emit to S3 + sync to metadata-repository",
-      "status": "pending",
+      "status": "complete",
+      "completed_at": "2026-06-14",
       "description": "Execute the migration designed in Phase 15: clean up the 3 data issues the audit found, emit JSON descriptors + conformant sidecars to S3 in the DC layout, copy book/sheet PDFs into documents/<uuid>/, run the reused DH CLI to sync sidecars into hyl-media-metadata-repository, and verify. Additive + reversible — the existing KnowledgeGraphItem table and library/ + sheet-music/ S3 prefixes are left intact until the Phase 17 frontend cutover.",
       "added_reason": "User approved Phase 16 after Phase 15 dry-run audit confirmed the plan and flagged 3 data-quality issues.",
       "tasks": [
@@ -1224,9 +1225,11 @@
         {
           "id": "16.6",
           "name": "Verify migrated data + write migration report",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "10 spot-checks (table item vs source: dc_title, dc_type, relationships, conformant shape); per-dc_type counts match audit; docs/migration-reports/dc-migration.md written",
+          "verified": "scripts/verify-dc-migration.mjs → VERIFY: ALL PASS. Table=1194; dc_type Text 419/Dataset 509/Sound 172/MovingImage 94 (match audit); all 28 DH Attributes keys present; PK==id; sort_key==SK; SK==#lang#slug. 7 relationship spot-checks across all dc_types pass (movie director→dc_creator, recording soundtrack→dc_is_part_of, movie→dc_has_part, book PDF→documents+dc_creator, file-less book→datasets+_file_missing, sheet_music→documents+artist, person→Dataset+_roles). NOTE: DDB maps are unordered + CLI round-trips through boto3, so key ORDER is not preserved in the table — order fidelity is verified at the sidecar level (15.4/15.7), table check asserts all 28 keys present. Report: docs/migration-reports/dc-migration.md.",
           "depends_on": ["16.5"],
           "notes": "Spot-check across all dc_types incl. a movie with cast, a recording with performer+soundtrack, a book. Confirm PK==id, sort_key==SK, first 28 Attributes == DH order."
         }
@@ -1234,7 +1237,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.6",
+  "current_task": null,
   "git_repos": {
     "orchestration": {
       "local": ".",
