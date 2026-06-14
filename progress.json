@@ -1091,9 +1091,11 @@
         {
           "id": "15.1",
           "name": "DC field-mapping spec — every entity + relationship to conformant-sidecar fields & DCMI dc_type",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "docs/dc-metadata-mapping.md covers all 8 entity types + 3 relationship types, each field mapped to a conformant-sidecar field",
+          "verified": "All 7 real entity types (movie/recording/person/band/collaboration/book/sheet_music) + 3 relationship types mapped. Grounded in real DDB samples (94 movies, 442 persons, 307 books, 172 recordings, 112 sheet music, 61 recording_performer, 44 recording_movie). Resolved: agents→dc_type Dataset+_entity_kind; external links→_external_links; role/curation tags excluded from dc_subject but kept in _tags.",
           "notes": "Conformant sidecar = the metadata.ts shape (NOT the legacy table-doc shape): top-level id/SK/DocumentId/Title/ContentType + Attributes with _authors,_category(string folder),_created_at,_document_title,_explicit_fields,_file_type,s3_bucket,s3_key,dc_source_uri,sort_key,language_code,additional_languages,size_estimate,daytime_estimate,dc_title,dc_type,dc_abstract,dc_subject,dc_rights_holder,dc_license,dc_accrual_method, + 6 dc relationship fields. dc_type per DCMI vocab: movie=MovingImage, recording=Sound, book/sheet_music=Text, person/band/collaboration=agents (resolve descriptor dc_type in spec — likely Text/Dataset for the JSON descriptor; document the work-vs-artifact distinction). Reference: digital-horizon-playbook/.../recordings/_shared/metadata.ts and docs/metadata-repository-producers.md."
         },
         {

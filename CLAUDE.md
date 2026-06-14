@@ -176,6 +176,18 @@ Use IMPLEMENTATION_PLAN.md, progress.json, tasks/ — not ad-hoc files.
 
 ### 6. Infrastructure via Amplify
 All infrastructure managed by Amplify Gen 2 (`amplify/` definitions). No direct AWS CLI resource creation.
+**Exception (Phase 15+):** the `hyl-media-metadata-repository` table is created by the reused
+Digital Horizon Python CLI (`tools/metadata-repository`), NOT Amplify, to stay byte-identical to
+the reference system. Documented in IMPLEMENTATION_PLAN.md § Dublin Core Metadata Model.
+
+### 7. Autonomous Execution & Independent Verification
+Work through tracked tasks **without stopping** between them — complete a phase end-to-end,
+committing after each task. **Verify every task independently** before marking it complete:
+run the script, query DynamoDB via the MCP tool, run `npm run build`, and **byte-compare
+against the reference solution** (`/home/ubuntu/digital-horizon-playbook`) where applicable.
+For frontend work, inspect the running app yourself (Playwright installed; deployed app is
+Cognito-gated — log in with the test account above). Do NOT ask the user to confirm work that
+you can verify yourself. Only stop for genuine branch-point decisions that are the user's to make.
 
 ---
 
