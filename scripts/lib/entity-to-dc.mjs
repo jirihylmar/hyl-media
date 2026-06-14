@@ -50,18 +50,33 @@ function descriptorFilename(name, fallbackId) {
   return `${sortKeySlug(name) || sortKeySlug(fallbackId) || 'item'}.json`;
 }
 
-/** Content key for an entity, given its raw item. Throws for a file-backed entity missing its s3Key. */
-export function entityContentKey(entity) {
-  const cat = categoryForEntityType(entity.entityType);
-  const uuid = entityUuid(entity.id, entity.entityType);
-  let filename;
-  if (cat === 'documents') {
-    filename = basename(entity.s3Key);
-    if (!filename) throw new Error(`${entity.entityType} '${entity.id}' has no s3Key (cannot form document content key)`);
-  } else {
-    filename = descriptorFilename(entity.name, entity.id);
+/**
+ * Resolve the artifact shape for an entity. A file-backed entity (book/sheet_music) WITH an s3Key
+ * → its PDF in documents/. A file-LESS book/sheet_music (e.g. a catalog entry with no upload) →
+ * a JSON descriptor in datasets/ (dc_type preserved, e.g. Text), so nothing is skipped. All other
+ * entities → JSON descriptor in datasets/.
+ */
+export function resolveArtifact(entity) {
+  const meta = ENTITY_DC[entity.entityType];
+  if (!meta) throw new Error(`no DC mapping for entityType '${entity.entityType}'`);
+  const nativeCat = categoryForEntityType(entity.entityType);
+  const pdf = nativeCat === 'documents' ? basename(entity.s3Key) : '';
+  if (nativeCat === 'documents' && pdf) {
+    return { category: 'documents', filename: pdf, fileType: meta.fileType, contentType: meta.contentType, dcType: meta.dcType, isDescriptor: false, fileMissing: false };
   }
-  return contentKey(cat, uuid, filename);
+  return {
+    category: 'datasets',
+    filename: descriptorFilename(entity.name, entity.id),
+    fileType: 'json', contentType: 'DATASET', dcType: meta.dcType,
+    isDescriptor: true,
+    fileMissing: nativeCat === 'documents', // a book/sheet_music with no PDF
+  };
+}
+
+/** Content key for an entity, given its raw item. */
+export function entityContentKey(entity) {
+  const a = resolveArtifact(entity);
+  return contentKey(a.category, entityUuid(entity.id, entity.entityType), a.filename);
 }
 
 /** Default URI resolver — valid for dataset (non-file) targets; the audit/migration supplies a
@@ -93,12 +108,10 @@ function splitTags(tags) {
 export function entityToDc(entity, crossRefs = [], opts = {}) {
   const now = opts.now || entity.updatedAt || entity.createdAt || '1970-01-01T00:00:00.000Z';
   const uriFor = opts.uriFor || defaultUriFor;
-  const meta = ENTITY_DC[entity.entityType];
-  if (!meta) throw new Error(`no DC mapping for entityType '${entity.entityType}'`);
-
-  const cat = categoryForEntityType(entity.entityType);
+  const art = resolveArtifact(entity);
+  const cat = art.category;
   const uuid = entityUuid(entity.id, entity.entityType);
-  const filename = cat === 'documents' ? basename(entity.s3Key) : descriptorFilename(entity.name);
+  const filename = art.filename;
   const cKey = contentKey(cat, uuid, filename);
   const sKey = sidecarKey(cat, uuid, filename);
 
@@ -164,11 +177,11 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   const sidecar = buildDublinCoreSidecar(
     {
       resourceId: uuid,
-      contentType: meta.contentType,
-      dcType: meta.dcType,
+      contentType: art.contentType,
+      dcType: art.dcType,
       category: cat,
       s3Key: cKey,
-      fileType: meta.fileType,
+      fileType: art.fileType,
     },
     { title: entity.name || entity.id, abstract: '', keywords: subject },
     {
@@ -198,9 +211,12 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   if (entity.givenName) sidecar.Attributes._given_name = entity.givenName;
   if (entity.familyName) sidecar.Attributes._family_name = entity.familyName;
   if (Array.isArray(entity.roles) && entity.roles.length) sidecar.Attributes._roles = entity.roles;
+  // Flag a file-backed entity that had no actual PDF (emitted as a descriptor instead).
+  if (art.fileMissing) sidecar.Attributes._file_missing = true;
 
-  // Descriptor content for non-file entities.
-  const descriptor = cat === 'documents' ? null : {
+  // Descriptor content — emitted whenever the artifact is a JSON descriptor (datasets/ or a
+  // file-less book/sheet_music); null when the content object is a real PDF.
+  const descriptor = art.isDescriptor ? {
     id: uuid,
     legacy_id: entity.id,
     entity_kind: entity.entityType,
@@ -218,7 +234,7 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
     is_part_of: dcIsPartOf,
     has_part: dcHasPart,
     relation: dcRelation,
-  };
+  } : null;
 
   return { contentKey: cKey, sidecarKey: sKey, descriptor, sidecar };
 }
@@ -296,6 +312,16 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   eq('movie_cast director → dc_creator', mout.sidecar.Attributes.dc_creator, ['Mike Nichols']);
   eq('movie_cast actor → dc_contributor', mout.sidecar.Attributes.dc_contributor, ['Dustin Hoffman']);
   check('movie _cast_uris present', Array.isArray(mout.sidecar.Attributes._cast_uris) && mout.sidecar.Attributes._cast_uris.length === 2);
+
+  // File-less book (no s3Key) → JSON descriptor in datasets/, dc_type stays Text, _file_missing.
+  const filelessBook = { id: 'syndikat_synd', entityType: 'book', name: 'Syndikát', author: 'Leoš Kýša', language: 'cs', tags: ['prose', 'entertainment'] };
+  const fb = entityToDc(filelessBook, [], { now: NOW });
+  eq('fileless book dc_type still Text', fb.sidecar.Attributes.dc_type, 'Text');
+  eq('fileless book _category datasets', fb.sidecar.Attributes._category, 'datasets');
+  eq('fileless book _file_type json', fb.sidecar.Attributes._file_type, 'json');
+  eq('fileless book _file_missing flag', fb.sidecar.Attributes._file_missing, true);
+  eq('fileless book dc_creator', fb.sidecar.Attributes.dc_creator, ['Leoš Kýša']);
+  check('fileless book emits descriptor', fb.descriptor !== null && fb.contentKey.startsWith('datasets/') && fb.contentKey.endsWith('.json'), fb.contentKey);
 
   // Person filmography: movie_cast reverse → dc_relation has movie URI.
   const director = { id: 'mike-nichols_oa5z', entityType: 'person', name: 'Mike Nichols', language: 'en', roles: ['director'], tags: ['director'] };

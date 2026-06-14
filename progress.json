@@ -1172,9 +1172,11 @@
         {
           "id": "16.1",
           "name": "Pre-flight data cleanup — fix missing s3Key, fold leftover legacy links, delete junk tag items",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "Re-run npm run audit:dc → 0 skipped entities, 0 leftover youtubeUrl/wikiUrl outside externalLinks, 0 'tag' entityType items",
+          "verified": "audit:dc after cleanup: total=1825 (−5 tags), excluded=0, skipped=0, unmapped fields = {updatedBy} only (youtubeUrl/wikiUrl gone). File-less book syndikat_synd handled by new resolveArtifact() descriptor fallback (Text descriptor; Text 418→419). scripts/dc-preflight-cleanup.mjs: removed 6 redundant legacy link attrs from 3 items (Blondie/Ivan Kral/Barbora Poláková — URLs already in externalLinks), deleted 5 junk tag items. entity-to-dc lib self-tests ALL PASS incl. new file-less-book case.",
           "notes": "scripts/dc-preflight-cleanup.mjs with --dry-run. MUTATES production KnowledgeGraphItem table: fix book 'syndikat_synd' s3Key (or set exclude), fold 6 items' youtubeUrl/wikiUrl into externalLinks JSON, delete 5 junk 'tag' items (Pride and Prejudice, Pure Shores, etc.). Dry-run first, then apply."
         },
         {
@@ -1224,7 +1226,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.1",
+  "current_task": "16.2",
   "git_repos": {
     "orchestration": {
       "local": ".",
