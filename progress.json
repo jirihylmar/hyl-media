@@ -1129,9 +1129,11 @@
         {
           "id": "15.5",
           "name": "Entity-to-artifact + relationship-to-DC-links resolver",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "scripts/lib/entity-to-dc.mjs: a recording with performer + movie cross-refs yields a JSON descriptor + correct dc_creator/dc_isPartOf/dc_relation in the sidecar",
+          "verified": "node scripts/lib/entity-to-dc.mjs --selftest → ALL PASS (29 checks): recording→dc_creator[performer]+dc_is_part_of[movie URI]+_performer_uris; reverse person→dc_relation[recording URI]; book→dc_creator+dc_rights_holder+documents/<uuid>/<pdf basename>; movie→dc_has_part[recording URI]; dc_subject excludes role/curation tags, _tags lossless. Surfaced DH-fidelity detail: dc_creator is NOT in DH's default template (DH adds it only via Phase 28.5 editor) — resolver adds it explicitly.",
           "notes": "Maps a hyl-media KnowledgeGraphItem (+ its recording_performer/recording_movie/sheet_music_performer cross-refs) into (a) the descriptor content object and (b) sidecar dc_* relationship fields. Uses 15.4 builder + 15.2 paths. depends_on 15.2, 15.4."
         },
         {
