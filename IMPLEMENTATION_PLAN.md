@@ -400,6 +400,9 @@ Types: feat, fix, docs, refactor, test, chore
 | 2026-03-22 | Single DynamoDB table for all entity types | Input design uses single-table with GSIs; proven pattern for knowledge graphs |
 | 2026-03-22 | Extend knowledge_graph table for books/sheet music | Same table, same access patterns, same frontend; avoids managing separate tables |
 | 2026-03-22 | Single S3 bucket with prefix partitioning | Matches requirement from idea.md; simpler than multiple buckets |
+| 2026-06-14 | Adopt Digital Horizon Dublin Core metadata model (Phase 15+) | Make hyl-media metadata byte-compatible with the DH metadata-repository so the same Elasticsearch/Kendra consumers can index the catalog. Format, naming, and S3 layout must match — see §10 |
+| 2026-06-14 | `hyl-media-metadata-repository` table created by the DH Python CLI, NOT Amplify | Deliberate exception to Critical Rule #6: the DH table schema (PK/SK + `resource-account-index`, no GSI sort keys) is owned by `tools/metadata-repository create-table`; an Amplify/CDK-defined table would diverge from the schema export and break the shared tooling |
+| 2026-06-14 | All entity types become first-class S3 artifacts | DH's model is artifact-centric (every row describes an S3 object). Non-file entities (movie/recording/person/band/collaboration) are materialized as JSON descriptors so they carry a real `s3_key` + sidecar |
 
 ---
 
@@ -418,3 +421,59 @@ Types: feat, fix, docs, refactor, test, chore
 ### External References
 - [Amplify Gen 2 Documentation](https://docs.amplify.aws/gen2/)
 - [DynamoDB Single-Table Design](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-modeling-nosql-B.html)
+- [DCMI Metadata Terms (Dublin Core)](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/)
+
+---
+
+## 10. Dublin Core Metadata Model (Phase 15+)
+
+A comprehensive refactor (Phases 15–18) makes hyl-media's metadata **byte-compatible** with the
+Digital Horizon (DH) metadata-repository at `/home/ubuntu/digital-horizon-playbook`. The full
+field-level mapping is in **`docs/dc-metadata-mapping.md`** (the authoritative spec); this section
+summarizes the architecture.
+
+### 10.1 Target store
+A new DynamoDB table **`hyl-media-metadata-repository`**, schema-identical to DH:
+- **PK** = `resourceId` (a deterministic UUIDv5-shaped id, `derivedArtifactId(legacyId, entityType)`)
+- **SK** = `#{language_code}#{normalized_title}`
+- **`Attributes`** map = DH's 28-field conformant-sidecar template (`dc_*` + `_*` + `s3_*`), plus
+  hyl-media `_`-prefixed extensions (`_entity_kind`, `_legacy_id`, `_tags`, `_external_links`, …)
+  for lossless round-trip.
+- GSI `resource-account-index` on `resource_account` (registry key `hylm`).
+
+**Created by the DH Python CLI** (`tools/metadata-repository create-table`), not Amplify — see the
+Decision Log exception to Critical Rule #6.
+
+### 10.2 Conformant format (NOT pure DC)
+The contract is DH's **conformant sidecar** (`buildDublinCoreSidecar` in
+`amplify/functions/recordings/_shared/metadata.ts`) — designed for Elasticsearch/Kendra, so field
+names, prefixes, ordering, and S3 organization must match exactly, not just DC semantics. The
+faithful port lives in `scripts/lib/build-dc-sidecar.mjs`. The legacy auto-generated
+`docs/metadata-repository.md` table-doc shape is **superseded** and not the target.
+
+### 10.3 S3 organization (must match DH)
+```
+<bucket>/<category>/<uuid>/<filename>                        ← content artifact
+<bucket>/metadata/<category>/<uuid>/<filename>.metadata.json ← Dublin Core sidecar
+```
+`<category>` ∈ {`audio`, `datasets`, `documents`}. hyl-media: books/sheet_music PDFs → `documents`;
+JSON descriptors for non-file entities → `datasets`. Implemented in `scripts/lib/dc-paths.mjs`.
+
+### 10.4 Entity & relationship mapping
+- `dc_type` (DCMI): movie→`MovingImage`, recording→`Sound`, book/sheet_music→`Text`,
+  person/band/collaboration→`Dataset` (agents; true kind in `_entity_kind`).
+- Relationships collapse into DC terms — `recording_performer`/`sheet_music_performer`/book author
+  → `dc_creator`; `movie_cast` director→`dc_creator`, actor→`dc_contributor`; `recording_movie`
+  → `dc_is_part_of`/`dc_has_part`; reverse edges → `dc_relation`. The 3–4 cross-ref item types
+  retire after migration → one source of truth. Implemented in `scripts/lib/entity-to-dc.mjs`.
+
+### 10.5 Sync pipeline
+Producers emit S3 sidecars; the reused DH Python CLI (`update-metadata`) scans the registered
+bucket and upserts to the table (`overwrite_by_pkeys=['PK','SK']`). hyl-media's bucket is added to
+the CLI's bucket registry (`resource_account=hylm`).
+
+### 10.6 Roadmap
+- **Phase 15** — design + foundation (mapping spec, vocab, builder/resolver, table, dry-run audit). ✅
+- **Phase 16** — migration: emit descriptors + sidecars to S3, run CLI sync, populate table.
+- **Phase 17** — frontend reads/writes the metadata-repository.
+- **Phase 18** — full lifecycle: `_explicit_fields` pinning, Claude enrichment, approve/regenerate/edit.

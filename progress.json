@@ -1111,9 +1111,11 @@
         {
           "id": "15.3",
           "name": "Revise IMPLEMENTATION_PLAN.md — add Dublin Core Metadata Model section",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "small",
           "verify": "IMPLEMENTATION_PLAN.md has a Dublin Core Metadata Model section documenting the table, conformant-sidecar format, S3 layout, CLI sync pipeline, and the Amplify-deviation note",
+          "verified": "Added §10 Dublin Core Metadata Model (target store, conformant format, S3 layout, entity/relationship mapping, CLI sync, roadmap) + 3 Decision Log rows incl. the explicit Amplify/Rule-6 exception + DCMI reference link.",
           "notes": "Explicitly document the deviation from Critical Rule #6: the metadata-repository table is created by the Python CLI (tools/metadata-repository create-table), NOT Amplify, to stay identical to Digital Horizon. depends_on 15.1, 15.2."
         },
         {
