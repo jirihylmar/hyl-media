@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-06-14",
-  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Metadata Foundation, 7 tasks) AND Phase 16 (DC Migration, 6 tasks) autonomously, verifying each against the reference solution + real data. Phase 16: cleaned 3 data issues (file-less book→descriptor fallback, removed 6 redundant legacy link attrs, deleted 5 junk tag items); emitted 1194 sidecars + 776 descriptors + 418 PDF copies to S3 in the DH layout; synced via the reused DH Python CLI into hyl-media-metadata-repository (1194 items, 0 failures); verified ALL PASS (counts match, conformant shape, 7 relationship spot-checks across all dc_types). Migration is additive + reversible (old KnowledgeGraphItem table + library//sheet-music/ prefixes intact for Phase 17 cutover). Also fixed pre-existing GlobalSearch navigate build error. All phases 0-16 complete (103 tasks). Next: Phase 17 (frontend on DC store) + Phase 18 (full lifecycle) via /add-work.",
+  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Foundation, 7) + Phase 16 (DC Migration, 6) autonomously with independent verification; fixed GlobalSearch build error; stored Anthropic API key in Secrets Manager (hyl-media/anthropic-api-key); DEFINED Phase 17 (frontend DC cutover, 6) + Phase 18 (DC lifecycle/enrichment, 6). Pushed (commit 640fb09) → Amplify deploy. All phases 0-16 complete (103 tasks); 17-18 defined (12 pending). Checkpointed before 17.1 (sizable AppSync custom-resolver deploy) due to session length. Next: Phase 17.1 — custom AppSync resolvers over hyl-media-metadata-repository.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -956,7 +956,9 @@
           "completed_at": "2026-04-03",
           "size": "small",
           "verify": "Audit report shows matched vs missing recordings, bands, persons",
-          "depends_on": ["13.1"],
+          "depends_on": [
+            "13.1"
+          ],
           "notes": "94 recordings matched, 18 to create. 13 bands and 21 persons to create. 61 cross-refs to create. 20 tags to update."
         },
         {
@@ -966,7 +968,9 @@
           "completed_at": "2026-04-03",
           "size": "medium",
           "verify": "Script runs without errors, creates entities with correct relations",
-          "depends_on": ["13.2"],
+          "depends_on": [
+            "13.2"
+          ],
           "notes": "Combined audit + enrichment in scripts/enrich-recordings.mjs. Supports --audit-only and --dry-run modes."
         },
         {
@@ -976,7 +980,9 @@
           "completed_at": "2026-04-03",
           "size": "small",
           "verify": "Recordings visible in Dossier with linked performers, spot-check 10 entries",
-          "depends_on": ["13.3"],
+          "depends_on": [
+            "13.3"
+          ],
           "notes": "Created: 13 bands, 21 persons, 18 recordings, 61 cross-refs. Updated 20 tags + patched 18 remaining untagged (9 recordings, 9 persons). Final: 100% tag coverage across all 1,148 entities."
         },
         {
@@ -1031,7 +1037,11 @@
           "status": "complete",
           "size": "small",
           "verify": "New entities + recording_movie cross-refs visible in Dossier",
-          "depends_on": ["14.1", "14.2", "14.3"],
+          "depends_on": [
+            "14.1",
+            "14.2",
+            "14.3"
+          ],
           "completed_at": "2026-04-12T16:19:00Z",
           "notes": "Created 27 recordings, 44 recording_movie links, tagged 33 movies with 'soundtrack'. Total recordings now 172, total links 44."
         },
@@ -1041,7 +1051,9 @@
           "status": "complete",
           "size": "small",
           "verify": "Bidirectional links work end-to-end on deployed app",
-          "depends_on": ["14.4"],
+          "depends_on": [
+            "14.4"
+          ],
           "completed_at": "2026-04-12T16:20:00Z",
           "notes": "Verified: My Heart Will Go On exists with [pop, soundtrack, recommended] tags. Titanic has [entertainment, soundtrack] tags. Titanic → My Heart Will Go On link confirmed. recording_movie count = 44. Recording count = 172 (was 145)."
         }
@@ -1208,7 +1220,9 @@
           "size": "medium",
           "verify": "S3 object counts under datasets/, documents/, metadata/ match audit expectations (~775 descriptors, ~417 PDF copies, ~1193 sidecars)",
           "verified": "Full --apply emit (exit 0): 1194 sidecars, 776 descriptors, 418 PDF copies. S3 ls --summarize confirms: metadata/ 1194, datasets/ 776, documents/ 418 (1.57 GB). Total 2388 objects. Additive (library/ + sheet-music/ untouched).",
-          "depends_on": ["16.3"],
+          "depends_on": [
+            "16.3"
+          ],
           "notes": "Additive S3 writes only (new prefixes). Existing library/ + sheet-music/ untouched."
         },
         {
@@ -1219,7 +1233,9 @@
           "size": "small",
           "verify": "hyl-media-metadata-repository item count ~1193 (MCP describe-table / scan COUNT)",
           "verified": "CLI dry-run found 1194 metadata files, parsed all with 0 errors. Apply: 1194 successful writes, 0 failed. MCP scan COUNT = 1194. (Note: the CLI writes by default; --dry-run is the opt-out, there is no --apply flag.)",
-          "depends_on": ["16.4"],
+          "depends_on": [
+            "16.4"
+          ],
           "notes": "Reused DH Python CLI with config/metadata-repository.yaml. Idempotent (overwrite_by_pkeys=[PK,SK])."
         },
         {
@@ -1230,7 +1246,9 @@
           "size": "medium",
           "verify": "10 spot-checks (table item vs source: dc_title, dc_type, relationships, conformant shape); per-dc_type counts match audit; docs/migration-reports/dc-migration.md written",
           "verified": "scripts/verify-dc-migration.mjs → VERIFY: ALL PASS. Table=1194; dc_type Text 419/Dataset 509/Sound 172/MovingImage 94 (match audit); all 28 DH Attributes keys present; PK==id; sort_key==SK; SK==#lang#slug. 7 relationship spot-checks across all dc_types pass (movie director→dc_creator, recording soundtrack→dc_is_part_of, movie→dc_has_part, book PDF→documents+dc_creator, file-less book→datasets+_file_missing, sheet_music→documents+artist, person→Dataset+_roles). NOTE: DDB maps are unordered + CLI round-trips through boto3, so key ORDER is not preserved in the table — order fidelity is verified at the sidecar level (15.4/15.7), table check asserts all 28 keys present. Report: docs/migration-reports/dc-migration.md.",
-          "depends_on": ["16.5"],
+          "depends_on": [
+            "16.5"
+          ],
           "notes": "Spot-check across all dc_types incl. a movie with cast, a recording with performer+soundtrack, a book. Confirm PK==id, sort_key==SK, first 28 Attributes == DH order."
         }
       ],
@@ -1264,7 +1282,10 @@
           "status": "pending",
           "size": "medium",
           "verify": "Each entity type's list + detail page renders from the DC store; relationships navigable; tags + external links shown",
-          "depends_on": ["17.1", "17.2"]
+          "depends_on": [
+            "17.1",
+            "17.2"
+          ]
         },
         {
           "id": "17.4",
@@ -1272,7 +1293,9 @@
           "status": "pending",
           "size": "medium",
           "verify": "Dossier counts/tabs and GlobalSearch (names + tags) operate on DC records",
-          "depends_on": ["17.2"]
+          "depends_on": [
+            "17.2"
+          ]
         },
         {
           "id": "17.5",
@@ -1280,7 +1303,10 @@
           "status": "pending",
           "size": "medium",
           "verify": "Logged-in Playwright run: each entity type loads, a movie shows cast, a recording shows soundtrack link, a book opens its PDF (documents/<uuid>/), search returns results; screenshots captured",
-          "depends_on": ["17.3", "17.4"],
+          "depends_on": [
+            "17.3",
+            "17.4"
+          ],
           "notes": "Deployed app is Cognito-gated; log in with the test account in CLAUDE.md. PDFs now live at documents/<uuid>/ — confirm download works."
         },
         {
@@ -1289,7 +1315,9 @@
           "status": "pending",
           "size": "medium",
           "verify": "App no longer reads KnowledgeGraphItem; old table exported to S3 backup before any deletion; library//sheet-music/ retirement documented",
-          "depends_on": ["17.5"],
+          "depends_on": [
+            "17.5"
+          ],
           "notes": "Only after 17.5 parity passes. Back up (export) the old table first; keep it recoverable. Do NOT delete library//sheet-music/ until documents/ download is confirmed in prod."
         }
       ],
@@ -1323,7 +1351,10 @@
           "status": "pending",
           "size": "medium",
           "verify": "After run, count of records with non-empty dc_abstract increases to ~all; spot-check 10 abstracts are sensible + correct language",
-          "depends_on": ["18.1", "18.2"],
+          "depends_on": [
+            "18.1",
+            "18.2"
+          ],
           "notes": "Update the S3 sidecar's Attributes then re-run the CLI update-metadata (idempotent), OR direct UpdateItem SET on non-pinned fields. Bump _last_updated_at. Rate-limit + log token usage."
         },
         {
@@ -1332,7 +1363,9 @@
           "status": "pending",
           "size": "medium",
           "verify": "Editing a DC field in the app persists via an updateMetadata mutation and adds the field to _explicit_fields",
-          "depends_on": ["17.3"],
+          "depends_on": [
+            "17.3"
+          ],
           "notes": "Mirror DH UPDATABLE_DC_FIELDS allowlist + per-field shape validation. SET-only (never overwrite whole item)."
         },
         {
@@ -1341,7 +1374,10 @@
           "status": "pending",
           "size": "medium",
           "verify": "regenerate re-runs enrichment for non-pinned fields only; approve sets _approval_status=approved + bumps _last_updated_at",
-          "depends_on": ["18.3", "18.4"]
+          "depends_on": [
+            "18.3",
+            "18.4"
+          ]
         },
         {
           "id": "18.6",
@@ -1349,7 +1385,9 @@
           "status": "pending",
           "size": "medium",
           "verify": "Enrich→pin→regenerate (pinned preserved)→edit→approve all work on a sample; token usage + cost logged to a report",
-          "depends_on": ["18.5"]
+          "depends_on": [
+            "18.5"
+          ]
         }
       ],
       "artifacts": []
@@ -1361,7 +1399,7 @@
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
       "status": "pushed",
-      "notes": "Force-pushed after reverting old Phase 14/15. Must be git repo from start. Commit after each task."
+      "notes": "Pushed through Phase 16 + phase 17/18 definitions (commit 640fb09). Amplify deploy triggered. Note: nested DH platform repo has a local-only commit (table_name support in metadata-repo CLI config.py) — not pushed to that project remote."
     }
   },
   "context_hints": {
