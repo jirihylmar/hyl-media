@@ -1202,9 +1202,11 @@
         {
           "id": "16.4",
           "name": "Execute full emit to S3 — all entities (descriptors + sidecars + PDF copies)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "S3 object counts under datasets/, documents/, metadata/ match audit expectations (~775 descriptors, ~417 PDF copies, ~1193 sidecars)",
+          "verified": "Full --apply emit (exit 0): 1194 sidecars, 776 descriptors, 418 PDF copies. S3 ls --summarize confirms: metadata/ 1194, datasets/ 776, documents/ 418 (1.57 GB). Total 2388 objects. Additive (library/ + sheet-music/ untouched).",
           "depends_on": ["16.3"],
           "notes": "Additive S3 writes only (new prefixes). Existing library/ + sheet-music/ untouched."
         },
@@ -1230,7 +1232,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.4",
+  "current_task": "16.5",
   "git_repos": {
     "orchestration": {
       "local": ".",
