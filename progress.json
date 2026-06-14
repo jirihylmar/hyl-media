@@ -1235,6 +1235,124 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_17_frontend_dc_cutover": {
+      "name": "Frontend Cutover to the DC metadata-repository",
+      "status": "pending",
+      "description": "Point the React app at hyl-media-metadata-repository (the DC store) instead of the KnowledgeGraphItem table. Because the DC table is CLI-created (not an Amplify model), expose it via Amplify Gen 2 custom AppSync resolvers (list/get/search), then refactor the read path (list + detail + Dossier + global search) to render from DC records (dc_title, dc_subject/_tags, dc_creator/dc_contributor, relationships via dc_* URIs, external links via _external_links). Verify parity in the live app, then decommission the old data path. Additive until parity is confirmed.",
+      "added_reason": "User: define phases. Phase 17 is the frontend cutover from the roadmap.",
+      "tasks": [
+        {
+          "id": "17.1",
+          "name": "Expose metadata-repository via Amplify custom AppSync resolvers (list/get/search) + deploy",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Deployed AppSync API resolves getMetadata(pk), listMetadataByType(dc_type), searchMetadata(q) against hyl-media-metadata-repository (Cognito-authed)",
+          "notes": "Amplify Gen 2 a.query custom resolvers over an external DynamoDB data source (the CLI-created table). Mirrors DH's planned Path 3. Grant the resolver role dynamodb read on the table + resource-account-index GSI."
+        },
+        {
+          "id": "17.2",
+          "name": "Frontend DC data-access module + DC→view-model mappers",
+          "status": "pending",
+          "size": "medium",
+          "verify": "src/lib/dcClient.ts returns typed DC records; mapper converts a DC record to the existing detail/list view shape (name, tags, links, relationships)",
+          "notes": "tags = _tags (full) / dc_subject; links = _external_links; relationships resolved from dc_creator/dc_contributor/dc_relation/dc_has_part/dc_is_part_of/_performer_uris/_cast_uris (URIs → legacy_id via a lookup)."
+        },
+        {
+          "id": "17.3",
+          "name": "Read-path cutover — list + detail pages render from DC records",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Each entity type's list + detail page renders from the DC store; relationships navigable; tags + external links shown",
+          "depends_on": ["17.1", "17.2"]
+        },
+        {
+          "id": "17.4",
+          "name": "Dossier + global search on the DC store",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Dossier counts/tabs and GlobalSearch (names + tags) operate on DC records",
+          "depends_on": ["17.2"]
+        },
+        {
+          "id": "17.5",
+          "name": "Parity verification in the live app (Playwright)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Logged-in Playwright run: each entity type loads, a movie shows cast, a recording shows soundtrack link, a book opens its PDF (documents/<uuid>/), search returns results; screenshots captured",
+          "depends_on": ["17.3", "17.4"],
+          "notes": "Deployed app is Cognito-gated; log in with the test account in CLAUDE.md. PDFs now live at documents/<uuid>/ — confirm download works."
+        },
+        {
+          "id": "17.6",
+          "name": "Decommission old data path (gated on parity)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "App no longer reads KnowledgeGraphItem; old table exported to S3 backup before any deletion; library//sheet-music/ retirement documented",
+          "depends_on": ["17.5"],
+          "notes": "Only after 17.5 parity passes. Back up (export) the old table first; keep it recoverable. Do NOT delete library//sheet-music/ until documents/ download is confirmed in prod."
+        }
+      ],
+      "artifacts": []
+    },
+    "phase_18_dc_lifecycle_enrichment": {
+      "name": "Full DC Lifecycle — Claude Enrichment + _explicit_fields + Edit/Approve",
+      "status": "pending",
+      "description": "Port the Digital Horizon metadata lifecycle: Claude-driven enrichment fills dc_abstract and refines dc_subject; _explicit_fields pins operator-edited DC fields so enrichment never clobbers them; frontend editor + approve/regenerate mutations. The Anthropic API key is sourced at runtime from AWS Secrets Manager (hyl-media/anthropic-api-key) — never hardcoded or committed.",
+      "added_reason": "User: define phases; enrichment uses a separate Claude API key stored in AWS Secrets Manager.",
+      "tasks": [
+        {
+          "id": "18.1",
+          "name": "Enrichment engine — fetch API key from Secrets Manager, call Claude for dc_abstract + dc_subject",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/enrich-dc.mjs --dry-run on a sample record: reads key from secret hyl-media/anthropic-api-key (SDK GetSecretValue, never printed), returns proposed dc_abstract (300-500 chars, same language) + refined dc_subject; no writes",
+          "notes": "Key ARN arn:aws:secretsmanager:eu-central-1:299025166536:secret:hyl-media/anthropic-api-key-KBL4LX. Use the latest Claude model. Port DH dc-refresh.ts prompt (Markdown-tuned, content-language-aware). NEVER log/commit the key."
+        },
+        {
+          "id": "18.2",
+          "name": "_explicit_fields pinning — respect operator-pinned DC fields across enrichment",
+          "status": "pending",
+          "size": "small",
+          "verify": "A record with _explicit_fields=['dc_title'] keeps its dc_title through an enrich run; non-pinned fields refresh",
+          "notes": "Mirror DH normalizeExplicitFields + REFRESHABLE_DC_FIELDS skip logic."
+        },
+        {
+          "id": "18.3",
+          "name": "Batch-enrich records missing dc_abstract — write back to S3 sidecar + re-sync",
+          "status": "pending",
+          "size": "medium",
+          "verify": "After run, count of records with non-empty dc_abstract increases to ~all; spot-check 10 abstracts are sensible + correct language",
+          "depends_on": ["18.1", "18.2"],
+          "notes": "Update the S3 sidecar's Attributes then re-run the CLI update-metadata (idempotent), OR direct UpdateItem SET on non-pinned fields. Bump _last_updated_at. Rate-limit + log token usage."
+        },
+        {
+          "id": "18.4",
+          "name": "Frontend DC editor — edit dc_title/dc_abstract/dc_subject/dc_creator, pin on save",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Editing a DC field in the app persists via an updateMetadata mutation and adds the field to _explicit_fields",
+          "depends_on": ["17.3"],
+          "notes": "Mirror DH UPDATABLE_DC_FIELDS allowlist + per-field shape validation. SET-only (never overwrite whole item)."
+        },
+        {
+          "id": "18.5",
+          "name": "Regenerate + approve mutations (mirror DH lifecycle)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "regenerate re-runs enrichment for non-pinned fields only; approve sets _approval_status=approved + bumps _last_updated_at",
+          "depends_on": ["18.3", "18.4"]
+        },
+        {
+          "id": "18.6",
+          "name": "Verify lifecycle end-to-end + cost/usage report",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Enrich→pin→regenerate (pinned preserved)→edit→approve all work on a sample; token usage + cost logged to a report",
+          "depends_on": ["18.5"]
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": null,
