@@ -1213,9 +1213,11 @@
         {
           "id": "16.5",
           "name": "Run CLI sync — update-metadata --apply --resource hylm → populate table",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "small",
           "verify": "hyl-media-metadata-repository item count ~1193 (MCP describe-table / scan COUNT)",
+          "verified": "CLI dry-run found 1194 metadata files, parsed all with 0 errors. Apply: 1194 successful writes, 0 failed. MCP scan COUNT = 1194. (Note: the CLI writes by default; --dry-run is the opt-out, there is no --apply flag.)",
           "depends_on": ["16.4"],
           "notes": "Reused DH Python CLI with config/metadata-repository.yaml. Idempotent (overwrite_by_pkeys=[PK,SK])."
         },
@@ -1232,7 +1234,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.5",
+  "current_task": "16.6",
   "git_repos": {
     "orchestration": {
       "local": ".",
