@@ -1162,9 +1162,69 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_16_dc_migration": {
+      "name": "Dublin Core Migration — emit to S3 + sync to metadata-repository",
+      "status": "pending",
+      "description": "Execute the migration designed in Phase 15: clean up the 3 data issues the audit found, emit JSON descriptors + conformant sidecars to S3 in the DC layout, copy book/sheet PDFs into documents/<uuid>/, run the reused DH CLI to sync sidecars into hyl-media-metadata-repository, and verify. Additive + reversible — the existing KnowledgeGraphItem table and library/ + sheet-music/ S3 prefixes are left intact until the Phase 17 frontend cutover.",
+      "added_reason": "User approved Phase 16 after Phase 15 dry-run audit confirmed the plan and flagged 3 data-quality issues.",
+      "tasks": [
+        {
+          "id": "16.1",
+          "name": "Pre-flight data cleanup — fix missing s3Key, fold leftover legacy links, delete junk tag items",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Re-run npm run audit:dc → 0 skipped entities, 0 leftover youtubeUrl/wikiUrl outside externalLinks, 0 'tag' entityType items",
+          "notes": "scripts/dc-preflight-cleanup.mjs with --dry-run. MUTATES production KnowledgeGraphItem table: fix book 'syndikat_synd' s3Key (or set exclude), fold 6 items' youtubeUrl/wikiUrl into externalLinks JSON, delete 5 junk 'tag' items (Pride and Prejudice, Pure Shores, etc.). Dry-run first, then apply."
+        },
+        {
+          "id": "16.2",
+          "name": "Build scripts/migrate-to-dc.mjs — emit descriptors + sidecars to S3 + copy PDFs to documents/ layout",
+          "status": "pending",
+          "size": "medium",
+          "verify": "--dry-run lists planned S3 puts/copies with correct content + sidecar keys; no writes performed",
+          "notes": "Scans all entities, builds full id→uri map, runs entity-to-dc with uriFor. Writes JSON descriptors to datasets/<uuid>/<slug>.json + sidecars to metadata/<category>/<uuid>/<file>.metadata.json. Copies book/sheet_music PDFs (S3 server-side copy) from library//sheet-music/ to documents/<uuid>/<file>. Flags: --dry-run, --limit N, --resource hylm. depends_on 16.1."
+        },
+        {
+          "id": "16.3",
+          "name": "Validation run — --limit 5 to real S3, verify keys, then clean up",
+          "status": "pending",
+          "size": "small",
+          "verify": "5 sidecars + descriptors (+1 PDF copy) present at expected S3 keys (s3 ls), then removed",
+          "notes": "Smoke test the emitter against real S3 before the full run. depends_on 16.2."
+        },
+        {
+          "id": "16.4",
+          "name": "Execute full emit to S3 — all entities (descriptors + sidecars + PDF copies)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "S3 object counts under datasets/, documents/, metadata/ match audit expectations (~775 descriptors, ~417 PDF copies, ~1193 sidecars)",
+          "depends_on": ["16.3"],
+          "notes": "Additive S3 writes only (new prefixes). Existing library/ + sheet-music/ untouched."
+        },
+        {
+          "id": "16.5",
+          "name": "Run CLI sync — update-metadata --apply --resource hylm → populate table",
+          "status": "pending",
+          "size": "small",
+          "verify": "hyl-media-metadata-repository item count ~1193 (MCP describe-table / scan COUNT)",
+          "depends_on": ["16.4"],
+          "notes": "Reused DH Python CLI with config/metadata-repository.yaml. Idempotent (overwrite_by_pkeys=[PK,SK])."
+        },
+        {
+          "id": "16.6",
+          "name": "Verify migrated data + write migration report",
+          "status": "pending",
+          "size": "medium",
+          "verify": "10 spot-checks (table item vs source: dc_title, dc_type, relationships, conformant shape); per-dc_type counts match audit; docs/migration-reports/dc-migration.md written",
+          "depends_on": ["16.5"],
+          "notes": "Spot-check across all dc_types incl. a movie with cast, a recording with performer+soundtrack, a book. Confirm PK==id, sort_key==SK, first 28 Attributes == DH order."
+        }
+      ],
+      "artifacts": []
     }
   },
-  "current_task": null,
+  "current_task": "16.1",
   "git_repos": {
     "orchestration": {
       "local": ".",
