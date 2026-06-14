@@ -86,10 +86,10 @@ async function putJson(key, obj) {
       try {
         if (APPLY) await s3.send(new CopyObjectCommand({ Bucket: BUCKET, CopySource: copySource(srcKey), Key: out.contentKey }));
         pdfCopies++;
-        if (n <= 3 || !APPLY && pdfCopies <= 3) console.log(`    PDF copy: ${srcKey}  →  ${out.contentKey}`);
+        if (n <= 10) console.log(`    PDF copy: ${srcKey}  →  ${out.contentKey}`);
       } catch (err) { pdfErrors++; console.log(`    PDF COPY FAIL ${e.id}: ${err.name} ${err.message.slice(0, 80)}`); }
     }
-    if (n <= 3) console.log(`    sidecar: ${out.sidecarKey}`);
+    if (n <= 10) console.log(`    sidecar: ${out.sidecarKey}`);
   }
 
   console.log(`\nemitted (${APPLY ? 'written' : 'planned'}): ${sidecars} sidecars, ${descriptors} descriptors, ${pdfCopies} PDF copies${pdfErrors ? `, ${pdfErrors} PDF errors` : ''}`);

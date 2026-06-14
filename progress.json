@@ -1192,9 +1192,11 @@
         {
           "id": "16.3",
           "name": "Validation run — --limit 5 to real S3, verify keys, then clean up",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "small",
           "verify": "5 sidecars + descriptors (+1 PDF copy) present at expected S3 keys (s3 ls), then removed",
+          "verified": "--apply --limit 5 wrote 5 sidecars (3 datasets + 2 documents), 3 person descriptors (datasets/<uuid>/<slug>.json), 2 book PDF copies (documents/<uuid>/<file>.pdf). S3 list confirmed exact keys + layout. Then s3 rm --recursive cleaned metadata/, datasets/, documents/ (all 10 objects removed). No errors.",
           "notes": "Smoke test the emitter against real S3 before the full run. depends_on 16.2."
         },
         {
@@ -1228,7 +1230,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.3",
+  "current_task": "16.4",
   "git_repos": {
     "orchestration": {
       "local": ".",
