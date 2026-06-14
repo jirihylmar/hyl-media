@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-04-06",
-  "last_session_summary": "Session 2026-04-03: Phase 13 (recording enrichment, 4+1 tasks). Parsed 115 YouTube playlist entries, created 13 bands, 21 persons, 18 recordings, 61 cross-refs. Fix: propagated 95 YouTube links to band/person entities, corrected 100 genre tags with LLM knowledge. All phases 0-13 complete (78 tasks).",
+  "last_updated": "2026-06-14",
+  "last_session_summary": "Session 2026-06-14: Studied digital-horizon-playbook metadata model. Added Phase 15 (DC Metadata Model — Design & Foundation, 7 tasks) to make hyl-media byte-compatible with the Digital Horizon metadata-repository (conformant-sidecar format, identical S3 organization, own table synced via the reused Python CLI). Roadmap: Phase 16 migration, 17 frontend, 18 full lifecycle (to be added via /add-work). All phases 0-14a complete (90 tasks).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1081,6 +1081,71 @@
         ".claude/commands/enrich-connections.md",
         "src/App.css"
       ]
+    },
+    "phase_15_dc_metadata_foundation": {
+      "name": "Dublin Core Metadata Model — Design & Foundation",
+      "status": "pending",
+      "description": "Make hyl-media metadata byte-compatible with the Digital Horizon metadata-repository: conformant-sidecar format, identical S3 organization, own table synced via the reused Python CLI. This phase produces the design (mapping spec, vocab, S3 layout), the faithful builder/resolver modules, the table+bucket registration, and a read-only dry-run audit. Non-destructive — no entity data is written to S3/DDB yet (Phase 16 does migration). All entities (incl. movie/person/band/recording/collaboration) become first-class S3 artifacts; non-file entities get a JSON descriptor. Relationships collapse into dc_creator/dc_contributor/dc_isPartOf/dc_hasPart/dc_relation. Full lifecycle (_explicit_fields, enrichment, approve/regenerate/edit) deferred to Phase 18.",
+      "added_reason": "User: make our metadata compatible with /home/ubuntu/digital-horizon-playbook and consequently DC terms — a comprehensive refactor. Format, naming conventions, and S3 organization MUST match (the DH metadata is designed for Elasticsearch/Kendra, not just pure DC).",
+      "tasks": [
+        {
+          "id": "15.1",
+          "name": "DC field-mapping spec — every entity + relationship to conformant-sidecar fields & DCMI dc_type",
+          "status": "pending",
+          "size": "medium",
+          "verify": "docs/dc-metadata-mapping.md covers all 8 entity types + 3 relationship types, each field mapped to a conformant-sidecar field",
+          "notes": "Conformant sidecar = the metadata.ts shape (NOT the legacy table-doc shape): top-level id/SK/DocumentId/Title/ContentType + Attributes with _authors,_category(string folder),_created_at,_document_title,_explicit_fields,_file_type,s3_bucket,s3_key,dc_source_uri,sort_key,language_code,additional_languages,size_estimate,daytime_estimate,dc_title,dc_type,dc_abstract,dc_subject,dc_rights_holder,dc_license,dc_accrual_method, + 6 dc relationship fields. dc_type per DCMI vocab: movie=MovingImage, recording=Sound, book/sheet_music=Text, person/band/collaboration=agents (resolve descriptor dc_type in spec — likely Text/Dataset for the JSON descriptor; document the work-vs-artifact distinction). Reference: digital-horizon-playbook/.../recordings/_shared/metadata.ts and docs/metadata-repository-producers.md."
+        },
+        {
+          "id": "15.2",
+          "name": "S3 layout + category/bucket plan — content + metadata/ sidecar paths, category per entity, resource_account key",
+          "status": "pending",
+          "size": "small",
+          "verify": "scripts/lib/dc-paths.mjs emits correct content key (<category>/<uuid>/<file>) and sidecar key (metadata/<category>/<uuid>/<file>.metadata.json) for a sample book and a sample movie",
+          "notes": "category in {audio,datasets,documents}: books/sheet_music=documents, JSON descriptors=datasets. Define hyl-media resource bucket + its resource_account registry key (e.g. 'hylm'). Mirror DH bucket naming convention. depends_on 15.1."
+        },
+        {
+          "id": "15.3",
+          "name": "Revise IMPLEMENTATION_PLAN.md — add Dublin Core Metadata Model section",
+          "status": "pending",
+          "size": "small",
+          "verify": "IMPLEMENTATION_PLAN.md has a Dublin Core Metadata Model section documenting the table, conformant-sidecar format, S3 layout, CLI sync pipeline, and the Amplify-deviation note",
+          "notes": "Explicitly document the deviation from Critical Rule #6: the metadata-repository table is created by the Python CLI (tools/metadata-repository create-table), NOT Amplify, to stay identical to Digital Horizon. depends_on 15.1, 15.2."
+        },
+        {
+          "id": "15.4",
+          "name": "Faithful port of conformant-sidecar builder",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/lib/build-dc-sidecar.mjs output matches metadata.ts field set and #lang#slug SK byte-for-byte on sample inputs",
+          "notes": "Port buildDublinCoreSidecar + convertToAscii (Czech ASCII_FOLD_MAP) + sortKeySlug + dcSourceUriFor + derivedArtifactId + normalizeExplicitFields + sizeEstimate + contentTypeForExt from digital-horizon-playbook/.../_shared/metadata.ts. Keep pure-function (no AWS deps). depends_on 15.1."
+        },
+        {
+          "id": "15.5",
+          "name": "Entity-to-artifact + relationship-to-DC-links resolver",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/lib/entity-to-dc.mjs: a recording with performer + movie cross-refs yields a JSON descriptor + correct dc_creator/dc_isPartOf/dc_relation in the sidecar",
+          "notes": "Maps a hyl-media KnowledgeGraphItem (+ its recording_performer/recording_movie/sheet_music_performer cross-refs) into (a) the descriptor content object and (b) sidecar dc_* relationship fields. Uses 15.4 builder + 15.2 paths. depends_on 15.2, 15.4."
+        },
+        {
+          "id": "15.6",
+          "name": "Register hyl-media bucket in metadata-repository CLI + create empty hyl-media-metadata-repository table",
+          "status": "pending",
+          "size": "small",
+          "verify": "CLI describe-table shows hyl-media-metadata-repository with PK/SK + resource-account-index GSI; hyl-media bucket present in the CLI registry",
+          "notes": "Reuse tools/metadata-repository CLI (Path 2). Register hyl-media's resource bucket + resource_account key in config; run create-table for the own table (account 299, eu-central-1). Empty table — non-destructive. depends_on 15.2."
+        },
+        {
+          "id": "15.7",
+          "name": "Read-only dry-run migration audit",
+          "status": "pending",
+          "size": "medium",
+          "verify": "scripts/audit-dc-migration.mjs writes would-be sidecars to a local dir (no S3/DDB writes), reports counts per dc_type/category, flags SK collisions + unmapped fields; sample sidecars validate against the conformant shape",
+          "notes": "Reads real DynamoDB via mcp__aws-vsb-299__call_aws (read-only). Runs builder (15.4) + resolver (15.5) across all entities. Surfaces SK collisions (same #lang#slug) and any source fields not mapped to a DC field. depends_on 15.4, 15.5."
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": null,

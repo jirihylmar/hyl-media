@@ -4,6 +4,48 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-14 — Add Phase 15: DC Metadata Model (Design & Foundation)
+
+**Context**:
+- All phases 0-14a complete (90 tasks). User requested a comprehensive refactor to make
+  hyl-media's metadata compatible with the Digital Horizon platform
+  (`/home/ubuntu/digital-horizon-playbook`) and consequently Dublin Core terms.
+
+**Study performed** (read real source, not just summaries):
+- DH metadata builder: `digital-horizon-platform/amplify/functions/recordings/_shared/metadata.ts`
+- Schema/table doc: `docs/metadata-repository.md` (legacy auto-gen shape)
+- Producer guide: `docs/metadata-repository-producers.md` (the authoritative contract)
+- **Key finding 1**: Two formats exist. The **conformant sidecar** (metadata.ts shape) is the
+  authoritative one for new producers; the table-doc shape is older legacy Python-CLI output.
+- **Key finding 2**: The format is **artifact-centric** — every row describes a real S3 file
+  (`s3_key`, `_category`, `_file_type`, `dc_source_uri`). hyl-media's non-file entities must be
+  materialized as S3 artifacts to comply.
+- **Key finding 3**: Pipeline is **S3-sidecar-first** — producers emit
+  `metadata/<category>/<uuid>/<file>.metadata.json`; the Python CLI (`tools/metadata-repository`)
+  scans registered buckets and upserts to DDB. Same S3 organization requires emitting sidecars.
+
+**Decisions captured (via AskUserQuestion)**:
+1. Storage: **own** `hyl-media-metadata-repository` table, same schema (not shared with DH).
+2. Entity scope: **all** entity types; non-file entities → **JSON descriptor per entity**.
+3. Lifecycle: **full** (enrichment, `_explicit_fields`, approve/regenerate/edit) — Phase 18.
+4. Revise IMPLEMENTATION_PLAN.md: **yes** (task 15.3).
+5. Sync: **reuse the existing Python CLI** (register a hyl-media bucket).
+6. Format authority: **conformant sidecar** (metadata.ts), not the legacy table-doc shape.
+
+**Work added** — Phase 15 (7 tasks, all non-destructive design/foundation):
+- 15.1 DC field-mapping spec · 15.2 S3 layout/bucket plan · 15.3 revise IMPLEMENTATION_PLAN.md
+- 15.4 port conformant-sidecar builder · 15.5 entity→artifact + relationship→DC resolver
+- 15.6 register bucket + create empty table via CLI · 15.7 read-only dry-run audit
+
+**Heads-up**: 15.6 deviates from Critical Rule #6 (infra via Amplify) — the metadata table is
+CLI-created to stay identical to DH. Documented in 15.3.
+
+**Roadmap (added later via /add-work)**: Phase 16 migration · 17 frontend on DC store · 18 full lifecycle.
+
+**No code/AWS changes this session** — planning only. Next: start Task 15.1.
+
+---
+
 ### Session: 2026-04-12 — Revert Phase 14/15, Add Real Enrichment Work
 
 **Context**:
