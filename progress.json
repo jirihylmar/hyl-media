@@ -1152,7 +1152,7 @@
           "size": "medium",
           "verify": "scripts/audit-dc-migration.mjs writes would-be sidecars to a local dir (no S3/DDB writes), reports counts per dc_type/category, flags SK collisions + unmapped fields; sample sidecars validate against the conformant shape",
           "verified": "Ran read-only over 1830 items (1194 core, 631 rel, 5 excluded). Emitted 1193 sidecars + 775 descriptors to .dc-audit/. dc_type: Text 418, Dataset 509, Sound 172, MovingImage 94. 0 content-key collisions, 0 (PK,SK) collisions. Emitted sidecar validated: first 28 Attributes == DH template+order, PK==id, sort_key==SK. Surfaced for Phase 16: movie_cast (327 items) was a MISSED 4th relationship type (sparse GSI hid it) — now mapped; 1 book w/o s3Key; 6 items w/ leftover youtubeUrl/wikiUrl; 5 junk 'tag' items; 34 benign cross-PK SK shares.",
-          "added_findings": "movie_cast relationship type discovered via audit (absent from byType GSI because it lacks a name attribute). Resolver + mapping spec updated to handle it (director->dc_creator, actor->dc_contributor)."
+          "added_findings": "movie_cast relationship type discovered via audit (absent from byType GSI because it lacks a name attribute). Resolver + mapping spec updated to handle it (director->dc_creator, actor->dc_contributor).",
           "notes": "Reads real DynamoDB via mcp__aws-vsb-299__call_aws (read-only). Runs builder (15.4) + resolver (15.5) across all entities. Surfaces SK collisions (same #lang#slug) and any source fields not mapped to a DC field. depends_on 15.4, 15.5."
         }
       ],
