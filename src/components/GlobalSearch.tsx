@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { listByType } from '../lib/queries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
@@ -29,7 +29,6 @@ export function GlobalSearch() {
   const [loaded, setLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   // Load data on first focus
   const loadData = async () => {
