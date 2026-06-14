@@ -4,6 +4,35 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-14 (cont.) — Execute Phase 16: DC Migration (all 6 tasks complete)
+
+Migrated the catalog into the DC metadata-repository, verifying each step against real data.
+
+- **16.1** Pre-flight cleanup: `entity-to-dc` `resolveArtifact()` now emits a file-less book
+  (`syndikat_synd`) as a Text descriptor; `scripts/dc-preflight-cleanup.mjs` removed 6 redundant
+  legacy link attrs (3 items) and deleted 5 junk `tag` items. audit:dc → 0 skipped / 0 legacy / 0 tag.
+- **16.2** `scripts/migrate-to-dc.mjs` — emits sidecars (no PK) + descriptors + copies PDFs to
+  `documents/<uuid>/`. Dry-run reconciled: 1194 / 776 / 418.
+- **16.3** `--limit 5 --apply` to real S3, verified keys, cleaned up.
+- **16.4** Full emit: 1194 sidecars + 776 descriptors + 418 PDF copies (2388 objects, 1.57 GB).
+  S3 `ls --summarize` confirmed counts. Additive (library/ + sheet-music/ untouched).
+- **16.5** Reused DH Python CLI `update-metadata --resource hylm`: 1194 writes, 0 failures. MCP
+  scan COUNT = 1194. (CLI writes by default; `--dry-run` is the opt-out — no `--apply` flag.)
+- **16.6** `scripts/verify-dc-migration.mjs` → ALL PASS: counts match audit (Text 419/Dataset
+  509/Sound 172/MovingImage 94), all 28 DH Attributes keys present, PK==id, sort_key==SK, 7
+  relationship spot-checks across all dc_types. Report: `docs/migration-reports/dc-migration.md`.
+
+**Note on key order:** DDB maps are unordered and the CLI round-trips sidecars through boto3, so
+Attributes key ORDER is not preserved in the table — order fidelity is verified at the sidecar
+level (15.4/15.7); the table check asserts all 28 keys present.
+
+**Also**: fixed the pre-existing unused-`navigate` build error in `GlobalSearch.tsx` (Phase 14a).
+**Not pushed** — push triggers an Amplify deploy; holding for user go-ahead.
+
+**All phases 0-16 complete (103 tasks).** Next: Phase 17 (frontend on DC store) + Phase 18 (full lifecycle).
+
+---
+
 ### Session: 2026-06-14 (cont.) — Execute Phase 15 end-to-end (all 7 tasks complete)
 
 Ran Phase 15 autonomously, verifying each task independently against the reference solution
