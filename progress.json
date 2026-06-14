@@ -1182,9 +1182,11 @@
         {
           "id": "16.2",
           "name": "Build scripts/migrate-to-dc.mjs — emit descriptors + sidecars to S3 + copy PDFs to documents/ layout",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "--dry-run lists planned S3 puts/copies with correct content + sidecar keys; no writes performed",
+          "verified": "Dry-run reconciles exactly: 1194 sidecars (= all core), 776 descriptors (775 native datasets + 1 file-less book syndikat), 418 PDF copies (306 books-with-PDF + 112 sheet). Keys verified: content documents/<uuid>/<file> + datasets/<uuid>/<slug>.json; sidecar metadata/<...>.metadata.json. Sidecar emitted WITHOUT top-level PK (producer-guide envelope; CLI derives PK from id). Additive only.",
           "notes": "Scans all entities, builds full id→uri map, runs entity-to-dc with uriFor. Writes JSON descriptors to datasets/<uuid>/<slug>.json + sidecars to metadata/<category>/<uuid>/<file>.metadata.json. Copies book/sheet_music PDFs (S3 server-side copy) from library//sheet-music/ to documents/<uuid>/<file>. Flags: --dry-run, --limit N, --resource hylm. depends_on 16.1."
         },
         {
@@ -1226,7 +1228,7 @@
       "artifacts": []
     }
   },
-  "current_task": "16.2",
+  "current_task": "16.3",
   "git_repos": {
     "orchestration": {
       "local": ".",
