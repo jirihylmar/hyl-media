@@ -1,0 +1,13 @@
+# hyl-media registration for the reused Digital Horizon metadata-repository CLI.
+# Usage (from the DH CLI dir):
+#   .venv/bin/metadata-repository --config /home/ubuntu/hyl-media/config/metadata-repository.yaml <cmd>
+# Targets hyl-media's OWN table + bucket; leaves the DH defaults untouched.
+table_name: hyl-media-metadata-repository
+resources:
+  hylm:
+    name: HYL Media Resources (299 internal)
+    bucket: amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m7stthq
+    aws:
+      region: eu-central-1
+      account_id: "299025166536"
+      profile: vsb-299

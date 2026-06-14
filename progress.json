@@ -1141,9 +1141,11 @@
         {
           "id": "15.6",
           "name": "Register hyl-media bucket in metadata-repository CLI + create empty hyl-media-metadata-repository table",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "small",
           "verify": "CLI describe-table shows hyl-media-metadata-repository with PK/SK + resource-account-index GSI; hyl-media bucket present in the CLI registry",
+          "verified": "Created via reused DH CLI. Independently verified via MCP describe-table: table ACTIVE, PK(HASH)+SK(RANGE), GSI resource-account-index, PAY_PER_REQUEST, 0 items — schema-identical to DH. ARN arn:aws:dynamodb:eu-central-1:299025166536:table/hyl-media-metadata-repository. Registration: hyl-media/config/metadata-repository.yaml (bucket + resource_account=hylm + table_name); CLI list-resources shows hylm. Minimal additive change to DH config.py _load_config_file to honor YAML table_name (backward compatible).",
           "notes": "Reuse tools/metadata-repository CLI (Path 2). Register hyl-media's resource bucket + resource_account key in config; run create-table for the own table (account 299, eu-central-1). Empty table — non-destructive. depends_on 15.2."
         },
         {
