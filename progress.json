@@ -1101,9 +1101,11 @@
         {
           "id": "15.2",
           "name": "S3 layout + category/bucket plan — content + metadata/ sidecar paths, category per entity, resource_account key",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "small",
           "verify": "scripts/lib/dc-paths.mjs emits correct content key (<category>/<uuid>/<file>) and sidecar key (metadata/<category>/<uuid>/<file>.metadata.json) for a sample book and a sample movie",
+          "verified": "node scripts/lib/dc-paths.mjs --selftest → ALL PASS (11 checks). Bucket=amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m7stthq, resource_account=hylm. books/sheet_music→documents, movie/recording/person/band/collaboration→datasets.",
           "notes": "category in {audio,datasets,documents}: books/sheet_music=documents, JSON descriptors=datasets. Define hyl-media resource bucket + its resource_account registry key (e.g. 'hylm'). Mirror DH bucket naming convention. depends_on 15.1."
         },
         {
