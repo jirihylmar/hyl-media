@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-06-14",
-  "last_session_summary": "Session 2026-06-14: Studied digital-horizon-playbook metadata model. Added Phase 15 (DC Metadata Model — Design & Foundation, 7 tasks) to make hyl-media byte-compatible with the Digital Horizon metadata-repository (conformant-sidecar format, identical S3 organization, own table synced via the reused Python CLI). Roadmap: Phase 16 migration, 17 frontend, 18 full lifecycle (to be added via /add-work). All phases 0-14a complete (90 tasks).",
+  "last_session_summary": "Session 2026-06-14: Added AND COMPLETED Phase 15 (DC Metadata Model — Design & Foundation, 7 tasks) autonomously, verifying each against the reference solution + real data. Delivered: docs/dc-metadata-mapping.md (mapping spec), scripts/lib/{dc-paths,build-dc-sidecar,entity-to-dc}.mjs (faithful DH port + resolver, all self-tested), IMPLEMENTATION_PLAN.md §10, scripts/audit-dc-migration.mjs (read-only dry-run: 1193 sidecars/775 descriptors, 0 collisions), and created the hyl-media-metadata-repository table via the reused DH Python CLI. Audit discovered movie_cast (327 items, hidden from sparse GSI) — added to mapping. Flagged for Phase 16: 1 book w/o s3Key, 6 leftover legacy links, 5 junk tag items. All phases 0-15 complete (97 tasks). Next: Phase 16 migration (add via /add-work).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1084,7 +1084,8 @@
     },
     "phase_15_dc_metadata_foundation": {
       "name": "Dublin Core Metadata Model — Design & Foundation",
-      "status": "pending",
+      "status": "complete",
+      "completed_at": "2026-06-14",
       "description": "Make hyl-media metadata byte-compatible with the Digital Horizon metadata-repository: conformant-sidecar format, identical S3 organization, own table synced via the reused Python CLI. This phase produces the design (mapping spec, vocab, S3 layout), the faithful builder/resolver modules, the table+bucket registration, and a read-only dry-run audit. Non-destructive — no entity data is written to S3/DDB yet (Phase 16 does migration). All entities (incl. movie/person/band/recording/collaboration) become first-class S3 artifacts; non-file entities get a JSON descriptor. Relationships collapse into dc_creator/dc_contributor/dc_isPartOf/dc_hasPart/dc_relation. Full lifecycle (_explicit_fields, enrichment, approve/regenerate/edit) deferred to Phase 18.",
       "added_reason": "User: make our metadata compatible with /home/ubuntu/digital-horizon-playbook and consequently DC terms — a comprehensive refactor. Format, naming conventions, and S3 organization MUST match (the DH metadata is designed for Elasticsearch/Kendra, not just pure DC).",
       "tasks": [

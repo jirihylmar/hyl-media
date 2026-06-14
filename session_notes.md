@@ -4,6 +4,32 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-14 (cont.) — Execute Phase 15 end-to-end (all 7 tasks complete)
+
+Ran Phase 15 autonomously, verifying each task independently against the reference solution
+(`/home/ubuntu/digital-horizon-playbook`) and real DynamoDB data.
+
+**Delivered & verified**:
+- **15.1** `docs/dc-metadata-mapping.md` — all 7 entity + (now) 4 relationship types → conformant sidecar.
+- **15.2** `scripts/lib/dc-paths.mjs` — S3 layout; self-test ALL PASS (11).
+- **15.3** `IMPLEMENTATION_PLAN.md` §10 + 3 Decision Log rows (incl. Rule-6 exception).
+- **15.4** `scripts/lib/build-dc-sidecar.mjs` — faithful port of DH `metadata.ts`; 28 Attributes in exact order; cross-checked `sortKeySlug` vs the CLI's Python `_normalize_for_sk` (agree on plain titles, diverge only on internal punctuation; documented). Self-test ALL PASS (18).
+- **15.5** `scripts/lib/entity-to-dc.mjs` — relationship→DC resolver. Self-test ALL PASS.
+- **15.7** `scripts/audit-dc-migration.mjs` — read-only dry-run: 1193 sidecars + 775 descriptors to `.dc-audit/`, dc_type Text 418 / Dataset 509 / Sound 172 / MovingImage 94, **0 overwriting collisions**. Emitted sidecar validated against conformant shape (first 28 Attributes == DH order, PK==id, sort_key==SK).
+- **15.6** Created `hyl-media-metadata-repository` table via the **reused DH Python CLI** (registered `hylm` bucket in `config/metadata-repository.yaml`; added backward-compatible `table_name` support to the DH CLI `config.py`, committed in the nested platform repo `5519a28`). MCP describe-table: ACTIVE, PK/SK + `resource-account-index`, PAY_PER_REQUEST, 0 items.
+
+**Key discovery (via audit)**: `movie_cast` (327 items) is a **4th relationship type** the initial study missed — it lacks a `name` attr so it's invisible to the sparse `byType` GSI. Added handling (director→`dc_creator`, actor→`dc_contributor`).
+
+**Flagged for Phase 16**: 1 book without `s3Key` (`syndikat_synd`); 6 items with leftover `youtubeUrl`/`wikiUrl` outside `externalLinks`; 5 junk `tag` items; 34 benign cross-PK SK shares.
+
+**Build note**: local `npm run build` fails on (a) missing `amplify_outputs.json` (generated at deploy — environmental) and (b) a pre-existing unused `navigate` in `GlobalSearch.tsx` (Phase 14a, commit 7af20a9). **Phase 15 changed no `src/` files** — no build regression. The `navigate` error is flagged for a future cleanup.
+
+**Standing instructions added** (per user): CLAUDE.md Rule 7 (autonomous execution + independent verification) and Rule 6 exception; memories `autonomous-execution-and-verification`, `dc-metadata-compatibility-refactor`. Playwright installed for Phase 17 frontend inspection.
+
+**All phases 0-15 complete (97 tasks).** Next: Phase 16 migration (add via /add-work).
+
+---
+
 ### Session: 2026-06-14 — Add Phase 15: DC Metadata Model (Design & Foundation)
 
 **Context**:
