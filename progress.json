@@ -1119,9 +1119,11 @@
         {
           "id": "15.4",
           "name": "Faithful port of conformant-sidecar builder",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-14",
           "size": "medium",
           "verify": "scripts/lib/build-dc-sidecar.mjs output matches metadata.ts field set and #lang#slug SK byte-for-byte on sample inputs",
+          "verified": "node scripts/lib/build-dc-sidecar.mjs --selftest → ALL PASS (18 checks). Attributes 28 keys in exact metadata.ts order; SK #lang#slug correct; Czech ASCII fold correct. Cross-checked sortKeySlug against a JS reimpl of the CLI's Python _normalize_for_sk: agree on plain titles, diverge only on internal punctuation (apostrophe: TS 'ive-had' vs CLI 'i-ve-had') — documented; TS form is authoritative since we emit explicit SK that the CLI trusts verbatim.",
           "notes": "Port buildDublinCoreSidecar + convertToAscii (Czech ASCII_FOLD_MAP) + sortKeySlug + dcSourceUriFor + derivedArtifactId + normalizeExplicitFields + sizeEstimate + contentTypeForExt from digital-horizon-playbook/.../_shared/metadata.ts. Keep pure-function (no AWS deps). depends_on 15.1."
         },
         {
