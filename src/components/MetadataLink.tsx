@@ -18,10 +18,18 @@ export function MetadataLink({ s3Key }: { s3Key: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="badge"
-      title="View the raw Dublin Core metadata sidecar (JSON) for this resource"
+      className="btn btn-sm"
+      title="Open the raw Dublin Core metadata sidecar (JSON) for this resource in S3"
+      style={{
+        border: '1px solid var(--green, #44dd55)',
+        padding: '2px 8px',
+        borderRadius: '3px',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        fontSize: '0.8rem',
+      }}
     >
-      ⧉ metadata
+      ⧉ DC metadata (S3 JSON)
     </a>
   );
 }
