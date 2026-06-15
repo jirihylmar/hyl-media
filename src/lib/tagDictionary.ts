@@ -49,9 +49,9 @@ export const TAG_DICTIONARY: Record<string, TagCategory> = {
   curation: {
     label: 'Curation',
     tags: [
-      'recommended', 'favorite', 'hidden-gem',
+      'recommended', 'favorite', 'hidden-gem', 'public', 'private',
     ],
-    method: 'Enrichment scripts auto-tag new entities as recommended. Manual curation for favorite and hidden-gem.',
+    method: 'Enrichment scripts auto-tag new entities as recommended. Manual curation for favorite and hidden-gem. Visibility (public/private) is set by DC enrichment: public = item has a resolved authoritative link (wikipedia/imdb/musicbrainz/openlibrary/goodreads/discogs); private = personal/not-publicly-documented (abstracts generated strictly from record fields + embedded PDF metadata, no fabricated facts).',
   },
 };
 
