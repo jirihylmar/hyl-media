@@ -79,7 +79,7 @@ function tally(map, key) { map.set(key, (map.get(key) || 0) + 1); }
   // Index rels by every entity id they reference.
   const relsByEntity = new Map();
   const addRel = (id, xr) => { if (!id) return; if (!relsByEntity.has(id)) relsByEntity.set(id, []); relsByEntity.get(id).push(xr); };
-  for (const xr of rels) { addRel(xr.recordingId, xr); addRel(xr.performerId, xr); addRel(xr.movieId, xr); addRel(xr.sheetMusicId, xr); }
+  for (const xr of rels) { addRel(xr.recordingId, xr); addRel(xr.performerId, xr); addRel(xr.movieId, xr); addRel(xr.sheetMusicId, xr); addRel(xr.personId, xr); }
 
   rmSync(OUT, { recursive: true, force: true });
   const byType = new Map(); const byCat = new Map();

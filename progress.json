@@ -1283,14 +1283,16 @@
         {
           "id": "17.3",
           "name": "Read-path cutover — list + detail pages render from DC records",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Each entity type's list + detail page renders from the DC store; relationships navigable; tags + external links shown",
           "depends_on": [
             "17.1",
             "17.2"
           ],
-          "notes": "Split into 17.3a (list pages — done) and 17.3b (detail pages — relationships + PDF). 17.3 completes when 17.3b done."
+          "notes": "Split into 17.3a (list pages — done) and 17.3b (detail pages — relationships + PDF). 17.3 completes when 17.3b done.",
+          "completed_at": "2026-06-15",
+          "verified": "Read-path cutover complete via 17.3a (lists) + 17.3b (detail pages), both Playwright-verified on the deployed app. Lists: Movies 94/People 442/Recordings 172/Library 307/Sheet 112. Details: relationships + PDF render from DC; editable fields write to DC."
         },
         {
           "id": "17.3a",
@@ -1305,11 +1307,13 @@
         {
           "id": "17.3b",
           "name": "Cut over DETAIL pages to the DC store (relationships + PDF)",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "All 6 detail pages render from DC records; relationships resolved via dc_creator/dc_contributor/dc_relation/_*_uris; book/sheet PDF opens from documents/<uuid>/ (storage read added)",
           "notes": "Needs backend additions: getByLegacyId AppSync op (URL is legacy id) + storage read on documents/*. Detail pages rewritten to render DcViewModel relationships (note: DC collapsed per-edge roles — dc_creator=directors, dc_contributor=actors, _cast_uris has no role). depends_on 17.2.",
-          "added_reason": "17.3 split: detail cutover is larger (relationship rendering + PDF storage) and deserves focused work."
+          "added_reason": "17.3 split: detail cutover is larger (relationship rendering + PDF storage) and deserves focused work.",
+          "completed_at": "2026-06-15",
+          "verified": "All 6 detail pages rewritten to read+write DC (getEntityDetail + updateEntity via updateMetadata mutation). Shared DcEntityHeader; TagManager/ExternalLinks gained DC save override. PDF downloads use documents/<uuid>/ + new documents/* storage grant. Backend verified (getByLegacyId; updateMetadata add+revert round-trip). Playwright on deployed app (job 62): Dirty Dancing→Soundtrack, recording→Featured in, book→Author+Download(PDF), Mike Nichols→Filmography — ALL PASS. Fixed a migration bug found via this check: relationship indexing missed personId, so persons lacked movie_cast filmography edges; fixed in migrate-to-dc.mjs + audit, re-emitted + re-synced (1194 writes), Mike Nichols filmography confirmed. Relationship EDITING deferred (DC collapses per-edge roles); editable scalars (name/lang/tags/links) write to DC."
         },
         {
           "id": "17.4",
@@ -1418,7 +1422,7 @@
       "artifacts": []
     }
   },
-  "current_task": "17.3b",
+  "current_task": "17.4",
   "git_repos": {
     "orchestration": {
       "local": ".",

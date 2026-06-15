@@ -67,7 +67,9 @@ async function putJson(key, obj) {
 
   const relsByEntity = new Map();
   const addRel = (id, xr) => { if (!id) return; (relsByEntity.get(id) || relsByEntity.set(id, []).get(id)).push(xr); };
-  for (const xr of rels) { addRel(xr.recordingId, xr); addRel(xr.performerId, xr); addRel(xr.movieId, xr); addRel(xr.sheetMusicId, xr); }
+  // Index by EVERY id a relationship references so both endpoints get their edge.
+  // movie_cast uses personId (not performerId) — missing it dropped person filmography.
+  for (const xr of rels) { addRel(xr.recordingId, xr); addRel(xr.performerId, xr); addRel(xr.movieId, xr); addRel(xr.sheetMusicId, xr); addRel(xr.personId, xr); }
 
   let sidecars = 0, descriptors = 0, pdfCopies = 0, pdfErrors = 0, n = 0;
   for (const e of core) {
