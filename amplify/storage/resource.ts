@@ -9,5 +9,9 @@ export const storage = defineStorage({
     'sheet-music/*': [
       allow.authenticated.to(['read', 'write', 'delete']),
     ],
+    // Phase 17.3b — DC migration layout: book/sheet PDFs also live under documents/<uuid>/.
+    'documents/*': [
+      allow.authenticated.to(['read']),
+    ],
   }),
 });

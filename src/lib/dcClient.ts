@@ -24,6 +24,13 @@ export async function getMetadata(pk: string): Promise<DcViewModel | null> {
   return rec && rec.Attributes ? dcToViewModel(rec) : null;
 }
 
+export async function getMetadataByLegacyId(legacyId: string): Promise<DcViewModel | null> {
+  const res = await getClient().queries.getMetadataByLegacyId({ legacyId });
+  if (res.errors?.length) console.error('getMetadataByLegacyId errors:', res.errors);
+  const rec = parse<DcRecord>(res.data);
+  return rec && rec.Attributes ? dcToViewModel(rec) : null;
+}
+
 export async function listMetadataByType(dcType: string, limit?: number): Promise<DcViewModel[]> {
   const res = await getClient().queries.listMetadataByType({ dcType, limit });
   if (res.errors?.length) console.error('listMetadataByType errors:', res.errors);

@@ -38,6 +38,15 @@ async function getMetadata(pk: string) {
   return items[0] ?? null;
 }
 
+async function getByLegacyId(legacyId: string) {
+  if (!legacyId) return null;
+  const items = await scanAll({
+    FilterExpression: 'Attributes._legacy_id = :lid',
+    ExpressionAttributeValues: { ':lid': legacyId },
+  });
+  return items[0] ?? null;
+}
+
 async function listMetadataByType(dcType: string, limit?: number) {
   if (!dcType) return [];
   const items = await scanAll({
@@ -69,6 +78,7 @@ export const handler = async (event: any) => {
   const args = event?.arguments ?? {};
   try {
     if (field === 'getMetadata' || (args.pk && !field)) return await getMetadata(args.pk);
+    if (field === 'getMetadataByLegacyId' || (args.legacyId && !field)) return await getByLegacyId(args.legacyId);
     if (field === 'listMetadataByType' || (args.dcType && !field)) return await listMetadataByType(args.dcType, args.limit);
     if (field === 'searchMetadata' || (args.q && !field)) return await searchMetadata(args.q, args.limit);
     return { error: `unknown field '${field}'` };

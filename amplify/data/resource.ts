@@ -63,6 +63,13 @@ const schema = a.schema({
     .handler(a.handler.function(metadataApi))
     .authorization((allow) => [allow.authenticated()]),
 
+  getMetadataByLegacyId: a
+    .query()
+    .arguments({ legacyId: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(metadataApi))
+    .authorization((allow) => [allow.authenticated()]),
+
   listMetadataByType: a
     .query()
     .arguments({ dcType: a.string().required(), limit: a.integer() })
