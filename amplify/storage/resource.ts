@@ -13,5 +13,13 @@ export const storage = defineStorage({
     'documents/*': [
       allow.authenticated.to(['read']),
     ],
+    // Phase 19 — JSON descriptors for non-file entities (person/band/movie/recording).
+    'datasets/*': [
+      allow.authenticated.to(['read']),
+    ],
+    // Phase 19 — DC metadata sidecars (the conformant example artifact); linked from detail pages.
+    'metadata/*': [
+      allow.authenticated.to(['read']),
+    ],
   }),
 });

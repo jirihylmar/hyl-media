@@ -47,6 +47,43 @@ DC store = `hyl-media-metadata-repository` (1194 records).
 
 ---
 
+### Session: 2026-06-15 (cont.) — Phase 19: conformance, S3 reconcile, managed-resource skill, metadata link
+
+User asks: (1) prove the S3 structure + sidecar content match the DH example *following exact rules*
+(the WHOLE structure, not just dc_* terms); (2) a `managed-resource` workflow skill (usable here +
+mirrors a future frontend dialog); (3) a metadata link next to each resource in the frontend;
+(4) run `/generate-architecture` at the end.
+
+**19.1 — Full structural conformance audit (`scripts/audit-dc-conformance.mjs`):** encodes the
+ENTIRE example ruleset — top-level keys, `DocumentId===id`, `SK===sort_key`, SK shape `#<lang>#<slug>`,
+`Title`/`ContentType` non-empty, the **canonical 28 `Attributes` keys present IN ORDER** (checked on
+the S3 sidecar — DDB maps are unordered), `dc_type` ∈ DCMI set, `_category` ∈ {audio,datasets,documents},
+`dc_source_uri` derivation, field types, DDB-mirrors-sidecar. Read all 1194 S3 sidecars → **ALL PASS,
+0 unreadable.** Verified against `/home/ubuntu/digital-horizon-playbook/.../recordings/_shared/metadata.ts`
++ `docs/metadata-repository-producers.md` (canonical example). hyl-media uses datasets+documents
+categories (no audio — legitimate subset); appends domain extensions AFTER the canonical 28.
+
+**19.2 — Reconcile S3 ← DDB (`scripts/sync-dc-to-s3.mjs`):** Phase 18.3 enrichment was DDB-only;
+this rebuilds each sidecar's `Attributes` in canonical order with values from the live DDB record
+(DDB-only keys appended) and writes back to `metadata/<category>/<uuid>/<file>.metadata.json`.
+Idempotent. Dry-run: 1194 changed / 0 missing / 0 errors. Applied → S3 now == DDB (re-audit ALL PASS).
+**Restores the S3-sidecar-is-source-of-truth invariant** so a future DH CLI re-sync is safe.
+
+**19.3 — `managed-resource` skill (`.claude/commands/managed-resource.md`):** documents the full
+lifecycle (create→sync→enrich→reconcile→edit/pin→approve→verify) with the EXACT structural rules,
+the public/private enrichment signal, the source-of-truth+reconcile guardrail, and the driving
+commands (migrate-to-dc / enrich-dc / sync-dc-to-s3 / audit-dc-conformance). Mirrors the future
+frontend "managed resource" dialog. Registered + appears in the skills list.
+
+**19.4 — Frontend metadata link:** `src/components/MetadataLink.tsx` signs
+`metadata/<s3Key>.metadata.json` via `Storage.getUrl` and renders a "⧉ metadata" link; wired into
+the shared `DcEntityHeader` next to the title (all 6 detail pages). `amplify/storage/resource.ts`
+grants authenticated read on `metadata/*` + `datasets/*`. tsc clean. Live check after deploy.
+
+Then ran `/generate-architecture` to refresh docs/skills/CLAUDE.
+
+---
+
 ### Session: 2026-06-15 (cont.) — Phase 18.3 complete: enrich ALL 1194 DC records
 
 Finished Phase 18.3 by applying the operator's enrichment guidance, then enriching every

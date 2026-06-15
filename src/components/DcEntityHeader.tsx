@@ -1,6 +1,7 @@
 import { InlineEdit } from './InlineEdit';
 import { ExternalLinks, type ExternalLink } from './ExternalLinks';
 import { TagManager } from './TagManager';
+import { MetadataLink } from './MetadataLink';
 import type { DcViewModel } from '../lib/dcMap';
 
 type Props = {
@@ -16,7 +17,10 @@ type Props = {
 export function DcEntityHeader({ vm, entityType, onPatch, children }: Props) {
   return (
     <>
-      <InlineEdit value={vm.name} onSave={(v) => onPatch({ dc_title: v })} as="h1" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <InlineEdit value={vm.name} onSave={(v) => onPatch({ dc_title: v })} as="h1" />
+        <MetadataLink s3Key={vm.s3Key} />
+      </div>
       {children}
       <p><InlineEdit value={vm.language || ''} onSave={(v) => onPatch({ language_code: v })} label="Language" /></p>
       {vm.abstract && <p>{vm.abstract}</p>}

@@ -1431,6 +1431,55 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_19_managed_resource": {
+      "name": "Managed-Resource Workflow + S3 Reconciliation + Frontend Metadata Link",
+      "status": "complete",
+      "started_at": "2026-06-15",
+      "completed_at": "2026-06-15",
+      "description": "Verify full structural conformance of all DC records against the DH example (not just dc_* terms); reconcile the S3 sidecars from the enriched DDB store so S3 (source-of-truth) matches; encode the resource lifecycle as the managed-resource skill (mirrors a future frontend dialog); add a raw-sidecar metadata link next to each resource in the frontend.",
+      "added_reason": "User: verify S3 + sidecars match the example following exact rules; want a managed-resource workflow skill; want a metadata link next to resources in the frontend.",
+      "tasks": [
+        {
+          "id": "19.1",
+          "name": "Full structural conformance audit vs DH example (whole record, exact rules)",
+          "status": "complete",
+          "size": "medium",
+          "verify": "scripts/audit-dc-conformance.mjs reports ALL PASS across all records",
+          "completed_at": "2026-06-15",
+          "verified": "scripts/audit-dc-conformance.mjs encodes the full example ruleset (top-level keys, DocumentId===id, SK===sort_key, SK shape #<lang>#<slug>, Title/ContentType non-empty, canonical 28 Attributes keys IN ORDER on the sidecar, dc_type in DCMI set, _category set, dc_source_uri derivation, field types, DDB mirrors sidecar). Read all 1194 S3 sidecars: ALL PASS, 0 unreadable. Confirms structure (not just dc_* terms) is byte-conformant to the example."
+        },
+        {
+          "id": "19.2",
+          "name": "Reconcile S3 sidecars from DDB (close the DDB-only enrichment divergence)",
+          "status": "complete",
+          "size": "medium",
+          "verify": "After run, a spot-checked S3 sidecar carries the enriched dc_abstract/dc_subject/_tags in canonical order; re-audit still ALL PASS",
+          "started_at": "2026-06-15",
+          "completed_at": "2026-06-15",
+          "notes": "scripts/sync-dc-to-s3.mjs rebuilds each sidecar's Attributes in canonical order with values from the live DDB record (DDB-only keys appended), writes back to the same metadata/<category>/<uuid>/<file>.metadata.json. Idempotent.",
+          "verified": "Applied: processed 1194, changed 1194, written 1194, 0 missing, 0 errors. Spot-checked Staša Bartůňková sidecar in S3 — now carries the enriched Czech dc_abstract + refined dc_subject + ['author','private'] _tags, first 28 Attributes keys still in canonical order, extensions intact. Re-ran scripts/audit-dc-conformance.mjs over all 1194: ALL PASS. S3 (source-of-truth) now == DDB with full structure + enriched content; CLI re-sync is safe."
+        },
+        {
+          "id": "19.3",
+          "name": "managed-resource skill — full DC lifecycle (doc + executable wrapper)",
+          "status": "complete",
+          "size": "small",
+          "verify": ".claude/commands/managed-resource.md exists; appears in the skills list; documents create→sync→enrich→reconcile→edit/pin→approve→verify with exact structural rules + commands",
+          "completed_at": "2026-06-15",
+          "verified": "Skill registered (shows in available skills). Encodes the conformant structure rules, public/private enrichment signal, the source-of-truth + reconcile guardrail, and drives the existing scripts (migrate-to-dc, enrich-dc, sync-dc-to-s3, audit-dc-conformance). Mirrors the future frontend dialog steps."
+        },
+        {
+          "id": "19.4",
+          "name": "Frontend metadata link — raw DC sidecar JSON next to each resource",
+          "status": "complete",
+          "size": "small",
+          "verify": "Detail pages show a 'metadata' link next to the title that opens the signed sidecar JSON; tsc clean; storage grants metadata/* read",
+          "completed_at": "2026-06-15",
+          "verified": "src/components/MetadataLink.tsx signs metadata/<s3Key>.metadata.json via Storage.getUrl; wired into the shared DcEntityHeader next to the title (all 6 detail pages). amplify/storage/resource.ts grants authenticated read on metadata/* + datasets/*. tsc --noEmit clean. Live verification pending deploy."
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": "18.4",
