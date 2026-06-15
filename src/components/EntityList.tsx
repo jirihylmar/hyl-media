@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listByType } from '../lib/queries';
+import { listEntitiesForList } from '../lib/dcQueries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { CreateEntityForm } from './CreateEntityForm';
 import { Breadcrumb } from './Breadcrumb';
@@ -30,7 +30,7 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
   const [showCreate, setShowCreate] = useState(searchParams.get('create') === '1');
 
   const refresh = () => {
-    listByType(entityType).then(data => {
+    listEntitiesForList(entityType).then(data => {
       setItems(data);
       setLoading(false);
     });

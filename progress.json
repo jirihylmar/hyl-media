@@ -1289,7 +1289,27 @@
           "depends_on": [
             "17.1",
             "17.2"
-          ]
+          ],
+          "notes": "Split into 17.3a (list pages — done) and 17.3b (detail pages — relationships + PDF). 17.3 completes when 17.3b done."
+        },
+        {
+          "id": "17.3a",
+          "name": "Cut over entity LIST pages to the DC store",
+          "status": "complete",
+          "completed_at": "2026-06-15",
+          "size": "small",
+          "verify": "All 7 EntityList-based lists (movies/people/bands/recordings/collaborations/library/sheet-music) load from hyl-media-metadata-repository; links use legacy ids; tags/lang/extra columns render",
+          "verified": "src/lib/dcQueries.ts listEntitiesForList(kind) → listMetadataByType(dc_type) filtered by _entity_kind, mapped to legacy-shaped items (id=legacyId, name, language, tags, externalLinks, roles, author/artistName, format). EntityList swapped listByType→listEntitiesForList — single change cuts over all 7 lists. tsc clean. Pending Playwright parity check on deployed app.",
+          "added_reason": "17.3 split: lists are a clean single-component cutover (EntityList), no backend change needed."
+        },
+        {
+          "id": "17.3b",
+          "name": "Cut over DETAIL pages to the DC store (relationships + PDF)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "All 6 detail pages render from DC records; relationships resolved via dc_creator/dc_contributor/dc_relation/_*_uris; book/sheet PDF opens from documents/<uuid>/ (storage read added)",
+          "notes": "Needs backend additions: getByLegacyId AppSync op (URL is legacy id) + storage read on documents/*. Detail pages rewritten to render DcViewModel relationships (note: DC collapsed per-edge roles — dc_creator=directors, dc_contributor=actors, _cast_uris has no role). depends_on 17.2.",
+          "added_reason": "17.3 split: detail cutover is larger (relationship rendering + PDF storage) and deserves focused work."
         },
         {
           "id": "17.4",
@@ -1398,7 +1418,7 @@
       "artifacts": []
     }
   },
-  "current_task": "17.3",
+  "current_task": "17.3b",
   "git_repos": {
     "orchestration": {
       "local": ".",
