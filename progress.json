@@ -1273,10 +1273,12 @@
         {
           "id": "17.2",
           "name": "Frontend DC data-access module + DC→view-model mappers",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "src/lib/dcClient.ts returns typed DC records; mapper converts a DC record to the existing detail/list view shape (name, tags, links, relationships)",
-          "notes": "tags = _tags (full) / dc_subject; links = _external_links; relationships resolved from dc_creator/dc_contributor/dc_relation/dc_has_part/dc_is_part_of/_performer_uris/_cast_uris (URIs → legacy_id via a lookup)."
+          "notes": "tags = _tags (full) / dc_subject; links = _external_links; relationships resolved from dc_creator/dc_contributor/dc_relation/dc_has_part/dc_is_part_of/_performer_uris/_cast_uris (URIs → legacy_id via a lookup).",
+          "completed_at": "2026-06-15",
+          "verified": "src/lib/dcMap.ts (pure types + dcToViewModel + pkFromUri, no Amplify import) + src/lib/dcClient.ts (getMetadata/listMetadataByType/searchMetadata/resolveUris over the 17.1 queries). Node-tested mapper on the real Dirty Dancing DC record: name/kind/dcType correct, 2 hasPart URIs, pkFromUri extracts uuid, fileBacked=false for descriptor, tags+legacyId correct. tsc (bundler resolution) clean — client.queries.* types resolve from the schema."
         },
         {
           "id": "17.3",
@@ -1396,7 +1398,7 @@
       "artifacts": []
     }
   },
-  "current_task": "17.2",
+  "current_task": "17.3",
   "git_repos": {
     "orchestration": {
       "local": ".",
