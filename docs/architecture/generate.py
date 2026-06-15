@@ -18,13 +18,15 @@ Output:
 from pathlib import Path
 
 from diagrams import Cluster, Diagram, Edge
+from diagrams.aws.compute import Lambda
 from diagrams.aws.database import Dynamodb
 from diagrams.aws.integration import Appsync
 from diagrams.aws.network import CloudFront
-from diagrams.aws.security import Cognito
+from diagrams.aws.security import Cognito, SecretsManager
 from diagrams.aws.storage import S3
-from diagrams.onprem.client import User
+from diagrams.onprem.client import User, Client
 from diagrams.programming.framework import React
+from diagrams.programming.language import Python
 
 SCRIPT_DIR = Path(__file__).parent
 OUTPUT_FILE = SCRIPT_DIR / "hyl_media_architecture"
@@ -38,17 +40,12 @@ graph_attr = {
     "labeljust": "l",
 }
 
-node_attr = {
-    "fontsize": "9",
-}
-
-edge_attr = {
-    "fontsize": "8",
-    "color": "#444444",
-}
+node_attr = {"fontsize": "9"}
+edge_attr = {"fontsize": "8", "color": "#444444"}
 
 with Diagram(
-    "HYL Media — Architecture\nAmplify App: d2r70lavusnzlx | Account: 299025166536 | eu-central-1",
+    "HYL Media — Architecture (Dublin Core metadata-repository)\n"
+    "Amplify App: d2r70lavusnzlx | Account: 299025166536 | eu-central-1",
     filename=str(OUTPUT_FILE),
     show=False,
     direction="TB",
@@ -59,31 +56,59 @@ with Diagram(
     user = User("Browser\njiri.hylmar@gmail.com")
 
     with Cluster("Amplify Hosting\nhttps://main.d2r70lavusnzlx.amplifyapp.com"):
-        cloudfront = CloudFront("CloudFront\nSPA + custom\nrewrite rules")
-        react = React("React + TypeScript\n+ Amplify UI\n(Vite build)\n\nDossier hub at /\nBreadcrumb navigation\n7 entity types")
+        cloudfront = CloudFront("CloudFront\nSPA + rewrite rules")
+        react = React(
+            "React + TypeScript (Vite)\n\nDossier hub at /\n6 DC detail pages\n"
+            "'metadata' link → raw sidecar\nsearch + tags"
+        )
 
     with Cluster("Amplify Gen 2 Backend (AppSync)"):
-        cognito = Cognito("Cognito User Pool\neu-central-1_GJhwO2ww5\nemail/password auth")
-        appsync = Appsync("AppSync GraphQL\n366ya64s65cqjhilw34nx5r2vu\nauto-generated CRUD")
+        cognito = Cognito("Cognito User Pool\neu-central-1_GJhwO2ww5")
+        appsync = Appsync(
+            "AppSync GraphQL\n\nDC custom resolvers:\n"
+            "getMetadata / listMetadataByType\nsearchMetadata / getMetadataByLegacyId\n"
+            "updateMetadata (SET, pin)\n+ legacy CRUD (create path)"
+        )
+        meta_lambda = Lambda("metadata-api Lambda\nDC read/write over the\nmetadata-repository table")
 
     with Cluster("DynamoDB"):
-        dynamodb = Dynamodb("KnowledgeGraphItem-\ng7elqzchivgt3g2i2zs6rfn64u-NONE\n\n~1,600 items (single-table)\n9 entity types, 6 GSIs\n\nexternalLinks: {url, type}[]\ntags: string[]")
+        dc_table = Dynamodb(
+            "hyl-media-metadata-repository\n\n1194 DC records (PK=id)\n"
+            "conformant sidecar shape\n28 canonical Attributes + ext\ndc_abstract enriched"
+        )
+        legacy_table = Dynamodb(
+            "KnowledgeGraphItem-*\n(legacy, still live)\n\nrelationship cross-refs\n+ create path"
+        )
 
-    with Cluster("S3 Buckets (3 — all managed by Amplify stack)"):
-        s3_storage = S3("hylmediastoragebucketefb-*\n\nUser content:\nlibrary/ (307 books)\nsheet-music/ (112 PDFs)")
-        s3_codegen = S3("amplifydataamplifycodege-*\n\nAmplify internal:\nCodeGen artifacts")
-        s3_schema = S3("modelintrospectionschema-*\n\nAmplify internal:\nGraphQL schema\nintrospection")
+    with Cluster("S3 — hylmediastoragebucketefb-* (Amplify-managed)"):
+        s3_content = S3("Content\ndatasets/<uuid>/*.json\ndocuments/<uuid>/*.pdf")
+        s3_sidecars = S3("DC sidecars\nmetadata/<cat>/<uuid>/\n*.metadata.json")
+        s3_legacy = S3("Legacy originals\nlibrary/ · sheet-music/")
 
-    # User flow
-    user >> Edge(label="HTTPS") >> cloudfront
-    cloudfront >> Edge(label="serves") >> react
-    react >> Edge(label="Amplify Auth") >> cognito
-    cognito >> Edge(label="JWT token") >> appsync
-    appsync >> Edge(label="GraphQL resolvers\n(queries + mutations)") >> dynamodb
-    react >> Edge(label="Amplify Storage\n(presigned URLs)") >> s3_storage
+    with Cluster("DC lifecycle — managed-resource skill (operator / offline)"):
+        enrich = Python("enrich-dc.mjs\npublic/private + pdfinfo\nClaude enrichment")
+        reconcile = Python("sync-dc-to-s3.mjs\nDDB → sidecars")
+        audit = Python("audit-dc-conformance.mjs\nfull structural rules")
+        dh_cli = Python("DH Python CLI\nupdate-metadata\nsidecars → DDB")
+        secret = SecretsManager("Secrets Manager\nhyl-media/anthropic-api-key")
+        claude = Client("Claude API\n(claude-opus-4-8)")
 
-    # Amplify internal
-    appsync >> Edge(label="codegen", style="dashed", color="#999999") >> s3_codegen
-    appsync >> Edge(label="schema", style="dashed", color="#999999") >> s3_schema
+    # Runtime request flow
+    user >> Edge(label="HTTPS") >> cloudfront >> Edge(label="serves") >> react
+    react >> Edge(label="Amplify Auth") >> cognito >> Edge(label="JWT") >> appsync
+    appsync >> Edge(label="DC queries/mutations") >> meta_lambda >> dc_table
+    appsync >> Edge(label="cross-refs / create", style="dashed", color="#999999") >> legacy_table
+    react >> Edge(label="Storage getUrl\n(PDF + sidecar JSON)") >> s3_content
+    react >> Edge(label="metadata link") >> s3_sidecars
+
+    # DC lifecycle flow
+    enrich >> Edge(label="GetSecretValue", color="#a3334d") >> secret
+    enrich >> Edge(label="messages.create", color="#a3334d") >> claude
+    enrich >> Edge(label="UpdateItem") >> dc_table
+    reconcile >> Edge(label="GET/PUT") >> s3_sidecars
+    dc_table >> Edge(label="read", style="dashed", color="#999999") >> reconcile
+    dh_cli >> Edge(label="scan + upsert", style="dashed", color="#999999") >> dc_table
+    s3_sidecars >> Edge(label="scan", style="dashed", color="#999999") >> dh_cli
+    audit >> Edge(label="GET + verify", style="dashed", color="#999999") >> s3_sidecars
 
 print(f"Diagram generated: {OUTPUT_FILE}.png")

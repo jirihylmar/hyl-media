@@ -11,8 +11,54 @@
 | Amplify App | `d2r70lavusnzlx` | Hosting, CI/CD from GitHub `main` |
 | CloudFront | via Amplify Hosting | SPA delivery with custom rewrite rules |
 | Cognito | `eu-central-1_GJhwO2ww5` | Email/password authentication |
-| AppSync | `366ya64s65cqjhilw34nx5r2vu` | Auto-generated GraphQL CRUD API |
-| DynamoDB | `KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE` | Single-table: ~1,600 items, 6 GSIs |
+| AppSync | `366ya64s65cqjhilw34nx5r2vu` | GraphQL: DC custom resolvers + legacy CRUD |
+| metadata-api Lambda | `amplify-...-metadataapilambda*` | DC read/write over the metadata-repository table |
+| **DynamoDB (DC store)** | `hyl-media-metadata-repository` | **Primary read/write store — 1194 conformant DC records (PK=id)** |
+| DynamoDB (legacy) | `KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE` | Still live for the create path + relationship cross-refs |
+| Secrets Manager | `hyl-media/anthropic-api-key` | Anthropic key for Claude enrichment (runtime fetch only) |
+
+> **As of Phases 17–19** the app reads and edits entities **from the DC metadata-repository**
+> (`hyl-media-metadata-repository`). The legacy `KnowledgeGraphItem` table remains live only for
+> the create path (CreateEntityForm/AssetUpload) and relationship cross-ref display, pending Phase
+> 17.6 decommission.
+
+## Dublin Core Metadata Repository (Phases 15–19)
+
+The catalog is stored in the **Digital Horizon metadata-repository** format — every item is an S3
+artifact described by a **conformant sidecar** that the DH Python CLI syncs into DynamoDB.
+
+**S3 layout** (in the storage bucket, alongside the legacy `library/` + `sheet-music/`):
+
+```
+datasets/<uuid>/<slug>.json                          # descriptors: person, band, movie, recording, collaboration
+documents/<uuid>/<name>.pdf                           # books + sheet music
+metadata/<category>/<uuid>/<file>.metadata.json      # the conformant DC sidecars (category = datasets|documents)
+```
+
+**Sidecar structure (exact rules, verified by `scripts/audit-dc-conformance.mjs` — all 1194 ALL PASS):**
+top-level `{ id, SK, DocumentId, Title, ContentType, Attributes }` with `DocumentId===id`,
+`SK===Attributes.sort_key` of shape `#<lang>#<slug>`; the first **28 `Attributes` keys in the exact
+canonical DH order** (`_authors … dc_is_part_of`), then hyl-media domain extensions (`dc_creator`,
+`_entity_kind`, `_legacy_id`, `_tags`, `_external_links`, `_given_name`, `_family_name`, `_roles`);
+`dc_type` ∈ DCMI {Text, Sound, Dataset, MovingImage, …}; `dc_source_uri` derived from bucket+key.
+
+**Lifecycle — the `managed-resource` skill** (`.claude/commands/managed-resource.md`):
+
+```
+create/emit sidecar → DH CLI sync (S3→DDB) → enrich (Claude) → reconcile (DDB→S3) → edit/pin → approve → verify
+```
+
+- **Enrichment** (`scripts/enrich-dc.mjs`): Claude (`claude-opus-4-8`) fills `dc_abstract` + refines
+  `dc_subject`. Key fetched at runtime from Secrets Manager. Branches **public vs private** by whether
+  a *resolved* authoritative link exists (wikipedia/imdb/musicbrainz/openlibrary/goodreads/discogs) —
+  public uses world knowledge, private uses only record fields + **embedded PDF metadata** (`pdfinfo`),
+  no fabrication. Writes a `public`/`private` curation tag. Respects `_explicit_fields` pins.
+- **Reconcile** (`scripts/sync-dc-to-s3.mjs`): pushes DDB values back into the S3 sidecars in
+  canonical order, keeping **S3 as the source of truth** so a CLI re-sync is safe.
+- **Frontend**: each detail page shows a **"metadata" link** (`MetadataLink` in `DcEntityHeader`)
+  opening the signed raw sidecar JSON.
+
+**Coverage:** all 1194 records have `dc_abstract` + refined `dc_subject` (520 public / 521 private).
 
 ## Data Model (Single-Table Design)
 

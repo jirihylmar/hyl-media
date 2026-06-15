@@ -56,7 +56,18 @@ aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
 /setup                   # Environment + repository setup
 /add-work                # Add phases or tasks mid-project
 /check-aws               # Verify AWS resources
+/managed-resource        # DC resource lifecycle: create→sync→enrich→reconcile→edit/pin→approve→verify
+/enrich-connections      # Detect + add knowledge-graph connections for new entities
 ```
+
+## Dublin Core metadata-repository (Phases 15–19 — PRIMARY store)
+The catalog now lives in `hyl-media-metadata-repository` (DynamoDB) as **conformant DH sidecars**
+(S3 `metadata/<category>/<uuid>/<file>.metadata.json`; content in `datasets/`+`documents/`). The
+frontend reads/edits from this DC store via the metadata-api Lambda; the legacy `KnowledgeGraphItem`
+table stays live only for the create path + relationship cross-refs (Phase 17.6 decommission pending).
+The full lifecycle (public/private Claude enrichment + S3 reconcile + structural conformance rules)
+is the **`/managed-resource` skill** — use it for any DC resource work. **Source-of-truth rule:** the
+S3 sidecar is authoritative; never leave a write DDB-only — reconcile with `scripts/sync-dc-to-s3.mjs`.
 
 ## Key Files
 | File | Purpose | Updates |
