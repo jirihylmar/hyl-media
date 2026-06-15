@@ -1476,7 +1476,7 @@
           "size": "small",
           "verify": "Detail pages show a 'metadata' link next to the title that opens the signed sidecar JSON; tsc clean; storage grants metadata/* read",
           "completed_at": "2026-06-15",
-          "verified": "src/components/MetadataLink.tsx signs metadata/<s3Key>.metadata.json via Storage.getUrl; wired into the shared DcEntityHeader next to the title (all 6 detail pages). amplify/storage/resource.ts grants authenticated read on metadata/* + datasets/*. tsc --noEmit clean. Live verification pending deploy."
+          "verified": "src/components/MetadataLink.tsx signs metadata/<s3Key>.metadata.json via Storage.getUrl; wired into the shared DcEntityHeader next to the title (all 6 detail pages). amplify/storage/resource.ts grants authenticated read on metadata/* + datasets/*. tsc --noEmit clean. DEPLOYED (Amplify job 70 SUCCEED) + LIVE-VERIFIED: scripts/verify-metadata-link.mjs (Playwright) — movie/book/person detail pages all show the link, follow it to the signed S3 sidecar, and the sidecar is conformant JSON (DocumentId===id, SK===sort_key) with a non-empty enriched dc_abstract. ALL PASS."
         }
       ],
       "artifacts": []
