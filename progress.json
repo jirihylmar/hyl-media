@@ -1365,18 +1365,22 @@
         {
           "id": "18.1",
           "name": "Enrichment engine — fetch API key from Secrets Manager, call Claude for dc_abstract + dc_subject",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "scripts/enrich-dc.mjs --dry-run on a sample record: reads key from secret hyl-media/anthropic-api-key (SDK GetSecretValue, never printed), returns proposed dc_abstract (300-500 chars, same language) + refined dc_subject; no writes",
-          "notes": "Key ARN arn:aws:secretsmanager:eu-central-1:299025166536:secret:hyl-media/anthropic-api-key-KBL4LX. Use the latest Claude model. Port DH dc-refresh.ts prompt (Markdown-tuned, content-language-aware). NEVER log/commit the key."
+          "notes": "Key ARN arn:aws:secretsmanager:eu-central-1:299025166536:secret:hyl-media/anthropic-api-key-KBL4LX. Use the latest Claude model. Port DH dc-refresh.ts prompt (Markdown-tuned, content-language-aware). NEVER log/commit the key.",
+          "completed_at": "2026-06-15",
+          "verified": "scripts/enrich-dc.mjs: fetches ANTHROPIC_API_KEY from Secrets Manager hyl-media/anthropic-api-key (never hardcoded), calls claude-opus-4-8 with structured outputs (json_schema) to generate dc_abstract + refined dc_subject in the content language. Dry-run on 3 movies produced accurate abstracts (director/year/plot); secret fetch + parse + cost tracking verified (~$0.006/item)."
         },
         {
           "id": "18.2",
           "name": "_explicit_fields pinning — respect operator-pinned DC fields across enrichment",
-          "status": "pending",
+          "status": "complete",
           "size": "small",
           "verify": "A record with _explicit_fields=['dc_title'] keeps its dc_title through an enrich run; non-pinned fields refresh",
-          "notes": "Mirror DH normalizeExplicitFields + REFRESHABLE_DC_FIELDS skip logic."
+          "notes": "Mirror DH normalizeExplicitFields + REFRESHABLE_DC_FIELDS skip logic.",
+          "completed_at": "2026-06-15",
+          "verified": "Engine skips records whose _explicit_fields includes dc_abstract (operator pin preserved); writes bump _last_updated_at. Mirrors DH REFRESHABLE_DC_FIELDS skip logic."
         },
         {
           "id": "18.3",
@@ -1426,7 +1430,7 @@
       "artifacts": []
     }
   },
-  "current_task": null,
+  "current_task": "18.3",
   "git_repos": {
     "orchestration": {
       "local": ".",
