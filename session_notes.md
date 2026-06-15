@@ -31,11 +31,34 @@ Phase 18. Never committed. **Rotate after Phase 18** (pasted in chat once).
   real Dirty Dancing record) + `src/lib/dcClient.ts` (calls the 17.1 queries, `resolveUris`).
   tsc clean. Not yet wired into pages.
 
-**Next: 17.3** — read-path cutover (list + detail pages render from DC records). Large multi-page
-refactor — checkpointed here mid-context. Then 17.4 (Dossier+search), 17.5 (Playwright parity),
-17.6 (decommission old path, gated on parity, backup first).
+**17.3 — read-path cutover COMPLETE (17.3a lists + 17.3b detail pages):**
+- **17.3a** — `dcQueries.listEntitiesForList(kind)` + one `EntityList` swap cut all 7 lists to DC.
+  Playwright (job 59): Movies 94 / People 442 / Recordings 172 / Library 307 / Sheet 112. ALL PASS.
+- **17.3b backend** — `getMetadataByLegacyId` (fixed: `_legacy_id` needs an ExpressionAttributeName
+  alias) + `updateMetadata(pk, patch)` mutation (SET dc_title/language_code/_tags/_external_links,
+  refreshes ASCII Title, bumps _last_updated_at; IAM +UpdateItem) + `documents/*` storage read.
+  Verified via Lambda: getByLegacyId returns records; updateMetadata add+revert round-trip clean.
+- **17.3b frontend** — all 6 detail pages read from DC (`getEntityDetail` resolves relationships)
+  and write editable fields (`updateEntity`). Shared `DcEntityHeader`; `TagManager`/`ExternalLinks`
+  gained a DC `save` override. PDFs download from `documents/<uuid>/`. Relationships read-only
+  (DC collapsed per-edge roles); relationship EDITING deferred. Playwright (job 62): Dirty Dancing
+  soundtrack, recording featured-in, book author+PDF download, Mike Nichols filmography — ALL PASS.
+- **Migration bug fixed (found by the filmography check):** the relationship indexer omitted
+  `personId`, so `movie_cast` reverse edges (person→movie filmography) were dropped — movies still
+  got their cast (indexed by `movieId`). Added `personId` to the indexer in migrate-to-dc.mjs +
+  audit, re-emitted + re-synced (1194 writes). Filmography confirmed.
 
-**Deploy pipeline is healthy again** — prerequisite for the rest of Phase 17 is cleared.
+**Known transient limitations until 17.4 / create+editor cutover:**
+- Dossier (DataManagement) + GlobalSearch still read the legacy `KnowledgeGraphItem` table (they
+  work — legacy data is intact). Detail-page edits write DC, so they can momentarily diverge from
+  Dossier/search until those cut over.
+- `+ New` (CreateEntityForm) and AssetUpload still write legacy → new items won't appear in DC
+  lists until the create path is cut over.
+
+**Remaining:** 17.4 (Dossier + GlobalSearch on DC), 17.5 (full Playwright parity), 17.6
+(decommission old path — gated on parity, backup first), then Phase 18 (enrichment + full editor).
+
+**Deploy pipeline healthy** (jobs 55–62 green).
 
 ---
 
