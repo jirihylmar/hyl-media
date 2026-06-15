@@ -15,6 +15,7 @@ export type DcAttributes = {
   dc_rights_holder?: string | null;
   dc_license: string;
   dc_source_uri: string;
+  s3_key?: string;
   language_code: string;
   _category: string;
   _entity_kind: string;
@@ -58,6 +59,7 @@ export type DcViewModel = {
   familyName: string | null;
   roles: string[];
   sourceUri: string;     // the artifact (PDF or JSON descriptor)
+  s3Key: string;         // Attributes.s3_key — the content object key (for Storage.getUrl)
   category: string;      // documents | datasets
   fileBacked: boolean;   // true → sourceUri is a real PDF to open/download
   // relationship URIs (resolve to records via pkFromUri + getMetadata)
@@ -105,6 +107,7 @@ export function dcToViewModel(rec: DcRecord): DcViewModel {
     familyName: a._family_name ?? null,
     roles: arr(a._roles),
     sourceUri: a.dc_source_uri,
+    s3Key: a.s3_key ?? '',
     category: a._category,
     fileBacked: a._category === 'documents' && a._file_missing !== true,
     relationUris: arr(a.dc_relation),

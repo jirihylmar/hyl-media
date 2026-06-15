@@ -8,12 +8,20 @@ type Props = {
   entityType: string;
   tags: string[];
   onUpdate: (tags: string[]) => void;
+  // When provided (DC-backed pages), persist via this instead of the legacy updateItem.
+  save?: (tags: string[]) => Promise<void>;
 };
 
-export function TagManager({ id, entityType, tags, onUpdate }: Props) {
+export function TagManager({ id, entityType, tags, onUpdate, save }: Props) {
   const userId = useUserId();
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const persist = async (newTags: string[]) => {
+    if (save) await save(newTags);
+    else await updateItem(id, entityType, { tags: newTags as unknown as string }, userId);
+    onUpdate(newTags);
+  };
 
   const handleToggle = async (tag: string) => {
     setSaving(true);
@@ -21,8 +29,7 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
       ? tags.filter(t => t !== tag)
       : [...tags, tag];
     try {
-      await updateItem(id, entityType, { tags: newTags as unknown as string }, userId);
-      onUpdate(newTags);
+      await persist(newTags);
     } catch (e) {
       console.error('Tag update failed:', e);
     } finally {
@@ -34,8 +41,7 @@ export function TagManager({ id, entityType, tags, onUpdate }: Props) {
     setSaving(true);
     const newTags = tags.filter(t => t !== tag);
     try {
-      await updateItem(id, entityType, { tags: newTags as unknown as string }, userId);
-      onUpdate(newTags);
+      await persist(newTags);
     } catch (e) {
       console.error('Tag remove failed:', e);
     } finally {

@@ -7,7 +7,7 @@ import {
   listMetadataByType, getMetadataByLegacyId, resolveUris, DC_TYPE_BY_KIND,
 } from './dcClient';
 import { getClient } from './client';
-import type { DcViewModel } from './dcMap';
+import type { DcViewModel, ExternalLink } from './dcMap';
 import type { KnowledgeGraphItem } from './client';
 
 // Map a DC view model to a legacy-shaped list item. All KnowledgeGraphItem fields are optional,
@@ -80,5 +80,22 @@ export async function updateEntity(pk: string, patch: Record<string, unknown>): 
     console.error('updateMetadata errors:', res.errors);
     throw new Error(res.errors[0].message);
   }
+}
+
+/** Reflect a saved patch into a local view model (optimistic UI, no refetch). */
+export function applyPatchToVm(vm: DcViewModel, fields: Record<string, unknown>): DcViewModel {
+  const out = { ...vm };
+  if (typeof fields.dc_title === 'string') out.name = fields.dc_title;
+  if (typeof fields.language_code === 'string') out.language = fields.language_code || null;
+  if (Array.isArray(fields._tags)) out.tags = fields._tags as string[];
+  if (Array.isArray(fields._external_links)) out.externalLinks = fields._external_links as ExternalLink[];
+  return out;
+}
+
+/** Group resolved relationship links by entity kind (for person/band detail sections). */
+export function groupByKind(links: DcLink[]): Record<string, DcLink[]> {
+  const out: Record<string, DcLink[]> = {};
+  for (const l of links) (out[l.kind] ||= []).push(l);
+  return out;
 }
 

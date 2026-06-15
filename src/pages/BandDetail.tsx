@@ -1,110 +1,61 @@
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
-import { getItem, listByPerformer, listByType, updateItem } from '../lib/queries';
-import type { KnowledgeGraphItem } from '../lib/client';
-import { InlineEdit } from '../components/InlineEdit';
-import { ExternalLinks } from '../components/ExternalLinks';
-import { TagManager } from '../components/TagManager';
-import { useUserId } from '../lib/UserContext';
+import { getEntityDetail, updateEntity, applyPatchToVm, groupByKind, type DcDetail } from '../lib/dcQueries';
+import { DcEntityHeader } from '../components/DcEntityHeader';
 import { Breadcrumb } from '../components/Breadcrumb';
 
-function normalize(s: string): string {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
+const SECTIONS: { kind: string; label: string; path: string }[] = [
+  { kind: 'recording', label: 'Discography', path: '/recordings' },
+  { kind: 'sheet_music', label: 'Sheet Music', path: '/sheet-music' },
+  { kind: 'movie', label: 'Soundtracks', path: '/movies' },
+];
 
-// Used for bands and collaborations
+// Used for bands and collaborations.
 export function BandDetail() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  const userId = useUserId();
-  const [entity, setEntity] = useState<KnowledgeGraphItem | null>(null);
-  const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
-  const [sheetMusic, setSheetMusic] = useState<KnowledgeGraphItem[]>([]);
+  const [detail, setDetail] = useState<DcDetail | null>(null);
 
-  // Determine entity type from URL path
-  const entityType = location.pathname.startsWith('/collaborations')
-    ? 'collaboration'
-    : 'band';
+  const isCollab = location.pathname.startsWith('/collaborations');
+  const entityType = isCollab ? 'collaboration' : 'band';
 
   useEffect(() => {
     if (!id) return;
-    getItem(id, entityType).then(data => {
-      setEntity(data);
-      // Find sheet music by artistName match (handles diacritics + partial names)
-      if (data?.name) {
-        const bNorm = normalize(data.name);
-        listByType('sheet_music').then(sheets => {
-          setSheetMusic(sheets.filter(s =>
-            s.artistName && (normalize(s.artistName).includes(bNorm) || bNorm.includes(normalize(s.artistName)))
-          ));
-        });
-      }
-    });
-    listByPerformer(id).then(setRecordings);
-  }, [id, entityType]);
+    getEntityDetail(id).then(setDetail);
+  }, [id]);
 
-  if (!entity) return <p>Loading...</p>;
+  if (!detail) return <p className="loading">Loading</p>;
+  const { vm } = detail;
+  const grouped = groupByKind(detail.relations);
 
-  const handleSave = async (field: string, value: string) => {
-    const updated = await updateItem(id!, entityType, { [field]: value }, userId);
-    if (updated) setEntity({ ...entity, ...updated });
+  const patch = async (fields: Record<string, unknown>) => {
+    await updateEntity(vm.id, fields);
+    setDetail((d) => (d ? { ...d, vm: applyPatchToVm(d.vm, fields) } : d));
   };
-
-  const crumbLabel = entityType === 'collaboration' ? 'Collaborations' : 'Bands';
-  const crumbPath = entityType === 'collaboration' ? '/collaborations' : '/bands';
 
   return (
     <div>
       <Breadcrumb items={[
         { label: 'Dossier', to: '/?tab=bands' },
-        { label: crumbLabel, to: crumbPath },
-        { label: entity.name || '' },
+        { label: isCollab ? 'Collaborations' : 'Bands', to: isCollab ? '/collaborations' : '/bands' },
+        { label: vm.name },
       ]} />
-      <InlineEdit value={entity.name || ''} onSave={v => handleSave('name', v)} as="h1" />
-      <p><InlineEdit value={entity.language || ''} onSave={v => handleSave('language', v)} label="Language" /></p>
-      {entity.updatedAt && (
-        <p className="meta">
-          Last updated: {new Date(entity.updatedAt).toLocaleString()} by {entity.updatedBy}
-        </p>
-      )}
+      <DcEntityHeader vm={vm} entityType={entityType} onPatch={patch} />
 
-      <ExternalLinks
-        id={id!} entityType={entityType}
-        externalLinks={entity.externalLinks}
-        onUpdate={externalLinks => setEntity({ ...entity, externalLinks } as typeof entity)}
-      />
-
-      <TagManager
-        id={id!} entityType={entityType}
-        tags={(entity.tags as string[] | null) || []}
-        onUpdate={tags => setEntity({ ...entity, tags } as typeof entity)}
-      />
-
-      {recordings.length > 0 && (
-        <>
-          <h2>Discography ({recordings.length})</h2>
-          <ul>
-            {recordings.map(r => (
-              <li key={r.id}>
-                <Link to={`/recordings/${r.recordingId}`}>{r.recordingName}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {sheetMusic.length > 0 && (
-        <>
-          <h2>Sheet Music ({sheetMusic.length})</h2>
-          <ul>
-            {sheetMusic.map(sm => (
-              <li key={sm.id}>
-                <Link to={`/sheet-music/${sm.id}`}>{sm.name}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {SECTIONS.map(({ kind, label, path }) => {
+        const items = grouped[kind] || [];
+        if (items.length === 0) return null;
+        return (
+          <div key={kind}>
+            <h2>{label} ({items.length})</h2>
+            <ul>
+              {items.map((it) => (
+                <li key={it.id}><Link to={`${path}/${it.id}`}>{it.name}</Link></li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

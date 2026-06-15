@@ -9,6 +9,8 @@ type Props = {
   entityType: string;
   externalLinks?: string | null;
   onUpdate: (externalLinks: string) => void;
+  // When provided (DC-backed pages), persist the parsed link array via this.
+  save?: (links: ExternalLink[]) => Promise<void>;
 };
 
 const KNOWN_TYPES: Record<string, { label: string; icon: string; color: string }> = {
@@ -33,7 +35,7 @@ function serializeLinks(links: ExternalLink[]): string {
   return JSON.stringify(links);
 }
 
-export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props) {
+export function ExternalLinks({ id, entityType, externalLinks, onUpdate, save }: Props) {
   const userId = useUserId();
   const [editing, setEditing] = useState<{ index: number; url: string; type: string } | null>(null);
   const [adding, setAdding] = useState(false);
@@ -47,7 +49,8 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate }: Props
     setSaving(true);
     const json = serializeLinks(updated);
     try {
-      await updateItem(id, entityType, { externalLinks: json }, userId);
+      if (save) await save(updated);
+      else await updateItem(id, entityType, { externalLinks: json }, userId);
       onUpdate(json);
     } catch (e) {
       console.error('Save failed:', e);
