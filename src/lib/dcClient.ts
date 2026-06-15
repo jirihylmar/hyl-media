@@ -52,13 +52,15 @@ export async function resolveUris(uris: string[]): Promise<DcViewModel[]> {
   return records.filter((r): r is DcViewModel => !!r);
 }
 
-// Map the DCMI dc_type back to the legacy entityKind set the UI groups by.
+// Map each entity kind to the dc_type the lists query by. Agent entities (person/band/
+// collaboration) are dc_type=Agent (dcterms:Agent); listEntitiesForList still narrows by
+// _entity_kind, so the three agent kinds sharing 'Agent' are separated downstream.
 export const DC_TYPE_BY_KIND: Record<string, string> = {
   movie: 'MovingImage',
   recording: 'Sound',
   book: 'Text',
   sheet_music: 'Text',
-  person: 'Dataset',
-  band: 'Dataset',
-  collaboration: 'Dataset',
+  person: 'Agent',
+  band: 'Agent',
+  collaboration: 'Agent',
 };

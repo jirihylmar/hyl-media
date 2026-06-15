@@ -6,9 +6,10 @@
  *   <bucket>/metadata/<category>/<uuid>/<filename>.metadata.json ← Dublin Core sidecar
  *   dc_source_uri = https://<bucket>.s3.<region>.amazonaws.com/<content-key>
  *
- * <category> ∈ { audio, datasets, documents } (DH's three folders). hyl-media uses:
+ * <category> ∈ { audio, datasets, documents, agents }. hyl-media uses:
  *   - documents : file-backed assets (book, sheet_music PDFs)
- *   - datasets  : JSON descriptors for non-file entities (movie, recording, person, band, collaboration)
+ *   - datasets  : JSON descriptors for non-file MEDIA resources (movie, recording)
+ *   - agents    : JSON descriptors for agent entities (person, band, collaboration) — dc_type=Agent
  *
  * Pure module — no AWS calls. See docs/dc-metadata-mapping.md §4 and tasks/phase_15_*.md.
  */
@@ -20,13 +21,17 @@ export const BUCKET = 'amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m
 export const REGION = 'eu-central-1';
 export const RESOURCE_ACCOUNT = 'hylm';
 
-export const CATEGORIES = Object.freeze(['audio', 'datasets', 'documents']);
+export const CATEGORIES = Object.freeze(['audio', 'datasets', 'documents', 'agents']);
 
-// File-backed entity types live in documents/; everything else is a JSON descriptor in datasets/.
+// File-backed entity types live in documents/; agent entities (person/band/collaboration) live in
+// agents/ (dc_type=Agent); other non-file MEDIA resources (movie/recording) are descriptors in datasets/.
 const DOCUMENT_ENTITY_TYPES = new Set(['book', 'sheet_music']);
+const AGENT_ENTITY_TYPES = new Set(['person', 'band', 'collaboration']);
 
 export function categoryForEntityType(entityType) {
-  return DOCUMENT_ENTITY_TYPES.has(entityType) ? 'documents' : 'datasets';
+  if (DOCUMENT_ENTITY_TYPES.has(entityType)) return 'documents';
+  if (AGENT_ENTITY_TYPES.has(entityType)) return 'agents';
+  return 'datasets';
 }
 
 function assertCategory(category) {
@@ -86,8 +91,10 @@ if (process.argv[1] && process.argv[1].endsWith('dc-paths.mjs') && process.argv.
   eq('movie sidecarKey', sidecarKey('datasets', movieUuid, movieFile),
      `metadata/datasets/${movieUuid}/${movieFile}.metadata.json`);
 
-  // Agent + recording also → datasets
-  eq('person category', categoryForEntityType('person'), 'datasets');
+  // Agent entities → agents; recording (media descriptor) → datasets
+  eq('person category', categoryForEntityType('person'), 'agents');
+  eq('band category', categoryForEntityType('band'), 'agents');
+  eq('collaboration category', categoryForEntityType('collaboration'), 'agents');
   eq('recording category', categoryForEntityType('recording'), 'datasets');
   eq('sheet_music category', categoryForEntityType('sheet_music'), 'documents');
 

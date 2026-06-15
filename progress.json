@@ -1480,6 +1480,35 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_20_agent_entity_typing": {
+      "name": "Agent Entity Re-typing + Repartition (person/band/collaboration)",
+      "status": "complete",
+      "started_at": "2026-06-15",
+      "completed_at": "2026-06-15",
+      "description": "Agent entities were materialized as dc_type=Dataset / ContentType=DATASET JSON descriptors in datasets/ — semantically wrong for a person/band. Re-type them as dc_type=Agent (dcterms:Agent — DCMI Type Vocabulary has no agent type) with ContentType PERSON/BAND/COLLABORATION, and move them to a dedicated agents/ S3 partition. Non-destructive of data: every record keeps its abstract, links, tags, relationships (same PK/SK/uuid).",
+      "added_reason": "User: a person's metadata says ContentType DATASET / dc_type Dataset — 'its not dataset' — the agent metadata must make sense; keep the records (don't lose them); also move the partition to agents.",
+      "tasks": [
+        {
+          "id": "20.1",
+          "name": "Re-type agent entities to dc_type=Agent + move to agents/ partition (scripts + live data)",
+          "status": "complete",
+          "size": "medium",
+          "verify": "All person/band/collaboration records: _category=agents, dc_type=Agent, ContentType=PERSON/BAND/COLLABORATION; none left in datasets/; conformance audit ALL PASS",
+          "completed_at": "2026-06-15",
+          "verified": "Source-of-truth scripts updated (dc-paths.mjs CATEGORIES+agents & AGENT_ENTITY_TYPES; entity-to-dc.mjs ENTITY_DC agent→Agent/PERSON|BAND|COLLABORATION + agents/ descriptor; self-tests pass). Live migration scripts/repartition-agents.mjs: moved 509 agents (content + sidecar) datasets/→agents/, updated DDB in place (s3_key, ContentType, _category, dc_source_uri, dc_type), deleted old objects — 0 errors. DDB: 509 records _category=agents & dc_type=Agent; 0 agents left in datasets/. dc_abstract/links/tags/relationships preserved (verified Staša Bartůňková sidecar). Cross-ref URIs in resources still resolve (frontend keys on uuid via pkFromUri). audit-dc-conformance.mjs (agents+Agent rules) re-run: ALL PASS."
+        },
+        {
+          "id": "20.2",
+          "name": "Frontend + storage + docs for the agents partition",
+          "status": "complete",
+          "size": "small",
+          "verify": "dcClient DC_TYPE_BY_KIND agent→Agent; storage grants agents/* read; lists still load; docs/diagram updated; tsc clean",
+          "completed_at": "2026-06-15",
+          "verified": "src/lib/dcClient.ts DC_TYPE_BY_KIND person/band/collaboration→'Agent' (listMetadataByType('Agent')+_entity_kind narrowing). amplify/storage/resource.ts grants agents/* read. managed-resource skill + architecture README/diagram updated for the agents partition + Agent type. tsc clean. Live list verification after deploy."
+        }
+      ],
+      "artifacts": []
     }
   },
   "current_task": "18.4",

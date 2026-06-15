@@ -32,8 +32,10 @@ const CANONICAL_28 = [
   'dc_title', 'dc_type', 'dc_abstract', 'dc_subject', 'dc_rights_holder', 'dc_license', 'dc_accrual_method',
   'dc_source', 'dc_relation', 'dc_has_format', 'dc_is_format_of', 'dc_has_part', 'dc_is_part_of',
 ];
-const DCMI_TYPES = new Set(['Text', 'Sound', 'Dataset', 'MovingImage', 'Image', 'InteractiveResource', 'Service']);
-const CATEGORIES = new Set(['audio', 'datasets', 'documents']);
+// DCMI Type Vocabulary + 'Agent' (dcterms:Agent) for agent entities — DCMI has no agent type, so
+// person/band/collaboration are typed Agent (a documented hyl-media extension; see managed-resource).
+const DCMI_TYPES = new Set(['Text', 'Sound', 'Dataset', 'MovingImage', 'Image', 'InteractiveResource', 'Service', 'Agent']);
+const CATEGORIES = new Set(['audio', 'datasets', 'documents', 'agents']);
 const TOP_KEYS = ['id', 'SK', 'DocumentId', 'Title', 'ContentType', 'Attributes'];
 
 async function scanAll() {

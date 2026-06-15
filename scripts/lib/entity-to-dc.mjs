@@ -22,12 +22,15 @@ import {
 } from './dc-paths.mjs';
 
 // dc_type + file/content type per entity (docs/dc-metadata-mapping.md §3).
+// Agent entities (person/band/collaboration) are typed dc_type=Agent (dcterms:Agent — DC-Terms
+// compatible; the DCMI Type Vocabulary has no agent type) and live in the agents/ partition;
+// ContentType carries the human-readable kind.
 const ENTITY_DC = {
   movie:         { dcType: 'MovingImage', fileType: 'json', contentType: 'DATASET' },
   recording:     { dcType: 'Sound',       fileType: 'json', contentType: 'DATASET' },
-  person:        { dcType: 'Dataset',     fileType: 'json', contentType: 'DATASET' },
-  band:          { dcType: 'Dataset',     fileType: 'json', contentType: 'DATASET' },
-  collaboration: { dcType: 'Dataset',     fileType: 'json', contentType: 'DATASET' },
+  person:        { dcType: 'Agent',       fileType: 'json', contentType: 'PERSON' },
+  band:          { dcType: 'Agent',       fileType: 'json', contentType: 'BAND' },
+  collaboration: { dcType: 'Agent',       fileType: 'json', contentType: 'COLLABORATION' },
   book:          { dcType: 'Text',        fileType: 'pdf',  contentType: 'PDF' },
   sheet_music:   { dcType: 'Text',        fileType: 'pdf',  contentType: 'PDF' },
 };
@@ -64,10 +67,14 @@ export function resolveArtifact(entity) {
   if (nativeCat === 'documents' && pdf) {
     return { category: 'documents', filename: pdf, fileType: meta.fileType, contentType: meta.contentType, dcType: meta.dcType, isDescriptor: false, fileMissing: false };
   }
+  // Agent descriptors live in agents/ with their kind ContentType; other descriptors (movie,
+  // recording, and the file-less book/sheet edge case) stay JSON datasets.
+  const descriptorCat = nativeCat === 'agents' ? 'agents' : 'datasets';
+  const descriptorContentType = nativeCat === 'agents' ? meta.contentType : 'DATASET';
   return {
-    category: 'datasets',
+    category: descriptorCat,
     filename: descriptorFilename(entity.name, entity.id),
-    fileType: 'json', contentType: 'DATASET', dcType: meta.dcType,
+    fileType: 'json', contentType: descriptorContentType, dcType: meta.dcType,
     isDescriptor: true,
     fileMissing: nativeCat === 'documents', // a book/sheet_music with no PDF
   };
@@ -288,7 +295,9 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   eq('person dc_relation has recording URI', PA.dc_relation, [recUri]);
   eq('person dc_subject excludes role tag', PA.dc_subject, []);
   eq('person _tags keeps role', PA._tags, ['artist']);
-  eq('person dc_type Dataset (agent)', PA.dc_type, 'Dataset');
+  eq('person dc_type Agent', PA.dc_type, 'Agent');
+  eq('person _category agents', PA._category, 'agents');
+  eq('person ContentType PERSON', pout.sidecar.ContentType, 'PERSON');
   eq('person _roles', PA._roles, ['artist']);
 
   // Book: author → dc_creator + dc_rights_holder; document category.

@@ -30,9 +30,10 @@ artifact described by a **conformant sidecar** that the DH Python CLI syncs into
 **S3 layout** (in the storage bucket, alongside the legacy `library/` + `sheet-music/`):
 
 ```
-datasets/<uuid>/<slug>.json                          # descriptors: person, band, movie, recording, collaboration
+datasets/<uuid>/<slug>.json                          # media-resource descriptors: movie, recording
+agents/<uuid>/<slug>.json                            # agent descriptors: person, band, collaboration (dc_type=Agent)
 documents/<uuid>/<name>.pdf                           # books + sheet music
-metadata/<category>/<uuid>/<file>.metadata.json      # the conformant DC sidecars (category = datasets|documents)
+metadata/<category>/<uuid>/<file>.metadata.json      # the conformant DC sidecars (category = datasets|agents|documents)
 ```
 
 **Sidecar structure (exact rules, verified by `scripts/audit-dc-conformance.mjs` — all 1194 ALL PASS):**
@@ -40,7 +41,8 @@ top-level `{ id, SK, DocumentId, Title, ContentType, Attributes }` with `Documen
 `SK===Attributes.sort_key` of shape `#<lang>#<slug>`; the first **28 `Attributes` keys in the exact
 canonical DH order** (`_authors … dc_is_part_of`), then hyl-media domain extensions (`dc_creator`,
 `_entity_kind`, `_legacy_id`, `_tags`, `_external_links`, `_given_name`, `_family_name`, `_roles`);
-`dc_type` ∈ DCMI {Text, Sound, Dataset, MovingImage, …}; `dc_source_uri` derived from bucket+key.
+`dc_type` ∈ DCMI {Text, Sound, Dataset, MovingImage, …} + `Agent` (dcterms:Agent — for
+person/band/collaboration, which have no DCMI type and live in `agents/`); `dc_source_uri` derived from bucket+key.
 
 **Lifecycle — the `managed-resource` skill** (`.claude/commands/managed-resource.md`):
 

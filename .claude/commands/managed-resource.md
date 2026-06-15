@@ -41,9 +41,13 @@ A sidecar is `{ id, SK, DocumentId, Title, ContentType, Attributes }` and MUST s
   dc_has_format, dc_is_format_of, dc_has_part, dc_is_part_of`.
   hyl-media then APPENDS its domain extensions: `dc_creator, dc_contributor, _entity_kind,
   _legacy_id, _tags, _external_links, _given_name, _family_name, _roles`.
-- **Values:** `dc_type` ∈ {Text, Sound, Dataset, MovingImage, Image, InteractiveResource, Service};
-  `_category` ∈ {audio, datasets, documents} (hyl-media uses datasets + documents);
+- **Values:** `dc_type` ∈ {Text, Sound, Dataset, MovingImage, Image, InteractiveResource, Service}
+  **+ `Agent`** for agent entities (dcterms:Agent — the DCMI Type Vocabulary has no agent type);
+  `_category` ∈ {audio, datasets, documents, **agents**};
   `dc_source_uri === https://<bucket>.s3.<region>.amazonaws.com/<s3_key>`.
+- **Per-kind typing:** movie→`MovingImage`, recording→`Sound` (both in `datasets/`); book/sheet_music→`Text`
+  (`documents/`); **person/band/collaboration→`Agent` (`agents/`, ContentType PERSON/BAND/COLLABORATION)**.
+  The real entity kind is always in `_entity_kind`.
 - Reference: `docs/dc-metadata-mapping.md`, and the DH builder
   `/home/ubuntu/digital-horizon-playbook/.../recordings/_shared/metadata.ts`.
 

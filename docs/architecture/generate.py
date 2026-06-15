@@ -81,7 +81,7 @@ with Diagram(
         )
 
     with Cluster("S3 — hylmediastoragebucketefb-* (Amplify-managed)"):
-        s3_content = S3("Content\ndatasets/<uuid>/*.json\ndocuments/<uuid>/*.pdf")
+        s3_content = S3("Content\ndatasets/ (movie,recording)\nagents/ (person,band)\ndocuments/ (book,sheet)")
         s3_sidecars = S3("DC sidecars\nmetadata/<cat>/<uuid>/\n*.metadata.json")
         s3_legacy = S3("Legacy originals\nlibrary/ · sheet-music/")
 

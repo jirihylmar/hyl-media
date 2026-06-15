@@ -47,6 +47,39 @@ DC store = `hyl-media-metadata-repository` (1194 records).
 
 ---
 
+### Session: 2026-06-15 (cont.) — Phase 20: agent entities re-typed (dc_type=Agent) + agents/ partition
+
+User flagged (viewing a person's sidecar via the metadata link): `ContentType: DATASET` / `dc_type:
+Dataset` is wrong — "its not dataset" — a person isn't a dataset. Clarified: KEEP persons/bands
+(don't lose them); their metadata just needs to make sense. Decision: type agents per **DC Terms**
+(`dc_type=Agent` = dcterms:Agent — the DCMI Type Vocabulary has no agent type) and **move the
+partition to `agents/`**.
+
+**20.1 — re-type + repartition (non-destructive of data):**
+- Source-of-truth scripts: `dc-paths.mjs` (CATEGORIES += `agents`; `AGENT_ENTITY_TYPES` →
+  categoryForEntityType returns `agents`); `entity-to-dc.mjs` (`ENTITY_DC` person/band/collaboration
+  → dcType `Agent`, ContentType `PERSON`/`BAND`/`COLLABORATION`; descriptor branch emits to `agents/`).
+  Self-tests updated + pass.
+- Live migration `scripts/repartition-agents.mjs`: for each of the 509 agent records — copy descriptor
+  + rewrite sidecar to `agents/<uuid>/…`, update DDB in place (s3_key, ContentType, _category,
+  dc_source_uri, dc_type, bump _last_updated_at), delete the old `datasets/` objects. Idempotent
+  (skips records already in `agents/`). **509 moved, 0 errors.** Verified: 509 records `_category=agents`
+  & `dc_type=Agent`; 0 agents left in `datasets/`; Staša Bartůňková sidecar keeps its enriched
+  dc_abstract/subjects/_tags, first 28 keys still canonical. **Nothing lost** — same PK/SK/uuid.
+- Cross-reference URIs in movies/recordings still point at `datasets/<uuid>` cosmetically but RESOLVE
+  fine — the frontend keys on the uuid (`pkFromUri` ignores the category). (Could rewrite them as a
+  cleanup; not needed for correctness.)
+
+**20.2 — frontend + storage + docs:** `dcClient.ts` `DC_TYPE_BY_KIND` agents → `Agent`
+(listMetadataByType('Agent') + `_entity_kind` narrowing keeps person/band/collaboration separate);
+`storage/resource.ts` grants `agents/*` read; `audit-dc-conformance.mjs` accepts `agents` + `Agent`;
+managed-resource skill + architecture README/diagram updated. tsc clean. Re-audit ALL PASS.
+
+**Movies stay `MovingImage`/datasets, recordings `Sound`/datasets, books/sheet `Text`/documents —
+only the agents moved.** Deploy + live list verification follow.
+
+---
+
 ### Session: 2026-06-15 (cont.) — Phase 19: conformance, S3 reconcile, managed-resource skill, metadata link
 
 User asks: (1) prove the S3 structure + sidecar content match the DH example *following exact rules*
