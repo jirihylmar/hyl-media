@@ -4,6 +4,41 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-15 — Deploy fix + Phase 17.1/17.2 (frontend DC cutover begun)
+
+**Deploy blocker diagnosed + fixed (was pre-existing, broke jobs 50–56):**
+- Symptom: Amplify backend deploy failed at CDK assembly with `spawnSync docker ENOENT`.
+- Root cause (confirmed in decompiled `aws-cdk-lib/aws-lambda-nodejs/bundling.js`):
+  `shouldBuildImage = !esbuildInstallation` — with no resolvable esbuild, CDK builds a Docker
+  image to bundle Amplify's auth/data custom-resource Lambdas; the Amplify build image has no
+  Docker. esbuild existed only nested under `tsx`, never at root. Regressed because the Amplify
+  build image stopped providing a global esbuild/Docker (our code never changed).
+- Fix: added `esbuild ^0.27.7` devDependency (major `0.x` — satisfies vite 8's `^0.27` peer AND
+  CDK's `startsWith('0.')` guard; linux-x64 binary in lockfile). **Jobs 55, 56, 57, 58 all green.**
+- Correction logged: my earlier claim that the `navigate` fix would restore deploys was wrong —
+  it was a real cleanup but not the blocker.
+
+**Anthropic key:** stored in Secrets Manager `hyl-media/anthropic-api-key` (ARN …-KBL4LX) for
+Phase 18. Never committed. **Rotate after Phase 18** (pasted in chat once).
+
+**Phase 17 — Frontend DC cutover (started):**
+- **17.1** ✓ `amplify/functions/metadata-api/` Lambda + 3 Cognito-authed custom AppSync queries
+  (`getMetadata`, `listMetadataByType`, `searchMetadata`) over `hyl-media-metadata-repository`.
+  IAM read granted by ARN in `backend.ts`. Deployed (job 57). Verified by direct-invoking the
+  live Lambda: getMetadata(Dirty Dancing)→MovingImage + 2 dc_has_part URIs + PK==id;
+  listMetadataByType(MovingImage)→movies; searchMetadata('dirty dancing')→hit.
+- **17.2** ✓ `src/lib/dcMap.ts` (pure types + `dcToViewModel` + `pkFromUri`, node-tested on the
+  real Dirty Dancing record) + `src/lib/dcClient.ts` (calls the 17.1 queries, `resolveUris`).
+  tsc clean. Not yet wired into pages.
+
+**Next: 17.3** — read-path cutover (list + detail pages render from DC records). Large multi-page
+refactor — checkpointed here mid-context. Then 17.4 (Dossier+search), 17.5 (Playwright parity),
+17.6 (decommission old path, gated on parity, backup first).
+
+**Deploy pipeline is healthy again** — prerequisite for the rest of Phase 17 is cleared.
+
+---
+
 ### Session: 2026-06-14 (cont.) — Execute Phase 16: DC Migration (all 6 tasks complete)
 
 Migrated the catalog into the DC metadata-repository, verifying each step against real data.
