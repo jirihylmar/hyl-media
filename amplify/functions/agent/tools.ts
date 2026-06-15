@@ -10,15 +10,21 @@
  * Tools are built via a `ToolDeps` factory so later tasks can inject the S3
  * client, secret, and write helpers without rewiring the handler.
  */
+import type Anthropic from '@anthropic-ai/sdk';
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 import { canRead, createToolRegistry, type ToolDefinition, type ToolRegistry } from './assistant';
+import { researchEntityTool } from './research';
 
 export interface ToolDeps {
   ddb: DynamoDBDocumentClient;
   /** hyl-media-metadata-repository */
   table: string;
+  /** Anthropic client — required for the research_entity (web-search) tool. */
+  anthropic?: Anthropic;
+  /** Model id for sub-agent research/extraction calls. */
+  model?: string;
 }
 
 /** Diacritics-insensitive normalize (mirrors metadata-api `norm`). */
@@ -235,5 +241,8 @@ export function buildRegistry(deps: ToolDeps): ToolRegistry {
   registry.register(searchCatalogTool(deps));
   registry.register(getResourceTool(deps));
   registry.register(findAgentTool(deps));
+  // research_entity needs the Anthropic client (server-side web search); only
+  // register it when one is wired (the handler always provides it in prod).
+  if (deps.anthropic) registry.register(researchEntityTool(deps.anthropic, deps.model));
   return registry;
 }

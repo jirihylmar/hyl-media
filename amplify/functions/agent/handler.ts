@@ -140,7 +140,7 @@ export const handler = async (
   }
 
   const anthropic = await getAnthropic();
-  const registry = TABLE ? buildRegistry({ ddb, table: TABLE }) : createToolRegistry();
+  const registry = TABLE ? buildRegistry({ ddb, table: TABLE, anthropic, model: MODEL }) : createToolRegistry();
 
   const result = await runAssistantTurn({
     client: anthropic,
