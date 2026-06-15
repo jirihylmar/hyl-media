@@ -1256,7 +1256,7 @@
     },
     "phase_17_frontend_dc_cutover": {
       "name": "Frontend Cutover to the DC metadata-repository",
-      "status": "pending",
+      "status": "in_progress",
       "description": "Point the React app at hyl-media-metadata-repository (the DC store) instead of the KnowledgeGraphItem table. Because the DC table is CLI-created (not an Amplify model), expose it via Amplify Gen 2 custom AppSync resolvers (list/get/search), then refactor the read path (list + detail + Dossier + global search) to render from DC records (dc_title, dc_subject/_tags, dc_creator/dc_contributor, relationships via dc_* URIs, external links via _external_links). Verify parity in the live app, then decommission the old data path. Additive until parity is confirmed.",
       "added_reason": "User: define phases. Phase 17 is the frontend cutover from the roadmap.",
       "tasks": [
@@ -1321,7 +1321,8 @@
           "notes": "Only after 17.5 parity passes. Back up (export) the old table first; keep it recoverable. Do NOT delete library//sheet-music/ until documents/ download is confirmed in prod."
         }
       ],
-      "artifacts": []
+      "artifacts": [],
+      "started_at": "2026-06-15"
     },
     "phase_18_dc_lifecycle_enrichment": {
       "name": "Full DC Lifecycle — Claude Enrichment + _explicit_fields + Edit/Approve",
@@ -1393,7 +1394,7 @@
       "artifacts": []
     }
   },
-  "current_task": null,
+  "current_task": "17.1",
   "git_repos": {
     "orchestration": {
       "local": ".",
