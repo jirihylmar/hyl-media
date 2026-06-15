@@ -55,10 +55,33 @@ Phase 18. Never committed. **Rotate after Phase 18** (pasted in chat once).
 - `+ New` (CreateEntityForm) and AssetUpload still write legacy → new items won't appear in DC
   lists until the create path is cut over.
 
-**Remaining:** 17.4 (Dossier + GlobalSearch on DC), 17.5 (full Playwright parity), 17.6
-(decommission old path — gated on parity, backup first), then Phase 18 (enrichment + full editor).
+**17.4 — Dossier + GlobalSearch on DC (COMPLETE):** GlobalSearch rewired to the server-side
+`searchMetadata` DC query (debounced, grouped, tag-aware). Dossier sources its 6 entity arrays
+from DC (`listEntitiesForList`); relationship cross-refs stay on the intact legacy table for
+read-only display (legacy ids align). Playwright (job 64): Dossier DC counts, search name+tag.
 
-**Deploy pipeline healthy** (jobs 55–62 green).
+**17.5 — full parity (COMPLETE):** Comprehensive Playwright across the cutover — lists, details,
+relationships, Dossier, search. **PDF download confirmed end-to-end:** in-app `getUrl` (Cognito
+identity) fetched a real 2.2 MB PDF from `documents/<uuid>/` → HTTP 200. (Earlier 403s were a test
+error — HEAD on GET-signed presigned URLs; downloads work.) `npm run verify:dc-ui` runs all 3 suites.
+
+**17.6 — decommission: DEFERRED/BLOCKED.** Cannot run yet: the CREATE path (CreateEntityForm +
+AssetUpload) still writes legacy, and the Dossier relationship cross-refs still read legacy
+(movie_cast/recording_performer/sheet_music_performer). Decommissioning would break create +
+relationship display. Also destructive (delete table + S3 prefixes) → needs explicit approval +
+a verified backup first. Recommend after Phase 18 (create + editor on DC).
+
+**Phase 17 status: 17.1–17.5 complete (entire read+write entity path on DC, verified live); 17.6
+deferred.** Deploy pipeline healthy (jobs 55–65 green).
+
+**Net:** the app now reads (and edits scalar fields) entirely from `hyl-media-metadata-repository`.
+Still on legacy until later: creating new entities, uploading assets, relationship cross-ref
+display in Dossier, and relationship editing.
+
+**Next options:** (a) move the create/upload path + Dossier cross-refs to DC (unblocks 17.6);
+(b) Phase 18 — Claude enrichment (dc_abstract) via the Secrets Manager key + full editor +
+approve/regenerate; (c) 17.6 decommission once (a) is done and you approve. Rotate the Anthropic
+key when convenient.
 
 ---
 
