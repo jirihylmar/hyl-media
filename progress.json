@@ -1417,8 +1417,9 @@
       "id": "deploy-docker-cdk",
       "summary": "Amplify Hosting backend deploy fails at CDK assembly with 'spawnSync docker ENOENT'. Pre-existing since job 50 (commit 7af20a9), BEFORE this session — NOT caused by Phase 15/16 or the navigate fix. Frontend type checks pass. Live site serves the last good build (job 49). Likely a transitive dependency version drift (caret-ranged @aws-amplify/backend ^1.21.1 / aws-cdk-lib resolving to a version that bundles a custom-resource Lambda via Docker, which the build image lacks). Backend (amplify/) code unchanged since job 49.",
       "impact": "Blocks React frontend redeploys only. Phase 15/16 DC migration is data/CLI-driven and already live in AWS — unaffected. Phase 17 (frontend cutover) will need this resolved before it can deploy.",
-      "status": "open",
-      "next": "Diagnose which asset needs Docker; likely fix = pin lockfile to job-49 versions, or enable a Docker-capable Amplify build image, or pin @aws-amplify/backend/aws-cdk-lib."
+      "status": "fix-applied-awaiting-build",
+      "next": "Diagnose which asset needs Docker; likely fix = pin lockfile to job-49 versions, or enable a Docker-capable Amplify build image, or pin @aws-amplify/backend/aws-cdk-lib.",
+      "fix": "Root cause confirmed via decompiled aws-cdk-lib/aws-lambda-nodejs/lib/bundling.js: shouldBuildImage = !esbuildInstallation; with no resolvable esbuild, CDK builds a Docker image to bundle Amplify's auth/data custom-resource Lambdas → spawnSync docker ENOENT on the Docker-less Amplify build image. Fix: added esbuild ^0.27.7 (major 0.x, satisfies vite 8 peer AND CDK's startsWith('0.') guard) as a devDependency so npm ci installs it at root → CDK uses local esbuild bundling, no Docker. linux-x64 binary captured in lockfile. Regressed originally because the Amplify build image stopped providing a global esbuild/Docker."
     }
   ]
 }
