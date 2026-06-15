@@ -4,23 +4,32 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
-## ⮕ NEXT SESSION — START HERE (handover 2026-06-15, updated)
+## ⮕ NEXT SESSION — START HERE (handover 2026-06-15, updated for Phase 21)
 
-**State:** Phases 0–16 complete. Phase 17 (frontend DC cutover) **17.1–17.5 complete**;
-**17.6 deferred** (decommission legacy — blocked + destructive, needs approval). Phase 18
-(DC lifecycle/enrichment): **18.1 engine + 18.2 pinning + 18.3 batch-enrichment COMPLETE** —
-**all 1194 DC records now have dc_abstract + refined dc_subject** (0 failures; 520 public /
-521 private; ~$7.3 Opus 4.8). 18.4–18.6 pending. Deploy pipeline healthy (jobs 55–65 green).
-DC store = `hyl-media-metadata-repository` (1194 records).
+**State:** Phases 0–16, 17.1–17.5, 18.1–18.3, 19, 20 complete. **17.6 deferred** (destructive
+decommission, needs approval). All 1194 DC records enriched + structurally conformant (audit ALL
+PASS). Agents (509) re-typed to `dc_type=Agent` in the `agents/` partition. Frontend reads/edits
+the DC store; metadata link live. DC store = `hyl-media-metadata-repository` (1194 records).
+Repo clean + pushed. **Deploy: latest green job 73** (agents); CDK/esbuild fix healthy.
+
+**NEXT: Phase 21 — Agent-Based Operator Panel (planned this session; tasks/phase_21_agent_operator_panel.md).**
+The user does NOT want a traditional DC editor (18.4 superseded) — everything is agent-driven: a chat
+**agent on the right** where "add movie Easy Virtue" triggers research → a proposed plan → (one
+approval) → create the conformant record, find/create cast agents, link, enrich, set links, reconcile.
 
 **Resume work, in order:**
-1. **18.4** — frontend DC editor: edit `dc_title`/`dc_abstract`/`dc_subject`/`dc_creator`, pin
-   edited fields into `_explicit_fields` via the `updateMetadata` mutation (already deployed).
-   DH allowlist = `UPDATABLE_DC_FIELDS`; SET-only writes.
-2. **18.5–18.6** — regenerate (non-pinned only) + approve (`_approval_status=approved`) mutations;
-   end-to-end lifecycle verify + cost/usage report.
-3. **17.6** — only after the create path (CreateEntityForm/AssetUpload) + Dossier cross-refs move
-   to DC; destructive (export backup first) → get explicit user approval.
+1. **Phase 21 (21.1 → 21.10)** — see the task file. Mirror the DH assistant:
+   - DH agent code: `digital-horizon-playbook/.../recordings/assistant/{handler,tools}.ts`,
+     `.../_shared/assistant/{loop,registry}.ts`; frontend `src/components/assistant/{AssistPanel,assistantChatClient}`.
+   - **Locked decisions:** research = Claude + **Anthropic web search** (+ resolve wiki/imdb/musicbrainz);
+     autonomy = **plan → approve batch → execute**; progress = **step log** (stream later).
+   - Net-new vs DH = the **`research_entity`** tool (DH extracts from uploads; hyl-media researches from
+     a name). All other tools wrap existing scripts (enrich-dc, sync-dc-to-s3, build-dc-sidecar/entity-to-dc).
+   - Every executed plan ends with `scripts/audit-dc-conformance.mjs` green.
+2. **18.5/18.6** are realized inside Phase 21 (21.9 regenerate/approve tools; 21.10 cost report).
+3. **17.6** — destructive decommission, only after create path is on DC + explicit approval + backup.
+
+**⚠ Rotate the Anthropic key** (`hyl-media/anthropic-api-key`) — pasted in chat once; Phase 21 uses it heavily.
 
 **18.3 enrichment — DONE, how it works (`scripts/enrich-dc.mjs`):**
 - `classifyVisibility(a)`: PUBLIC iff a *resolved* authoritative link exists

@@ -4,7 +4,7 @@
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
   "last_updated": "2026-06-15",
-  "last_session_summary": "Session 2026-06-15 (cont.): Phases 18.3, 19, 20 complete. 18.3 — enriched ALL 1194 DC records with dc_abstract + refined dc_subject (public/private branching from resolved authoritative links, embedded pdfinfo metadata for books/sheet, no fabrication for private; ~$7.3). 19 — full structural conformance auditor (audit-dc-conformance.mjs, all 1194 ALL PASS against the DH example, not just dc_* terms); reconciled S3 sidecars from DDB (sync-dc-to-s3.mjs) so S3 is source-of-truth again; managed-resource skill (full lifecycle); frontend metadata link (MetadataLink → signed raw sidecar JSON) deployed + Playwright-verified. 20 — re-typed the 509 agent entities (person/band/collaboration) from dc_type=Dataset to dc_type=Agent (dcterms:Agent; DCMI has no agent type), ContentType PERSON/BAND/COLLABORATION, moved to the agents/ S3 partition (repartition-agents.mjs, 0 errors, nothing lost); rewrote 306 agent cross-ref URIs datasets/→agents/ (_cast_uris/_performer_uris); deployed (job 73) + live-verified (People 442/Bands 59, person metadata reads Agent). All conformance audits ALL PASS. Phases 0-16, 17.1-17.5, 18.1-18.3, 19, 20 complete. Next: 18.4 frontend DC editor, 18.5 regenerate/approve, 18.6 lifecycle verify; 17.6 decommission deferred. TODO: rotate Anthropic key (pasted in chat once).",
+  "last_session_summary": "Session 2026-06-15 (cont.): Phases 18.3, 19, 20 complete. 18.3 — enriched ALL 1194 DC records with dc_abstract + refined dc_subject (public/private branching from resolved authoritative links, embedded pdfinfo metadata for books/sheet, no fabrication for private; ~$7.3). 19 — full structural conformance auditor (audit-dc-conformance.mjs, all 1194 ALL PASS against the DH example, not just dc_* terms); reconciled S3 sidecars from DDB (sync-dc-to-s3.mjs) so S3 is source-of-truth again; managed-resource skill (full lifecycle); frontend metadata link (MetadataLink → signed raw sidecar JSON) deployed + Playwright-verified. 20 — re-typed the 509 agent entities (person/band/collaboration) from dc_type=Dataset to dc_type=Agent (dcterms:Agent; DCMI has no agent type), ContentType PERSON/BAND/COLLABORATION, moved to the agents/ S3 partition (repartition-agents.mjs, 0 errors, nothing lost); rewrote 306 agent cross-ref URIs datasets/→agents/ (_cast_uris/_performer_uris); deployed (job 73) + live-verified (People 442/Bands 59, person metadata reads Agent). All conformance audits ALL PASS. Phases 0-16, 17.1-17.5, 18.1-18.3, 19, 20 complete. PLANNED Phase 21 (Agent-Based Operator Panel) for next session: user wants no traditional DC editor (18.4 superseded) — an agent on the right ('add movie Easy Virtue' → research via web search → plan → one approval → create+link+enrich+reconcile), mirroring the DH assistant; decisions locked (web search / plan-approve-batch / step-log); tasks in tasks/phase_21_agent_operator_panel.md (21.1–21.10). 17.6 decommission deferred. TODO: rotate Anthropic key (pasted in chat once).",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1400,13 +1400,14 @@
         {
           "id": "18.4",
           "name": "Frontend DC editor — edit dc_title/dc_abstract/dc_subject/dc_creator, pin on save",
-          "status": "pending",
+          "status": "superseded",
+          "superseded_by": "21.9",
           "size": "medium",
           "verify": "Editing a DC field in the app persists via an updateMetadata mutation and adds the field to _explicit_fields",
           "depends_on": [
             "17.3"
           ],
-          "notes": "Mirror DH UPDATABLE_DC_FIELDS allowlist + per-field shape validation. SET-only (never overwrite whole item)."
+          "notes": "SUPERSEDED: user does NOT want a traditional form editor — everything must be agent-driven (Phase 21 Agent-Based Operator Panel). The edit+pin capability is realized as the agent's update_metadata tool (21.9). Mirror DH UPDATABLE_DC_FIELDS allowlist + per-field shape validation; SET-only."
         },
         {
           "id": "18.5",
@@ -1417,7 +1418,8 @@
           "depends_on": [
             "18.3",
             "18.4"
-          ]
+          ],
+          "notes": "Realized as agent tools (regenerate/approve) in Phase 21 (21.9), not standalone mutations — the operator drives them through the agent panel."
         },
         {
           "id": "18.6",
@@ -1427,7 +1429,8 @@
           "verify": "Enrich→pin→regenerate (pinned preserved)→edit→approve all work on a sample; token usage + cost logged to a report",
           "depends_on": [
             "18.5"
-          ]
+          ],
+          "notes": "Cost/usage report + end-to-end lifecycle verify folded into Phase 21 (21.10)."
         }
       ],
       "artifacts": []
@@ -1518,9 +1521,33 @@
         }
       ],
       "artifacts": []
+    },
+    "phase_21_agent_operator_panel": {
+      "name": "Agent-Based Operator Panel (chat agent on the right — research + create + link + enrich)",
+      "status": "pending",
+      "description": "Replace the traditional DC editor (supersedes 18.4) with an agent panel on the right: the operator types intents like 'add movie Easy Virtue' and an agent researches (web search), proposes a full plan, and on one approval creates the conformant DC record, finds/creates related agents, links relationships, enriches, sets external links, and reconciles S3. Mirrors the Digital Horizon assistant (assistant/handler+tools+loop, AssistPanel). Key from Secrets Manager; every executed plan ends with the conformance audit green. Details: tasks/phase_21_agent_operator_panel.md.",
+      "added_reason": "User: don't want a traditional DC editor — everything must be agent-based; an agent on the right does the job (search expansions, extractions, entries). Plan for next session.",
+      "decisions": {
+        "research_source": "Claude knowledge + Anthropic server-side web search, then resolve wikipedia/imdb/musicbrainz URLs",
+        "autonomy": "plan → approve batch → execute (agent proposes full plan; operator approves once; agent executes all + summary)",
+        "progress_ux": "step log per turn now; live streaming a later enhancement"
+      },
+      "tasks": [
+        { "id": "21.1", "name": "Agent Lambda + tool-use loop + agentChat mutation (skeleton, Cognito-gated, key from Secrets Manager, step-log)", "status": "pending", "size": "medium", "verify": "round-trip a turn; one read tool (search_catalog) works" },
+        { "id": "21.2", "name": "Read tools — search_catalog, get_resource, find_agent (fuzzy)", "status": "pending", "size": "small", "verify": "agent answers 'is Easy Virtue in the catalog?' and 'find Colin Firth'", "depends_on": ["21.1"] },
+        { "id": "21.3", "name": "research_entity tool — Anthropic web search + structured extraction (+ disambiguation)", "status": "pending", "size": "medium", "verify": "research 'Easy Virtue' → 2008/1928 disambiguation then full facts (director/year/cast/links)", "depends_on": ["21.1"] },
+        { "id": "21.4", "name": "Plan assembly + approval protocol (awaiting_approval → approve once → execute batch)", "status": "pending", "size": "medium", "verify": "'add movie Easy Virtue' returns a plan listing movie + new persons + links", "depends_on": ["21.2", "21.3"] },
+        { "id": "21.5", "name": "Write tool create_resource — conformant emit → S3 sidecar + DDB (correct partition/dc_type)", "status": "pending", "size": "medium", "verify": "Easy Virtue movie record created, conformant, in Movies list; audit passes", "depends_on": ["21.4"] },
+        { "id": "21.6", "name": "Write tools find_or_create_agent + link_relationship (agents/ + dc_type=Agent; _cast_uris/_performer_uris)", "status": "pending", "size": "medium", "verify": "cast persons created + linked; person filmography reverse-edge resolves", "depends_on": ["21.5"] },
+        { "id": "21.7", "name": "Write tools enrich_resource + set_external_links + reconcile (wrap enrich-dc + sync-dc-to-s3)", "status": "pending", "size": "medium", "verify": "movie gets abstract + wiki/imdb links; sidecar reconciled; audit ALL PASS", "depends_on": ["21.5"] },
+        { "id": "21.8", "name": "Frontend AssistPanel (right side, global) — chat + step log + plan Approve/Decline; stateless history", "status": "pending", "size": "medium", "verify": "Playwright: 'add movie Easy Virtue' end-to-end in the deployed app; movie + cast appear", "depends_on": ["21.4", "21.6", "21.7"] },
+        { "id": "21.9", "name": "Edit/regenerate/approve as agent tools (realizes superseded 18.4 + 18.5)", "status": "pending", "size": "medium", "verify": "'set Easy Virtue abstract to …' pins _explicit_fields; regenerate preserves pin; approve sets _approval_status", "depends_on": ["21.7"] },
+        { "id": "21.10", "name": "Guardrails + identity + cost report + post-run audit (realizes 18.6)", "status": "pending", "size": "medium", "verify": "unauthorized blocked; per-run token/cost logged; full E2E conformance audit ALL PASS", "depends_on": ["21.8", "21.9"] }
+      ],
+      "artifacts": []
     }
   },
-  "current_task": "18.4",
+  "current_task": "21.1",
   "git_repos": {
     "orchestration": {
       "local": ".",
