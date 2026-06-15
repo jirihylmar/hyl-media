@@ -16,6 +16,7 @@ import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 import { canRead, createToolRegistry, type ToolDefinition, type ToolRegistry } from './assistant';
 import { researchEntityTool } from './research';
+import { commitPlanTool } from './writes';
 
 export interface ToolDeps {
   ddb: DynamoDBDocumentClient;
@@ -244,5 +245,6 @@ export function buildRegistry(deps: ToolDeps): ToolRegistry {
   // research_entity needs the Anthropic client (server-side web search); only
   // register it when one is wired (the handler always provides it in prod).
   if (deps.anthropic) registry.register(researchEntityTool(deps.anthropic, deps.model));
+  registry.register(commitPlanTool(deps));
   return registry;
 }

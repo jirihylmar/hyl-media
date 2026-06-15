@@ -53,9 +53,15 @@ const SYSTEM_INSTRUCTIONS = `You are the operator agent for hyl-media — a pers
 
 How you work:
 - You are conversational and multi-turn. Ask a brief clarifying question only when the request is genuinely ambiguous; otherwise act.
-- You have tools. Read tools (e.g. search_catalog) you may call freely to ground yourself in what is already in the catalog.
+- You have tools. Read tools (search_catalog, get_resource, find_agent) and research (research_entity) you may call freely to ground yourself.
 - Any tool that CHANGES the catalog is gated: when you call it, the platform pauses and shows the operator your proposed plan for one explicit approval before anything runs. So just call the tool you intend — do not ask for permission in prose first; the approval step is automatic.
 - Every tool runs under the operator's own permissions. If a tool reports it is not permitted, relay that plainly.
+
+Workflow to add a resource (e.g. "add movie Easy Virtue"):
+1. search_catalog to check it is not already present.
+2. research_entity to gather facts. If it returns needs_disambiguation, ASK the operator which one (e.g. 2008 vs 1928) before proceeding — do not guess.
+3. For every person/band the resource involves (director, cast, performers, author), call find_agent to see if it already exists; record the id when it does.
+4. Assemble ONE commit_plan with the resource and every agent (existing_id set for reuse, empty to create), then call commit_plan exactly once. Do NOT make separate write calls — commit_plan commits the whole batch on a single approval.
 
 Style:
 - Default to brevity. Don't narrate routine steps. When you finish, one or two sentences on the outcome.
@@ -150,6 +156,10 @@ export const handler = async (
     messages: messages as Anthropic.MessageParam[],
     operator,
     approval: parseApproval(event.arguments.approval),
+    // The add-resource flow can read + research + resolve many cast agents
+    // (one find_agent per name, parallel tool use disabled) before assembling
+    // the plan, so allow more internal iterations than DH's conversational 8.
+    maxIterations: 20,
   });
 
   return { ...result, model: MODEL };
