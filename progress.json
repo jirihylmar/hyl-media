@@ -1506,6 +1506,15 @@
           "verify": "dcClient DC_TYPE_BY_KIND agent→Agent; storage grants agents/* read; lists still load; docs/diagram updated; tsc clean",
           "completed_at": "2026-06-15",
           "verified": "src/lib/dcClient.ts DC_TYPE_BY_KIND person/band/collaboration→'Agent' (listMetadataByType('Agent')+_entity_kind narrowing). amplify/storage/resource.ts grants agents/* read. managed-resource skill + architecture README/diagram updated for the agents partition + Agent type. tsc clean. DEPLOYED (Amplify job 73 SUCCEED) + LIVE-VERIFIED via scripts/verify-agents.mjs (Playwright): People list 442 rows, Bands list 59 rows, person metadata link → sidecar dc_type=Agent / ContentType=PERSON / _category=agents / s3_key=agents/…. ALL PASS."
+        },
+        {
+          "id": "20.3",
+          "name": "Rewrite agent cross-reference URIs in resources datasets/→agents/",
+          "status": "complete",
+          "size": "small",
+          "verify": "Movie/recording/sheet cross-ref URIs pointing at agents now spell agents/<uuid>; conformance audit ALL PASS",
+          "completed_at": "2026-06-15",
+          "verified": "scripts/rewrite-agent-xrefs.mjs: rewrote /datasets/<agent-uuid>/→/agents/<agent-uuid>/ only for URIs whose uuid is an agent (a resource's own datasets/ source URI untouched). 306 records updated: _cast_uris (94 movies) + _performer_uris (212 recordings/sheet). DDB applied, then sync-dc-to-s3 reconciled 306 sidecars (0 errors). Spot-check: The Others _cast_uris → agents/…/nicole-kidman.json. Re-audit ALL PASS. Cross-refs now byte-consistent with the agents partition (resolution was already correct via uuid)."
         }
       ],
       "artifacts": []

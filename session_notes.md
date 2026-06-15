@@ -76,7 +76,14 @@ partition to `agents/`**.
 managed-resource skill + architecture README/diagram updated. tsc clean. Re-audit ALL PASS.
 
 **Movies stay `MovingImage`/datasets, recordings `Sound`/datasets, books/sheet `Text`/documents —
-only the agents moved.** Deploy + live list verification follow.
+only the agents moved.** Deployed (job 73) + live-verified (verify-agents.mjs): People 442 / Bands 59,
+person metadata reads Agent/PERSON/agents.
+
+**20.3 — cross-ref URI cleanup:** `scripts/rewrite-agent-xrefs.mjs` rewrote `/datasets/<agent-uuid>/`
+→ `/agents/<agent-uuid>/` ONLY for agent-uuid URIs (a resource's own datasets/ source URI untouched).
+306 records: `_cast_uris` (94 movies) + `_performer_uris` (212 recordings/sheet). DDB applied, then
+sync-dc-to-s3 reconciled 306 sidecars (0 errors). Re-audit ALL PASS. (Resolution already worked via
+uuid; this makes the cross-refs byte-consistent with the agents partition.)
 
 ---
 
