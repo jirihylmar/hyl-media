@@ -4,41 +4,37 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
-## ⮕ NEXT SESSION — START HERE (handover 2026-06-15)
+## ⮕ NEXT SESSION — START HERE (handover 2026-06-15, updated)
 
 **State:** Phases 0–16 complete. Phase 17 (frontend DC cutover) **17.1–17.5 complete**;
 **17.6 deferred** (decommission legacy — blocked + destructive, needs approval). Phase 18
-(DC lifecycle/enrichment): **18.1 engine + 18.2 _explicit_fields pinning complete**;
-**18.3 in_progress — all 94 movies enriched**, other kinds pending. Deploy pipeline healthy
-(esbuild fix, jobs 55–65 green). Repo clean + pushed (commit eb8c572). Test login + Playwright
-verified. DC store = `hyl-media-metadata-repository` (1194 records).
+(DC lifecycle/enrichment): **18.1 engine + 18.2 pinning + 18.3 batch-enrichment COMPLETE** —
+**all 1194 DC records now have dc_abstract + refined dc_subject** (0 failures; 520 public /
+521 private; ~$7.3 Opus 4.8). 18.4–18.6 pending. Deploy pipeline healthy (jobs 55–65 green).
+DC store = `hyl-media-metadata-repository` (1194 records).
 
 **Resume work, in order:**
-1. **Finish 18.3 enrichment of the remaining kinds** — `recording`, `band`, `person`, `book`,
-   `sheet_music` — via `node scripts/enrich-dc.mjs --kind <k> --apply` (key auto-sourced from
-   Secrets Manager). **BUT first apply the operator's guidance below — do NOT just reuse the
-   movie prompt for books/persons.**
-2. **18.4–18.6** — frontend DC editor (edit dc_* fields, pin to _explicit_fields via the
-   `updateMetadata` mutation already deployed) + regenerate/approve mutations + cost report.
+1. **18.4** — frontend DC editor: edit `dc_title`/`dc_abstract`/`dc_subject`/`dc_creator`, pin
+   edited fields into `_explicit_fields` via the `updateMetadata` mutation (already deployed).
+   DH allowlist = `UPDATABLE_DC_FIELDS`; SET-only writes.
+2. **18.5–18.6** — regenerate (non-pinned only) + approve (`_approval_status=approved`) mutations;
+   end-to-end lifecycle verify + cost/usage report.
 3. **17.6** — only after the create path (CreateEntityForm/AssetUpload) + Dossier cross-refs move
    to DC; destructive (export backup first) → get explicit user approval.
 
-**OPERATOR GUIDANCE on enrichment (apply before running books/persons):**
-- **Treat ALL records seriously.** Book authors are NOT obscure — they're simply *not publicly
-  known / not publicly accessible* (private). Don't let the LLM shrug them off or invent facts.
-- **Use embedded metadata.** Most book/sheet PDFs in S3 (`documents/<uuid>/…pdf`, and the legacy
-  `library/`, `sheet-music/`) have embedded document metadata (title/author/subject). READ it
-  (e.g. `pdfinfo`/`pdf-lib`/`pdfjs`) and feed it to the abstract generator instead of relying on
-  LLM world-knowledge. The DC record already has `dc_creator` (author/artist) and `_legacy_id`.
-- **Public vs private distinction matters.** Add a curation/visibility tag (e.g. `public` vs
-  `private`, in the `curation` tag category) so publicly-known authors/books/recordings are
-  distinguished from private/personal ones. For PRIVATE records, generate the abstract strictly
-  from the record's own fields + embedded PDF metadata (no fabricated "known facts"); for PUBLIC
-  ones, LLM knowledge is fine (as done for movies). Decide the public/private signal from whether
-  the item has authoritative external links (wikipedia/imdb/musicbrainz/nkp) and/or embedded
-  metadata — discuss with the user if unsure.
-- The enrich-dc.mjs prompt currently says "use your knowledge of it" — that's right for movies but
-  WRONG for private books. Branch the prompt by public/private (and pass embedded metadata).
+**18.3 enrichment — DONE, how it works (`scripts/enrich-dc.mjs`):**
+- `classifyVisibility(a)`: PUBLIC iff a *resolved* authoritative link exists
+  (wikipedia/imdb/musicbrainz/openlibrary/goodreads/discogs/databazeknih). **nkp + supermusic are
+  auto-generated SEARCH urls** (present on every book / every sheet) → excluded; youtube weak → excluded.
+- `readPdfMetadata(a)`: `pdfinfo` over the S3 PDF (book/sheet_music) → embedded Title/Author/Subject/Pages,
+  fed into the prompt. Graceful null on non-PDF or non-conformant files (e.g. the user's own "Scales - macro").
+- Prompt branches: **public** → world knowledge OK (as movies); **private** → STRICTLY record fields +
+  embedded metadata, no fabricated facts (thin info → short plain description).
+- Writes a `public`/`private` curation tag into `_tags` (also added to `tagDictionary.ts`).
+- Run again for any new empty-abstract records: `node scripts/enrich-dc.mjs [--kind <k>] --apply` (idempotent).
+- **KNOWN DIVERGENCE:** writes are **DDB-only**; the S3 sidecars still hold empty `dc_abstract`. A CLI
+  `update-metadata` re-sync from S3 would clobber the enrichment → re-emit sidecars from current DDB data
+  first. Frontend reads DDB (Phase 17), so the live app is correct.
 
 **Key facts for the next session:**
 - Anthropic key: Secrets Manager `hyl-media/anthropic-api-key` (ARN …-KBL4LX). **Rotate it** — it
@@ -48,6 +44,41 @@ verified. DC store = `hyl-media-metadata-repository` (1194 records).
 - KnowledgeGraphItem (legacy, still live): `KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE`.
 - Verify frontend: `node scripts/verify-frontend-{dc,detail,dossier}.mjs` (Playwright login).
 - Tasks file: `tasks/phase_18_dc_lifecycle_enrichment.md`; mapping spec `docs/dc-metadata-mapping.md`.
+
+---
+
+### Session: 2026-06-15 (cont.) — Phase 18.3 complete: enrich ALL 1194 DC records
+
+Finished Phase 18.3 by applying the operator's enrichment guidance, then enriching every
+remaining kind. All independently verified against real DynamoDB.
+
+**Engine changes (`scripts/enrich-dc.mjs`, commit 52dc279):**
+- **Public/private classification** — `classifyVisibility()`: PUBLIC only when a *resolved*
+  authoritative link exists (wikipedia/imdb/musicbrainz/openlibrary/goodreads/discogs/databazeknih).
+  Discovered via `scripts/inspect-dc-kinds.mjs` that **nkp (306/306 books) and supermusic (112/112
+  sheet) are auto-generated SEARCH urls** — false public-ness signals → excluded; youtube (playlist)
+  excluded too.
+- **Embedded PDF metadata** — `readPdfMetadata()` runs `pdfinfo` over the S3 artifact for
+  book/sheet_music, extracting Title/Author/Subject/Pages, fed into the prompt. Graceful null on
+  non-PDF / non-conformant files (the user's own "Scales - macro" isn't a valid PDF — handled).
+- **Prompt branches** public (world knowledge, as movies) vs private (strictly record fields +
+  embedded metadata, no fabricated facts; thin info → short plain description).
+- **Visibility tag** `public`/`private` written into `_tags`; both added to `tagDictionary.ts`
+  curation category.
+
+**Enrichment runs (claude-opus-4-8, structured outputs, effort low):**
+- Movies 94 (last session) + **band 59 (0 failed)** + **rest 1041 (0 failed)** = **1194/1194**.
+- 520 public / 521 private; embedded PDF metadata used on **352 of 419** PDFs. Total ~**$7.3**.
+- Verified: DDB COUNT scan = 1194/1194 non-empty `dc_abstract`. Spot-checks — private
+  person/book/recording get conservative factual abstracts (no fabrication, Czech→Czech); public
+  sheet/recording get rich accurate ones (artist/year/album).
+
+**Write path:** direct `UpdateItem` SET on `dc_abstract`/`dc_subject`/`_tags`/`_last_updated_at`
+(non-pinned fields only; respects `_explicit_fields` pin from 18.2). **KNOWN DIVERGENCE:** DDB-only —
+S3 sidecars still empty; re-emit before any CLI re-sync. Frontend reads DDB (Phase 17) → app correct.
+
+**Phase 18 status: 18.1–18.3 complete; 18.4 (frontend editor) next.** Rotate the Anthropic key
+when convenient (pasted in chat once).
 
 ---
 
