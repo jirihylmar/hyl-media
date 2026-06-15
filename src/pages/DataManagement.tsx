@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listByType } from '../lib/queries';
+import { listEntitiesForList } from '../lib/dcQueries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
 import { parseLinks } from '../components/ExternalLinks';
@@ -25,12 +26,14 @@ export function DataManagement() {
 
   useEffect(() => {
     Promise.all([
-      listByType('person'),
-      listByType('band'),
-      listByType('movie'),
-      listByType('recording'),
-      listByType('book'),
-      listByType('sheet_music'),
+      // Entity data from the DC store (drives counts/tags/links/tabs).
+      listEntitiesForList('person'),
+      listEntitiesForList('band'),
+      listEntitiesForList('movie'),
+      listEntitiesForList('recording'),
+      listEntitiesForList('book'),
+      listEntitiesForList('sheet_music'),
+      // Relationship cross-refs stay on the (intact, read-only) legacy table for display.
       listByType('movie_cast'),
       listByType('recording_performer'),
       listByType('sheet_music_performer'),

@@ -1,106 +1,78 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listByType } from '../lib/queries';
-import type { KnowledgeGraphItem } from '../lib/client';
+import { searchMetadata } from '../lib/dcClient';
+import type { DcViewModel } from '../lib/dcMap';
 import { TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
 
-type SearchGroup = {
-  label: string;
-  detailPath: string;
-  matches: KnowledgeGraphItem[];
-};
-
 const normalize = (s: string) =>
-  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-const ENTITY_GROUPS = [
-  { label: 'Movies', type: 'movie', detailPath: '/movies' },
-  { label: 'Bands', type: 'band', detailPath: '/bands' },
-  { label: 'People', type: 'person', detailPath: '/persons' },
-  { label: 'Recordings', type: 'recording', detailPath: '/recordings' },
-  { label: 'Library', type: 'book', detailPath: '/library' },
-  { label: 'Sheet Music', type: 'sheet_music', detailPath: '/sheet-music' },
-];
+// entity kind → list group label + detail route.
+const KIND_GROUP: Record<string, { label: string; path: string }> = {
+  movie: { label: 'Movies', path: '/movies' },
+  band: { label: 'Bands', path: '/bands' },
+  person: { label: 'People', path: '/persons' },
+  recording: { label: 'Recordings', path: '/recordings' },
+  book: { label: 'Library', path: '/library' },
+  sheet_music: { label: 'Sheet Music', path: '/sheet-music' },
+  collaboration: { label: 'Collaborations', path: '/collaborations' },
+};
+const GROUP_ORDER = ['movie', 'band', 'person', 'recording', 'book', 'sheet_music', 'collaboration'];
 
 export function GlobalSearch() {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [allItems, setAllItems] = useState<Map<string, KnowledgeGraphItem[]>>(new Map());
-  const [loaded, setLoaded] = useState(false);
+  const [results, setResults] = useState<DcViewModel[]>([]);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // Load data on first focus
-  const loadData = async () => {
-    if (loaded) return;
-    const results = await Promise.all(ENTITY_GROUPS.map(g => listByType(g.type)));
-    const map = new Map<string, KnowledgeGraphItem[]>();
-    ENTITY_GROUPS.forEach((g, i) => map.set(g.type, results[i]));
-    setAllItems(map);
-    setLoaded(true);
-  };
+  // Debounced server-side search via the DC searchMetadata query.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); setLoading(false); return; }
+    setLoading(true);
+    let cancelled = false;
+    const t = setTimeout(() => {
+      searchMetadata(q, 100).then((r) => {
+        if (!cancelled) { setResults(r); setLoading(false); }
+      }).catch(() => { if (!cancelled) setLoading(false); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [query]);
 
-  // Keyboard shortcut: Ctrl+K or Cmd+K
+  // Ctrl/Cmd+K focus, Escape close.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
         setOpen(true);
-        loadData();
       }
       if (e.key === 'Escape') {
-        setOpen(false);
-        setQuery('');
-        inputRef.current?.blur();
+        setOpen(false); setQuery(''); inputRef.current?.blur();
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [loaded]);
+  }, []);
 
-  // Close on outside click
+  // Close on outside click.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const searchNorm = normalize(query);
+  const grouped = GROUP_ORDER
+    .map((kind) => ({ kind, ...KIND_GROUP[kind], matches: results.filter((r) => r.entityKind === kind) }))
+    .filter((g) => g.matches.length > 0);
+  const totalMatches = results.length;
 
-  function matchesSearch(item: KnowledgeGraphItem): boolean {
-    if (!searchNorm || searchNorm.length < 2) return false;
-    // Match name fields
-    const fields = [item.name, item.author, item.artistName, item.givenName, item.familyName];
-    const nameMatch = fields.some(f => f && normalize(String(f)).includes(searchNorm));
-    if (nameMatch) return true;
-    // Match tags
-    const tags = (item.tags as string[] | null) || [];
-    return tags.some(t => t.toLowerCase().includes(searchNorm));
-  }
-
-  const searchResults: SearchGroup[] = searchNorm.length >= 2
-    ? ENTITY_GROUPS.map(g => ({
-        label: g.label,
-        detailPath: g.detailPath,
-        matches: (allItems.get(g.type) || []).filter(matchesSearch),
-      })).filter(g => g.matches.length > 0)
-    : [];
-  const totalMatches = searchResults.reduce((s, g) => s + g.matches.length, 0);
-
-  const handleFocus = () => {
-    setOpen(true);
-    loadData();
-  };
-
-  const handleResultClick = () => {
-    setOpen(false);
-    setQuery('');
-  };
+  const handleResultClick = () => { setOpen(false); setQuery(''); };
 
   return (
     <div className="global-search" ref={wrapRef}>
@@ -110,35 +82,34 @@ export function GlobalSearch() {
         className="global-search-input"
         placeholder="Search... (Ctrl+K)"
         value={query}
-        onChange={e => setQuery(e.target.value)}
-        onFocus={handleFocus}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setOpen(true)}
       />
       {query && (
         <button className="global-search-clear" onClick={() => { setQuery(''); inputRef.current?.focus(); }}>&times;</button>
       )}
-      {open && searchNorm.length >= 2 && (
+      {open && query.trim().length >= 2 && (
         <div className="global-search-dropdown">
-          {!loaded ? (
-            <p className="global-search-msg">Loading...</p>
+          {loading ? (
+            <p className="global-search-msg">Searching...</p>
           ) : totalMatches === 0 ? (
             <p className="global-search-msg">No results for "{query}"</p>
           ) : (
             <>
               <p className="global-search-count">{totalMatches} result{totalMatches !== 1 ? 's' : ''}</p>
-              {searchResults.map(group => (
-                <div key={group.label} className="global-search-group">
+              {grouped.map((group) => (
+                <div key={group.kind} className="global-search-group">
                   <div className="global-search-group-label">{group.label} ({group.matches.length})</div>
-                  {group.matches.slice(0, 10).map(item => (
+                  {group.matches.slice(0, 10).map((item) => (
                     <Link
                       key={item.id}
-                      to={`${group.detailPath}/${item.id}`}
+                      to={`${group.path}/${item.legacyId}`}
                       className="global-search-result"
                       onClick={handleResultClick}
                     >
                       <span className="global-search-result-name">{item.name}</span>
-                      {item.author && <span className="global-search-result-meta"> — {item.author}</span>}
-                      {item.artistName && <span className="global-search-result-meta"> — {item.artistName as string}</span>}
-                      {renderMatchedTags(item, searchNorm)}
+                      {item.creators.length > 0 && <span className="global-search-result-meta"> — {item.creators[0]}</span>}
+                      {renderMatchedTags(item.tags, searchNorm)}
                     </Link>
                   ))}
                   {group.matches.length > 10 && (
@@ -154,13 +125,12 @@ export function GlobalSearch() {
   );
 }
 
-function renderMatchedTags(item: KnowledgeGraphItem, searchNorm: string) {
-  const tags = (item.tags as string[] | null) || [];
-  const matched = tags.filter(t => t.toLowerCase().includes(searchNorm));
+function renderMatchedTags(tags: string[], searchNorm: string) {
+  const matched = tags.filter((t) => t.toLowerCase().includes(searchNorm));
   if (matched.length === 0) return null;
   return (
     <span className="global-search-tags">
-      {matched.map(tag => {
+      {matched.map((tag) => {
         const cat = getTagCategory(tag);
         const color = cat ? TAG_COLORS[cat] : 'var(--text-dim)';
         return (
