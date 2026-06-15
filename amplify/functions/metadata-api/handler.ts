@@ -9,13 +9,26 @@
  * The function dispatches on the AppSync field name (with an argument-presence fallback).
  */
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 const TABLE = process.env.METADATA_TABLE as string;
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const norm = (s: string) =>
   (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// ASCII-fold mirroring the migration's convertToAscii (Czech map + NFD strip ≥128).
+const ASCII_MAP: Record<string, string> = {
+  á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ý: 'y', č: 'c', ď: 'd', ě: 'e', ň: 'n',
+  ř: 'r', š: 's', ť: 't', ž: 'z', Á: 'A', É: 'E', Í: 'I', Ó: 'O', Ú: 'U', Ý: 'Y',
+  Č: 'C', Ď: 'D', Ě: 'E', Ň: 'N', Ř: 'R', Š: 'S', Ť: 'T', Ž: 'Z',
+};
+const asciiFold = (s: string) =>
+  Array.from((s || '').replace(/[áéíóúýčďěňřšťžÁÉÍÓÚÝČĎĚŇŘŠŤŽ]/g, (c) => ASCII_MAP[c] ?? c).normalize('NFD'))
+    .filter((c) => c.charCodeAt(0) < 128).join('');
+
+// Operator-editable DC fields (mirrors the lifecycle allowlist; relationships are not edited here).
+const UPDATABLE = new Set(['dc_title', 'language_code', '_tags', '_external_links']);
 
 async function scanAll(params: Record<string, unknown> = {}): Promise<any[]> {
   const items: any[] = [];
@@ -40,11 +53,49 @@ async function getMetadata(pk: string) {
 
 async function getByLegacyId(legacyId: string) {
   if (!legacyId) return null;
+  // `_legacy_id` is underscore-prefixed → must alias via ExpressionAttributeNames.
   const items = await scanAll({
-    FilterExpression: 'Attributes._legacy_id = :lid',
+    FilterExpression: 'Attributes.#lid = :lid',
+    ExpressionAttributeNames: { '#lid': '_legacy_id' },
     ExpressionAttributeValues: { ':lid': legacyId },
   });
   return items[0] ?? null;
+}
+
+async function updateMetadata(pk: string, patch: unknown) {
+  if (!pk || patch == null) throw new Error('updateMetadata requires pk and patch');
+  const obj = (typeof patch === 'string' ? JSON.parse(patch) : patch) as Record<string, unknown>;
+  const row: any = await getMetadata(pk);
+  if (!row) throw new Error(`updateMetadata: not found ${pk}`);
+
+  const sets: string[] = [];
+  const names: Record<string, string> = {};
+  const values: Record<string, unknown> = {};
+  let i = 0;
+  for (const [k, v] of Object.entries(obj)) {
+    if (!UPDATABLE.has(k)) continue;
+    const an = `#a${i}`, av = `:v${i}`; i++;
+    sets.push(`Attributes.${an} = ${av}`);
+    names[an] = k; values[av] = v;
+  }
+  // Renaming dc_title also refreshes the ASCII-folded Title / _document_title (SK/PK stay stable).
+  if (typeof obj.dc_title === 'string') {
+    const folded = asciiFold(obj.dc_title);
+    sets.push('Title = :title', 'Attributes.#dt = :title');
+    names['#dt'] = '_document_title'; values[':title'] = folded;
+  }
+  sets.push('Attributes.#lu = :now');
+  names['#lu'] = '_last_updated_at'; values[':now'] = new Date().toISOString();
+  if (sets.length === 1) throw new Error('updateMetadata: no updatable fields in patch');
+
+  await ddb.send(new UpdateCommand({
+    TableName: TABLE,
+    Key: { PK: row.PK, SK: row.SK },
+    UpdateExpression: 'SET ' + sets.join(', '),
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: values,
+  }));
+  return await getMetadata(pk);
 }
 
 async function listMetadataByType(dcType: string, limit?: number) {
@@ -81,6 +132,7 @@ export const handler = async (event: any) => {
     if (field === 'getMetadataByLegacyId' || (args.legacyId && !field)) return await getByLegacyId(args.legacyId);
     if (field === 'listMetadataByType' || (args.dcType && !field)) return await listMetadataByType(args.dcType, args.limit);
     if (field === 'searchMetadata' || (args.q && !field)) return await searchMetadata(args.q, args.limit);
+    if (field === 'updateMetadata' || (args.pk && args.patch && !field)) return await updateMetadata(args.pk, args.patch);
     return { error: `unknown field '${field}'` };
   } catch (err: any) {
     console.error('metadata-api error', field, err);

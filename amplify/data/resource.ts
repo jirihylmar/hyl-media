@@ -83,6 +83,15 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(metadataApi))
     .authorization((allow) => [allow.authenticated()]),
+
+  // Phase 17.3b / 18.4 — operator edit of DC fields (dc_title, language_code, _tags,
+  // _external_links). SET-only on the existing row; relationships are not edited here.
+  updateMetadata: a
+    .mutation()
+    .arguments({ pk: a.string().required(), patch: a.json().required() })
+    .returns(a.json())
+    .handler(a.handler.function(metadataApi))
+    .authorization((allow) => [allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

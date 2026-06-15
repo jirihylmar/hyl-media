@@ -18,7 +18,7 @@ const backend = defineBackend({
 const tableArn = 'arn:aws:dynamodb:eu-central-1:299025166536:table/hyl-media-metadata-repository';
 backend.metadataApi.resources.lambda.addToRolePolicy(
   new PolicyStatement({
-    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan'],
+    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:UpdateItem'],
     resources: [tableArn, `${tableArn}/index/*`],
   }),
 );
