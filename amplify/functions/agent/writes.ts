@@ -18,8 +18,12 @@
  * Until those land, the executor validates the plan and reports what it WOULD
  * do (executed:false) rather than silently claiming success.
  */
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutCommand } from '@aws-sdk/lib-dynamodb';
+
 import type { ToolDeps } from './tools';
 import { canWrite, type ToolDefinition } from './assistant';
+import { buildRecord, type EmitInput } from './dc-emit';
 
 /** A person/band/collaboration the plan touches (created if `existing_id` empty). */
 export interface PlanAgent {
@@ -112,7 +116,56 @@ function describePlan(plan: CatalogPlan): string {
   );
 }
 
-export function commitPlanTool(_deps: ToolDeps): ToolDefinition {
+/** Map a plan resource to the emit input (21.5 — no agent links yet; those land in 21.6). */
+function resourceToEmitInput(r: PlanResource): EmitInput {
+  const genre = Array.isArray(r.genre) ? r.genre : [];
+  return {
+    kind: r.kind,
+    title: r.title,
+    year: r.year,
+    language: r.language,
+    abstract: r.abstract,
+    subjects: genre,
+    tags: genre.map((g) => g.toLowerCase()),
+    externalLinks: Array.isArray(r.external_links) ? r.external_links : [],
+  };
+}
+
+/** Write a conformant record: S3 content descriptor + S3 sidecar + DDB item. */
+async function createResource(deps: ToolDeps, input: EmitInput): Promise<{ id: string; sidecarKey: string }> {
+  if (!deps.s3) throw new Error('S3 client not configured');
+  const now = new Date().toISOString();
+  const rec = buildRecord(input, now);
+  // S3 is the source of truth; write content + sidecar, then mirror to DDB.
+  await deps.s3.send(new PutObjectCommand({
+    Bucket: rec.ddbItem.s3_bucket, Key: rec.contentKey,
+    Body: JSON.stringify(rec.descriptor, null, 2), ContentType: 'application/json',
+  }));
+  await deps.s3.send(new PutObjectCommand({
+    Bucket: rec.ddbItem.s3_bucket, Key: rec.sidecarKey,
+    Body: JSON.stringify(rec.sidecar, null, 2), ContentType: 'application/json',
+  }));
+  await deps.ddb.send(new PutCommand({ TableName: deps.table, Item: rec.ddbItem }));
+  return { id: rec.id, sidecarKey: rec.sidecarKey };
+}
+
+/**
+ * Execute the approved plan as a batch. Phase 21.5 creates the primary resource;
+ * agent creation + relationship linking (21.6) and enrich + external links +
+ * reconcile (21.7) extend this executor.
+ */
+async function executePlan(deps: ToolDeps, plan: CatalogPlan): Promise<{ summary: string; detail: any }> {
+  const steps: string[] = [];
+  const created = await createResource(deps, resourceToEmitInput(plan.resource));
+  steps.push(`created ${plan.resource.kind} "${plan.resource.title}" (${created.id})`);
+  const pendingAgents = plan.agents.length;
+  return {
+    summary: `${steps.join('; ')}${pendingAgents ? ` — ${pendingAgents} agents + links pending (Phase 21.6)` : ''}`,
+    detail: { resource_id: created.id, sidecar: created.sidecarKey, agents_pending: pendingAgents },
+  };
+}
+
+export function commitPlanTool(deps: ToolDeps): ToolDefinition {
   return {
     name: 'commit_plan',
     description:
@@ -135,15 +188,12 @@ export function commitPlanTool(_deps: ToolDeps): ToolDefinition {
       } catch (err: any) {
         return { content: `Invalid plan: ${err?.message || String(err)}`, summary: 'invalid plan', isError: true };
       }
-      // Executor lands in 21.5–21.7. Until then, do not claim success.
-      return {
-        content: JSON.stringify({
-          executed: false,
-          note: 'Plan validated and approved; the batch executor (create/link/enrich/reconcile) is implemented in Phase 21.5–21.7.',
-          plan: describePlan(plan),
-        }),
-        summary: `approved (executor pending): ${describePlan(plan)}`,
-      };
+      try {
+        const { summary, detail } = await executePlan(deps, plan);
+        return { content: JSON.stringify({ executed: true, ...detail }), summary };
+      } catch (err: any) {
+        return { content: `Plan execution failed: ${err?.message || String(err)}`, summary: 'execution error', isError: true };
+      }
     },
   };
 }

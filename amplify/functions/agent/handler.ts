@@ -24,6 +24,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 
 import { createToolRegistry, type OperatorContext } from './assistant';
@@ -36,6 +37,7 @@ const SECRET_ID = process.env.ANTHROPIC_SECRET_ID || 'hyl-media/anthropic-api-ke
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const s3 = new S3Client({});
 const sm = new SecretsManagerClient({ region: REGION });
 
 // Cache the key + client across warm invocations; never log either.
@@ -146,7 +148,7 @@ export const handler = async (
   }
 
   const anthropic = await getAnthropic();
-  const registry = TABLE ? buildRegistry({ ddb, table: TABLE, anthropic, model: MODEL }) : createToolRegistry();
+  const registry = TABLE ? buildRegistry({ ddb, table: TABLE, anthropic, model: MODEL, s3 }) : createToolRegistry();
 
   const result = await runAssistantTurn({
     client: anthropic,

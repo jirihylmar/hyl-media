@@ -27,13 +27,14 @@ backend.metadataApi.resources.lambda.addToRolePolicy(
   }),
 );
 
-// agent (Phase 21): read tools scan the DC table; write tools are added in
-// later tasks (grant widened then). The Anthropic key is read at runtime from
-// Secrets Manager — grant GetSecretValue on that secret only (random 6-char
-// suffix → wildcard).
+// agent (Phase 21): read tools scan the DC table; the commit_plan executor
+// (21.5+) writes records (Put) and enriches them (Update). The Anthropic key is
+// read at runtime from Secrets Manager — grant GetSecretValue on that secret
+// only (random 6-char suffix → wildcard). The S3 sidecars/descriptors are
+// written to the Amplify storage bucket (granted via the storage construct).
 backend.agent.resources.lambda.addToRolePolicy(
   new PolicyStatement({
-    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan'],
+    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:UpdateItem'],
     resources: [tableArn, `${tableArn}/index/*`],
   }),
 );
@@ -43,3 +44,4 @@ backend.agent.resources.lambda.addToRolePolicy(
     resources: ['arn:aws:secretsmanager:eu-central-1:299025166536:secret:hyl-media/anthropic-api-key-*'],
   }),
 );
+backend.storage.resources.bucket.grantReadWrite(backend.agent.resources.lambda);

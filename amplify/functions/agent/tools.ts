@@ -11,6 +11,7 @@
  * client, secret, and write helpers without rewiring the handler.
  */
 import type Anthropic from '@anthropic-ai/sdk';
+import type { S3Client } from '@aws-sdk/client-s3';
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 
@@ -26,6 +27,8 @@ export interface ToolDeps {
   anthropic?: Anthropic;
   /** Model id for sub-agent research/extraction calls. */
   model?: string;
+  /** S3 client — required for the write path (commit_plan executor). */
+  s3?: S3Client;
 }
 
 /** Diacritics-insensitive normalize (mirrors metadata-api `norm`). */
