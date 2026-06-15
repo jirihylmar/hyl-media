@@ -4,6 +4,32 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+## Session 2026-06-15 (cont.) — Phase 21.1–21.5: agent operator panel backend
+
+Built and verified (locally, end-to-end) the backend half of the Phase 21 agent operator panel.
+**Not deployed** (push held; AssistPanel + deploy are 21.8). Authoritative handoff: progress.json
+`last_session_summary`.
+
+- **21.1** Agent Lambda + tool-use loop + `agentChat` mutation (ported DH assistant; key from Secrets
+  Manager at runtime; step-log; one read tool). `amplify/functions/agent/{assistant,loop,tools,handler,resource}.ts`.
+- **21.2** Read tools `get_resource` + `find_agent` (fuzzy, diacritics-insensitive). Verified: find_agent
+  "Colin Firth"→1, "Suchý"→band; get_resource full view.
+- **21.3** `research_entity` — server-side web_search + JSON-schema extraction + disambiguation (`research.ts`).
+  Verified live: "Easy Virtue" → 1928/2008 disambiguation, then full 2008 facts.
+- **21.4** `commit_plan` — single mutating tool; agent assembles ONE plan → `awaiting_approval` (approve
+  once → execute batch) (`writes.ts`). Verified: "add movie Easy Virtue (2008)" → plan w/ movie + 10
+  agents (Colin Firth reused) + links.
+- **21.5** `create_resource` — conformant emit → S3 sidecar (28-key DH order) + DDB (`dc-emit.ts`). Verified
+  end-to-end: **created the real Easy Virtue (2008) movie** in the production catalog
+  (id `6187d196-3a32-5563-e103-0bfcd7a28e12`); full conformance audit **ALL PASS (1195/1195)**.
+
+**Next (21.6):** `find_or_create_agent` + `link_relationship` — create the 12 cast/crew agents and wire
+`dc_creator`/`dc_contributor`/`_cast_uris` + reverse filmography edges; extend the commit_plan executor.
+**5 commits unpushed on main** (frontend unchanged → live site unaffected; deploy needed before 21.8).
+**TODO:** rotate the Anthropic key.
+
+---
+
 ## ⮕ NEXT SESSION — START HERE (handover 2026-06-15, updated for Phase 21)
 
 **State:** Phases 0–16, 17.1–17.5, 18.1–18.3, 19, 20 complete. **17.6 deferred** (destructive
