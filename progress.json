@@ -3,8 +3,8 @@
   "project": "hyl-media",
   "description": "Personal media knowledge graph — movies, music, books, sheet music. DynamoDB + Amplify Gen 2.",
   "created_at": "2026-03-22",
-  "last_updated": "2026-06-14",
-  "last_session_summary": "Session 2026-06-14: Completed Phase 15 (DC Foundation, 7) + Phase 16 (DC Migration, 6) autonomously with independent verification; fixed GlobalSearch build error; stored Anthropic API key in Secrets Manager (hyl-media/anthropic-api-key); DEFINED Phase 17 (frontend DC cutover, 6) + Phase 18 (DC lifecycle/enrichment, 6). Pushed (commit fe05547). IMPORTANT: Amplify deploy is BROKEN since job 50 (pre-session) on a backend CDK 'docker ENOENT' error — see blockers. Frontend tsc passes; live site = last good build (job 49). DC data work is live + unaffected. All phases 0-16 complete (103 tasks); 17-18 defined (12 pending). Checkpointed before 17.1 (sizable AppSync custom-resolver deploy) due to session length. Next: Phase 17.1 — custom AppSync resolvers over hyl-media-metadata-repository.",
+  "last_updated": "2026-06-15",
+  "last_session_summary": "Completed Phase 15 (DC Foundation, 7) + Phase 16 (DC Migration, 6) with independent verification; stored Anthropic key in Secrets Manager; defined Phases 17-18. DIAGNOSED + FIXED a pre-existing deploy blocker (broken since job 50): Amplify backend CDK fell back to Docker bundling because esbuild wasn't resolvable at root → added esbuild ^0.27.7 devDependency → job 55 SUCCEED (first green since job 49), live site HTTP 200. All phases 0-16 complete (103 tasks); 17-18 defined. Next: Phase 17 (frontend DC cutover) — deploy pipeline now healthy.",
   "phases": {
     "phase_0_planning": {
       "name": "Planning & Setup",
@@ -1399,7 +1399,7 @@
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
       "status": "pushed",
-      "notes": "Pushed through Phase 16 + phase 17/18 definitions (commit 640fb09). Amplify deploy triggered. Note: nested DH platform repo has a local-only commit (table_name support in metadata-repo CLI config.py) — not pushed to that project remote."
+      "notes": "Pushed through deploy fix (commit e7ea13d, job 55 SUCCEED). Deploy pipeline healthy again. Nested DH platform repo still has local-only commit (table_name CLI support)."
     }
   },
   "context_hints": {
@@ -1417,9 +1417,10 @@
       "id": "deploy-docker-cdk",
       "summary": "Amplify Hosting backend deploy fails at CDK assembly with 'spawnSync docker ENOENT'. Pre-existing since job 50 (commit 7af20a9), BEFORE this session — NOT caused by Phase 15/16 or the navigate fix. Frontend type checks pass. Live site serves the last good build (job 49). Likely a transitive dependency version drift (caret-ranged @aws-amplify/backend ^1.21.1 / aws-cdk-lib resolving to a version that bundles a custom-resource Lambda via Docker, which the build image lacks). Backend (amplify/) code unchanged since job 49.",
       "impact": "Blocks React frontend redeploys only. Phase 15/16 DC migration is data/CLI-driven and already live in AWS — unaffected. Phase 17 (frontend cutover) will need this resolved before it can deploy.",
-      "status": "fix-applied-awaiting-build",
+      "status": "resolved",
       "next": "Diagnose which asset needs Docker; likely fix = pin lockfile to job-49 versions, or enable a Docker-capable Amplify build image, or pin @aws-amplify/backend/aws-cdk-lib.",
-      "fix": "Root cause confirmed via decompiled aws-cdk-lib/aws-lambda-nodejs/lib/bundling.js: shouldBuildImage = !esbuildInstallation; with no resolvable esbuild, CDK builds a Docker image to bundle Amplify's auth/data custom-resource Lambdas → spawnSync docker ENOENT on the Docker-less Amplify build image. Fix: added esbuild ^0.27.7 (major 0.x, satisfies vite 8 peer AND CDK's startsWith('0.') guard) as a devDependency so npm ci installs it at root → CDK uses local esbuild bundling, no Docker. linux-x64 binary captured in lockfile. Regressed originally because the Amplify build image stopped providing a global esbuild/Docker."
+      "fix": "Root cause confirmed via decompiled aws-cdk-lib/aws-lambda-nodejs/lib/bundling.js: shouldBuildImage = !esbuildInstallation; with no resolvable esbuild, CDK builds a Docker image to bundle Amplify's auth/data custom-resource Lambdas → spawnSync docker ENOENT on the Docker-less Amplify build image. Fix: added esbuild ^0.27.7 (major 0.x, satisfies vite 8 peer AND CDK's startsWith('0.') guard) as a devDependency so npm ci installs it at root → CDK uses local esbuild bundling, no Docker. linux-x64 binary captured in lockfile. Regressed originally because the Amplify build image stopped providing a global esbuild/Docker.",
+      "resolution": "Amplify build job 55 SUCCEED (commit e7ea13d) — first green deploy since job 49. esbuild devDependency fix confirmed: CDK now bundles locally, no Docker fallback. Live site HTTP 200."
     }
   ]
 }
