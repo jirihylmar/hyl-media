@@ -1505,7 +1505,7 @@
           "size": "small",
           "verify": "dcClient DC_TYPE_BY_KIND agent→Agent; storage grants agents/* read; lists still load; docs/diagram updated; tsc clean",
           "completed_at": "2026-06-15",
-          "verified": "src/lib/dcClient.ts DC_TYPE_BY_KIND person/band/collaboration→'Agent' (listMetadataByType('Agent')+_entity_kind narrowing). amplify/storage/resource.ts grants agents/* read. managed-resource skill + architecture README/diagram updated for the agents partition + Agent type. tsc clean. Live list verification after deploy."
+          "verified": "src/lib/dcClient.ts DC_TYPE_BY_KIND person/band/collaboration→'Agent' (listMetadataByType('Agent')+_entity_kind narrowing). amplify/storage/resource.ts grants agents/* read. managed-resource skill + architecture README/diagram updated for the agents partition + Agent type. tsc clean. DEPLOYED (Amplify job 73 SUCCEED) + LIVE-VERIFIED via scripts/verify-agents.mjs (Playwright): People list 442 rows, Bands list 59 rows, person metadata link → sidecar dc_type=Agent / ContentType=PERSON / _category=agents / s3_key=agents/…. ALL PASS."
         }
       ],
       "artifacts": []
