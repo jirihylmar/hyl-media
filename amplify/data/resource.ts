@@ -1,5 +1,6 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { metadataApi } from '../functions/metadata-api/resource';
+import { agent } from '../functions/agent/resource';
 
 const schema = a.schema({
   KnowledgeGraphItem: a.model({
@@ -91,6 +92,21 @@ const schema = a.schema({
     .arguments({ pk: a.string().required(), patch: a.json().required() })
     .returns(a.json())
     .handler(a.handler.function(metadataApi))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Phase 21 — the operator agent. Stateless multi-turn Claude tool-use loop:
+  // the frontend owns the chat history and sends the full `messages` array each
+  // call; `approval` carries the operator's approve/decline of a proposed
+  // mutating tool (propose → approve → execute). Returns a step-log JSON.
+  agentChat: a
+    .mutation()
+    .arguments({
+      messages: a.json().required(),
+      surfaceContext: a.string(),
+      approval: a.json(),
+    })
+    .returns(a.json())
+    .handler(a.handler.function(agent))
     .authorization((allow) => [allow.authenticated()]),
 });
 

@@ -1533,7 +1533,7 @@
         "progress_ux": "step log per turn now; live streaming a later enhancement"
       },
       "tasks": [
-        { "id": "21.1", "name": "Agent Lambda + tool-use loop + agentChat mutation (skeleton, Cognito-gated, key from Secrets Manager, step-log)", "status": "pending", "size": "medium", "verify": "round-trip a turn; one read tool (search_catalog) works" },
+        { "id": "21.1", "name": "Agent Lambda + tool-use loop + agentChat mutation (skeleton, Cognito-gated, key from Secrets Manager, step-log)", "status": "complete", "completed_at": "2026-06-15", "size": "medium", "verify": "round-trip a turn; one read tool (search_catalog) works", "notes": "Ported DH assistant pattern into amplify/functions/agent/: assistant.ts (types+registry+auth — hyl-media single-tier: any authenticated operator may read/write, groups threaded for 21.10), loop.ts (one-tool/turn, disable_parallel_tool_use, propose→approve→execute gate via mutating flag, per-turn step-log), tools.ts (ToolDeps factory + search_catalog read tool over the DC table, diacritics-insensitive), handler.ts (Secrets Manager key fetch hyl-media/anthropic-api-key cached module-scope per guardrail, claude-opus-4-8, cache_control ephemeral on system+tools). agentChat mutation (messages/surfaceContext/approval → json, allow.authenticated()) in data/resource.ts; agent fn wired in backend.ts with DDB read + secretsmanager:GetSecretValue (writes deferred to later tasks). Type-checks clean (bundler resolution). Verified independently via scripts/verify-agent-loop.mts: mock Anthropic client round-trips tool_use(search_catalog)→tool_result→final text; usage aggregated (30 in/13 out/5 cache-read); search_catalog hit LIVE table (Bartunkova→7, piano→1, Easy Virtue→0 as expected). NOT yet deployed (push triggers Amplify build; held as a boundary).", "artifacts": ["amplify/functions/agent/assistant.ts", "amplify/functions/agent/loop.ts", "amplify/functions/agent/tools.ts", "amplify/functions/agent/handler.ts", "amplify/functions/agent/resource.ts", "scripts/verify-agent-loop.mts"] },
         { "id": "21.2", "name": "Read tools — search_catalog, get_resource, find_agent (fuzzy)", "status": "pending", "size": "small", "verify": "agent answers 'is Easy Virtue in the catalog?' and 'find Colin Firth'", "depends_on": ["21.1"] },
         { "id": "21.3", "name": "research_entity tool — Anthropic web search + structured extraction (+ disambiguation)", "status": "pending", "size": "medium", "verify": "research 'Easy Virtue' → 2008/1928 disambiguation then full facts (director/year/cast/links)", "depends_on": ["21.1"] },
         { "id": "21.4", "name": "Plan assembly + approval protocol (awaiting_approval → approve once → execute batch)", "status": "pending", "size": "medium", "verify": "'add movie Easy Virtue' returns a plan listing movie + new persons + links", "depends_on": ["21.2", "21.3"] },
@@ -1547,7 +1547,7 @@
       "artifacts": []
     }
   },
-  "current_task": "21.1",
+  "current_task": "21.2",
   "git_repos": {
     "orchestration": {
       "local": ".",
