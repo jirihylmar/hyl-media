@@ -4,6 +4,53 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+## ⮕ NEXT SESSION — START HERE (handover 2026-06-15)
+
+**State:** Phases 0–16 complete. Phase 17 (frontend DC cutover) **17.1–17.5 complete**;
+**17.6 deferred** (decommission legacy — blocked + destructive, needs approval). Phase 18
+(DC lifecycle/enrichment): **18.1 engine + 18.2 _explicit_fields pinning complete**;
+**18.3 in_progress — all 94 movies enriched**, other kinds pending. Deploy pipeline healthy
+(esbuild fix, jobs 55–65 green). Repo clean + pushed (commit eb8c572). Test login + Playwright
+verified. DC store = `hyl-media-metadata-repository` (1194 records).
+
+**Resume work, in order:**
+1. **Finish 18.3 enrichment of the remaining kinds** — `recording`, `band`, `person`, `book`,
+   `sheet_music` — via `node scripts/enrich-dc.mjs --kind <k> --apply` (key auto-sourced from
+   Secrets Manager). **BUT first apply the operator's guidance below — do NOT just reuse the
+   movie prompt for books/persons.**
+2. **18.4–18.6** — frontend DC editor (edit dc_* fields, pin to _explicit_fields via the
+   `updateMetadata` mutation already deployed) + regenerate/approve mutations + cost report.
+3. **17.6** — only after the create path (CreateEntityForm/AssetUpload) + Dossier cross-refs move
+   to DC; destructive (export backup first) → get explicit user approval.
+
+**OPERATOR GUIDANCE on enrichment (apply before running books/persons):**
+- **Treat ALL records seriously.** Book authors are NOT obscure — they're simply *not publicly
+  known / not publicly accessible* (private). Don't let the LLM shrug them off or invent facts.
+- **Use embedded metadata.** Most book/sheet PDFs in S3 (`documents/<uuid>/…pdf`, and the legacy
+  `library/`, `sheet-music/`) have embedded document metadata (title/author/subject). READ it
+  (e.g. `pdfinfo`/`pdf-lib`/`pdfjs`) and feed it to the abstract generator instead of relying on
+  LLM world-knowledge. The DC record already has `dc_creator` (author/artist) and `_legacy_id`.
+- **Public vs private distinction matters.** Add a curation/visibility tag (e.g. `public` vs
+  `private`, in the `curation` tag category) so publicly-known authors/books/recordings are
+  distinguished from private/personal ones. For PRIVATE records, generate the abstract strictly
+  from the record's own fields + embedded PDF metadata (no fabricated "known facts"); for PUBLIC
+  ones, LLM knowledge is fine (as done for movies). Decide the public/private signal from whether
+  the item has authoritative external links (wikipedia/imdb/musicbrainz/nkp) and/or embedded
+  metadata — discuss with the user if unsure.
+- The enrich-dc.mjs prompt currently says "use your knowledge of it" — that's right for movies but
+  WRONG for private books. Branch the prompt by public/private (and pass embedded metadata).
+
+**Key facts for the next session:**
+- Anthropic key: Secrets Manager `hyl-media/anthropic-api-key` (ARN …-KBL4LX). **Rotate it** — it
+  was pasted in chat once. Model used: `claude-opus-4-8`, structured outputs, effort low.
+- DC table Lambda (for spot-checks): `amplify-d2r70lavusnzlx-ma-metadataapilambda72099A2-oojXNsn35cPO`.
+  Bucket: `amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m7stthq`.
+- KnowledgeGraphItem (legacy, still live): `KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE`.
+- Verify frontend: `node scripts/verify-frontend-{dc,detail,dossier}.mjs` (Playwright login).
+- Tasks file: `tasks/phase_18_dc_lifecycle_enrichment.md`; mapping spec `docs/dc-metadata-mapping.md`.
+
+---
+
 ### Session: 2026-06-15 — Deploy fix + Phase 17.1/17.2 (frontend DC cutover begun)
 
 **Deploy blocker diagnosed + fixed (was pre-existing, broke jobs 50–56):**
