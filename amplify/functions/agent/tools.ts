@@ -55,6 +55,44 @@ function toHit(it: any) {
   };
 }
 
+/** Fuller view of one DC record — adds abstract + relationship edges. */
+function toFullView(it: any) {
+  const a = it.Attributes || {};
+  return {
+    ...toHit(it),
+    content_type: it.ContentType ?? null,
+    abstract: a.dc_abstract ?? '',
+    creators: Array.isArray(a.dc_creator) ? a.dc_creator : a.dc_creator ?? null,
+    contributors: Array.isArray(a.dc_contributor) ? a.dc_contributor : a.dc_contributor ?? null,
+    given_name: a._given_name ?? null,
+    family_name: a._family_name ?? null,
+    roles: Array.isArray(a._roles) ? a._roles : [],
+    tags: Array.isArray(a._tags) ? a._tags : [],
+    external_links: Array.isArray(a._external_links) ? a._external_links : [],
+    cast_uris: Array.isArray(a._cast_uris) ? a._cast_uris : [],
+    performer_uris: Array.isArray(a._performer_uris) ? a._performer_uris : [],
+    is_part_of: a.dc_is_part_of ?? null,
+    has_part: a.dc_has_part ?? null,
+    relation: a.dc_relation ?? null,
+  };
+}
+
+/** Fetch one record by PK (hash key). PK has one row here, so Query-by-PK via scan filter. */
+async function getResourceById(deps: ToolDeps, id: string): Promise<any | null> {
+  if (!id) return null;
+  const items = await scanAll(deps, {
+    FilterExpression: 'PK = :pk',
+    ExpressionAttributeValues: { ':pk': id },
+  });
+  return items[0] ?? null;
+}
+
+/** Is this record an agent (person / band / collaboration)? */
+function isAgentRecord(it: any): boolean {
+  const a = it.Attributes || {};
+  return a.dc_type === 'Agent' || ['person', 'band', 'collaboration'].includes(a._entity_kind);
+}
+
 /** search_catalog(query, limit?) — diacritics-insensitive title/subject/tag/creator search. */
 function searchCatalogTool(deps: ToolDeps): ToolDefinition {
   return {
@@ -103,9 +141,99 @@ function searchCatalogTool(deps: ToolDeps): ToolDefinition {
   };
 }
 
+/** get_resource(id) — fetch one DC record in full (abstract, links, relationships). */
+function getResourceTool(deps: ToolDeps): ToolDefinition {
+  return {
+    name: 'get_resource',
+    description:
+      'Fetch one catalog record in full by its id (the PK/UUID returned by search_catalog or ' +
+      'find_agent). Returns title, dc_type, entity_kind, abstract, subjects, tags, external links, ' +
+      'and relationship edges (creators, contributors, cast/performer uris, is_part_of/has_part). ' +
+      'Use this to inspect a candidate before editing or linking to it.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'The record id (PK/UUID).' } },
+      required: ['id'],
+    },
+    mutating: false,
+    handler: async (input, operator) => {
+      if (!canRead(operator)) {
+        return { content: 'Not permitted: the operator is not authorized to read the catalog.', isError: true };
+      }
+      const id = typeof input.id === 'string' ? input.id : '';
+      if (!id) return { content: 'Provide a record id.', summary: 'missing id', isError: true };
+      const row = await getResourceById(deps, id);
+      if (!row) return { content: JSON.stringify({ id, found: false }), summary: `no record for id ${id}`, isError: true };
+      const view = toFullView(row);
+      return { content: JSON.stringify({ found: true, resource: view }), summary: `loaded "${view.title}" (${view.entity_kind ?? view.dc_type})` };
+    },
+  };
+}
+
+/** find_agent(name, limit?) — fuzzy-resolve an EXISTING person/band/collaboration agent. */
+function findAgentTool(deps: ToolDeps): ToolDefinition {
+  return {
+    name: 'find_agent',
+    description:
+      'Find an existing agent (person, band, or collaboration) by name. Diacritics-insensitive, ' +
+      'fuzzy (substring either direction). Use this BEFORE proposing to create a person/band so you ' +
+      'reuse the existing agent instead of making a duplicate — e.g. resolve a movie\'s cast to ' +
+      'catalog agents. Returns ranked candidates with id, title, entity_kind, roles, and link types. ' +
+      'An empty result means no such agent exists yet.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'The agent name to resolve (e.g. "Colin Firth"). Min 2 chars.' },
+        limit: { type: 'integer', description: 'Max candidates to return (default 10).' },
+      },
+      required: ['name'],
+    },
+    mutating: false,
+    handler: async (input, operator) => {
+      if (!canRead(operator)) {
+        return { content: 'Not permitted: the operator is not authorized to read the catalog.', isError: true };
+      }
+      const name = typeof input.name === 'string' ? input.name : '';
+      const limit = typeof input.limit === 'number' && input.limit > 0 ? Math.min(input.limit, 25) : 10;
+      const nq = norm(name);
+      if (nq.length < 2) {
+        return { content: 'Provide a name of at least 2 characters.', summary: 'name too short', isError: true };
+      }
+      const agents = (await scanAll(deps)).filter(isAgentRecord);
+      const scored = agents
+        .map((it) => {
+          const nt = norm((it.Attributes?.dc_title as string) || it.Title || '');
+          let score = 0;
+          if (nt === nq) score = 3;
+          else if (nt.includes(nq)) score = 2;
+          else if (nq.includes(nt) && nt.length >= 2) score = 1;
+          return { it, score };
+        })
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score || String(a.it.Title || '').localeCompare(String(b.it.Title || '')));
+      const view = scored.slice(0, limit).map((s) => {
+        const a = s.it.Attributes || {};
+        return {
+          id: s.it.PK ?? s.it.id,
+          title: a.dc_title ?? s.it.Title ?? '',
+          entity_kind: a._entity_kind ?? null,
+          roles: Array.isArray(a._roles) ? a._roles : [],
+          link_types: Array.isArray(a._external_links) ? a._external_links.map((l: any) => l?.type).filter(Boolean) : [],
+        };
+      });
+      return {
+        content: JSON.stringify({ name, total: scored.length, returned: view.length, candidates: view }),
+        summary: `find_agent "${name}" → ${scored.length} candidate${scored.length === 1 ? '' : 's'}`,
+      };
+    },
+  };
+}
+
 /** Build the registry of all tools available this phase. */
 export function buildRegistry(deps: ToolDeps): ToolRegistry {
   const registry = createToolRegistry();
   registry.register(searchCatalogTool(deps));
+  registry.register(getResourceTool(deps));
+  registry.register(findAgentTool(deps));
   return registry;
 }
