@@ -1263,10 +1263,12 @@
         {
           "id": "17.1",
           "name": "Expose metadata-repository via Amplify custom AppSync resolvers (list/get/search) + deploy",
-          "status": "pending",
+          "status": "complete",
           "size": "medium",
           "verify": "Deployed AppSync API resolves getMetadata(pk), listMetadataByType(dc_type), searchMetadata(q) against hyl-media-metadata-repository (Cognito-authed)",
-          "notes": "Amplify Gen 2 a.query custom resolvers over an external DynamoDB data source (the CLI-created table). Mirrors DH's planned Path 3. Grant the resolver role dynamodb read on the table + resource-account-index GSI."
+          "notes": "Amplify Gen 2 a.query custom resolvers over an external DynamoDB data source (the CLI-created table). Mirrors DH's planned Path 3. Grant the resolver role dynamodb read on the table + resource-account-index GSI.",
+          "completed_at": "2026-06-15",
+          "verified": "Amplify build job 57 SUCCEED (first backend change since the esbuild fix — validates the CDK path). Lambda amplify-d2r70lavusnzlx-ma-metadataapilambda72099A2-oojXNsn35cPO deployed; AppSync API g7elqz... has 3 PIPELINE resolvers getMetadata/listMetadataByType/searchMetadata. Direct-invoked against live hyl-media-metadata-repository: getMetadata(Dirty Dancing PK)→MovingImage, 2 dc_has_part URIs, PK==id; listMetadataByType(MovingImage)→movies; searchMetadata('dirty dancing')→Dirty Dancing. All correct."
         },
         {
           "id": "17.2",
@@ -1394,7 +1396,7 @@
       "artifacts": []
     }
   },
-  "current_task": "17.1",
+  "current_task": "17.2",
   "git_repos": {
     "orchestration": {
       "local": ".",
