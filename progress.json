@@ -1299,7 +1299,7 @@
           "completed_at": "2026-06-15",
           "size": "small",
           "verify": "All 7 EntityList-based lists (movies/people/bands/recordings/collaborations/library/sheet-music) load from hyl-media-metadata-repository; links use legacy ids; tags/lang/extra columns render",
-          "verified": "src/lib/dcQueries.ts listEntitiesForList(kind) → listMetadataByType(dc_type) filtered by _entity_kind, mapped to legacy-shaped items (id=legacyId, name, language, tags, externalLinks, roles, author/artistName, format). EntityList swapped listByType→listEntitiesForList — single change cuts over all 7 lists. tsc clean. Pending Playwright parity check on deployed app.",
+          "verified": "src/lib/dcQueries.ts listEntitiesForList(kind) → listMetadataByType(dc_type) filtered by _entity_kind, mapped to legacy-shaped items (id=legacyId, name, language, tags, externalLinks, roles, author/artistName, format). EntityList swapped listByType→listEntitiesForList — single change cuts over all 7 lists. tsc clean. Playwright parity on deployed app (job 59): logged in, all lists render from DC with exact counts — Movies 94, People 442, Recordings 172, Library 307, Sheet Music 112. ALL PASS.",
           "added_reason": "17.3 split: lists are a clean single-component cutover (EntityList), no backend change needed."
         },
         {
