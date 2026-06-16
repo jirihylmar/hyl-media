@@ -19,13 +19,16 @@ const backend = defineBackend({
 // the Lambdas access.
 const tableArn = 'arn:aws:dynamodb:eu-central-1:299025166536:table/hyl-media-metadata-repository';
 
-// metadata-api: read + operator field edits on the DC table.
+// metadata-api: read + operator field edits + document-upload create (17.6c) on the DC table.
 backend.metadataApi.resources.lambda.addToRolePolicy(
   new PolicyStatement({
-    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:UpdateItem'],
+    actions: ['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:UpdateItem', 'dynamodb:PutItem'],
     resources: [tableArn, `${tableArn}/index/*`],
   }),
 );
+// 17.6c — createDocumentMetadata writes the DC sidecar to S3 (the PDF is uploaded by the browser).
+// The bucket name is the hardcoded constant in the handler (consistent with the agent/dc-emit).
+backend.storage.resources.bucket.grantReadWrite(backend.metadataApi.resources.lambda);
 
 // agent (Phase 21): read tools scan the DC table; the commit_plan executor
 // (21.5+) writes records (Put) and enriches them (Update). The Anthropic key is

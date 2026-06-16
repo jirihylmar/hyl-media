@@ -94,6 +94,16 @@ const schema = a.schema({
     .handler(a.handler.function(metadataApi))
     .authorization((allow) => [allow.authenticated()]),
 
+  // Phase 17.6c — DC-native document upload. The browser uploads the PDF to documents/<uuid>/ via
+  // Amplify Storage, then calls this to create the conformant file-backed DC record (S3 sidecar +
+  // metadata-repo row). Replaces the legacy KnowledgeGraphItem write path for book/sheet uploads.
+  createDocumentMetadata: a
+    .mutation()
+    .arguments({ input: a.json().required() })
+    .returns(a.json())
+    .handler(a.handler.function(metadataApi))
+    .authorization((allow) => [allow.authenticated()]),
+
   // Phase 21 — the operator agent. Stateless multi-turn Claude tool-use loop:
   // the frontend owns the chat history and sends the full `messages` array each
   // call; `approval` carries the operator's approve/decline of a proposed

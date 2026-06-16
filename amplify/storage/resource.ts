@@ -9,9 +9,11 @@ export const storage = defineStorage({
     'sheet-music/*': [
       allow.authenticated.to(['read', 'write', 'delete']),
     ],
-    // Phase 17.3b — DC migration layout: book/sheet PDFs also live under documents/<uuid>/.
+    // Phase 17.3b — DC migration layout: book/sheet PDFs live under documents/<uuid>/.
+    // 17.6c: authenticated operators upload new book/sheet PDFs here (then createDocumentMetadata
+    // writes the DC sidecar + metadata-repo row).
     'documents/*': [
-      allow.authenticated.to(['read']),
+      allow.authenticated.to(['read', 'write']),
     ],
     // Phase 19 — JSON descriptors for non-file MEDIA resources (movie/recording).
     'datasets/*': [

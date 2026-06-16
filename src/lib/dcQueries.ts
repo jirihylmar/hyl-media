@@ -84,6 +84,26 @@ export async function updateEntity(pk: string, patch: Record<string, unknown>): 
   }
 }
 
+/** 17.6c — create a DC record for a freshly uploaded document (book/sheet PDF). The PDF must
+ *  already be uploaded to documents/<id>/<filename>; this writes the sidecar + metadata-repo row. */
+export type DocumentInput = {
+  kind: 'book' | 'sheet_music';
+  id: string;
+  filename: string;
+  title: string;
+  creator?: string;
+  language?: string;
+  fileType?: string;
+  sizeBytes?: number;
+};
+export async function createDocument(input: DocumentInput): Promise<void> {
+  const res = await getClient().mutations.createDocumentMetadata({ input: JSON.stringify(input) });
+  if (res.errors?.length) {
+    console.error('createDocumentMetadata errors:', res.errors);
+    throw new Error(res.errors[0].message);
+  }
+}
+
 /** Reflect a saved patch into a local view model (optimistic UI, no refetch). */
 export function applyPatchToVm(vm: DcViewModel, fields: Record<string, unknown>): DcViewModel {
   const out = { ...vm };

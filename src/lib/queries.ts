@@ -1,35 +1,8 @@
 import { getClient } from './client';
-import type { KnowledgeGraphItem } from './client';
 
-function filterNulls(data: (KnowledgeGraphItem | null)[]): KnowledgeGraphItem[] {
-  return data.filter((item): item is KnowledgeGraphItem => item !== null);
-}
-
-export async function listByType(entityType: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByEntityTypeAndName(
-      { entityType },
-      { limit: 1000 },
-    );
-  if (result.errors?.length) {
-    console.error('listByType errors:', result.errors);
-  }
-  return filterNulls(result.data);
-}
-
-export async function createItem(fields: Record<string, unknown>) {
-  const result = await getClient().models.KnowledgeGraphItem.create({
-    ...fields,
-    createdAt: new Date().toISOString(),
-    __typename: 'KnowledgeGraphItem',
-  } as never);
-  if (result.errors?.length) {
-    console.error('createItem errors:', result.errors);
-    throw new Error(result.errors[0].message);
-  }
-  return result.data;
-}
-
+// Legacy KnowledgeGraphItem access — all that remains (17.6c) is the updateItem fallback for
+// Tag/ExternalLinks when no DC save callback is supplied. On live pages DcEntityHeader always
+// passes a save cb, so this is currently unreached; it is removed with the schema model in 17.6e.
 export async function updateItem(
   id: string,
   entityType: string,

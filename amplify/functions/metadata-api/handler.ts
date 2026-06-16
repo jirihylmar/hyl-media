@@ -1,18 +1,28 @@
 /**
- * Read API over the hyl-media-metadata-repository (Dublin Core) table.
- * Backs three custom AppSync queries (Phase 17.1):
- *   - getMetadata(pk)            → one DC record (or null)
- *   - listMetadataByType(dcType) → all records of a DCMI type (MovingImage/Sound/Text/Dataset)
- *   - searchMetadata(q)          → records whose name/dc_subject/_tags match q (diacritics-insensitive)
+ * API over the hyl-media-metadata-repository (Dublin Core) table. Backs custom AppSync
+ * queries/mutations:
+ *   - getMetadata(pk) / getMetadataByLegacyId(legacyId) → one DC record (or null)   [Phase 17.1]
+ *   - listMetadataByType(dcType) → all records of a DCMI type                        [Phase 17.1]
+ *   - searchMetadata(q)          → name/dc_subject/_tags match (diacritics-insensitive) [17.1]
+ *   - updateMetadata(pk, patch)  → operator edit of allowlisted DC fields            [Phase 18.4]
+ *   - createDocumentMetadata(input) → create a file-backed document record (S3 sidecar +
+ *                                     metadata-repo row) for an uploaded book/sheet PDF [17.6c]
  *
  * Each returns AWSJSON (a.json()) — the raw DC record(s); the frontend maps to view models.
  * The function dispatches on the AppSync field name (with an argument-presence fallback).
  */
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const TABLE = process.env.METADATA_TABLE as string;
+// The Amplify storage bucket (holds documents/ + metadata/ sidecars). Matches the constant used by
+// the migration scripts + the agent's dc-emit (kept in sync; Phase 17.6c document upload).
+const BUCKET = process.env.METADATA_BUCKET || 'amplify-d2r70lavusnzlx-ma-hylmediastoragebucketefb-p0iq0m7stthq';
+const REGION = process.env.AWS_REGION || 'eu-central-1';
+const RESOURCE_ACCOUNT = 'hylm';
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const s3 = new S3Client({});
 
 const norm = (s: string) =>
   (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -98,6 +108,117 @@ async function updateMetadata(pk: string, patch: unknown) {
   return await getMetadata(pk);
 }
 
+// --- Phase 17.6c — DC-native document upload (file-backed book/sheet_music) ------------------
+// sort_key slug: ASCII-fold → lowercase → spaces/dots to '-' → strip non-alphanumeric-hyphen.
+// Mirrors build-dc-sidecar.mjs sortKeySlug so uploaded docs are byte-consistent with the migration.
+function sortKeySlug(title: string): string {
+  if (!title) return '';
+  return asciiFold(title).toLowerCase()
+    .replace(/[\s.]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+}
+function sizeEstimate(bytes?: number): string {
+  if (bytes === undefined || bytes === null) return '';
+  if (bytes < 10 * 1024 * 1024) return 'small file';
+  if (bytes <= 100 * 1024 * 1024) return 'medium file';
+  return 'big file';
+}
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  pdf: 'PDF', txt: 'TEXT', md: 'MARKDOWN', doc: 'WORD', docx: 'WORD', epub: 'EPUB', xps: 'XPS',
+};
+
+interface DocInput {
+  kind: 'book' | 'sheet_music';
+  id: string;          // uuid (the documents/<uuid>/ partition + PK + _legacy_id)
+  filename: string;    // basename under documents/<uuid>/
+  title: string;
+  creator?: string;    // author (book) / artist (sheet_music) → dc_creator + dc_rights_holder
+  language?: string;
+  fileType?: string;   // ext, e.g. 'pdf'
+  sizeBytes?: number;
+}
+
+/** Build the conformant file-backed DC record (sidecar + DDB ingest item) for an uploaded document. */
+function buildDocumentRecord(input: DocInput, now: string) {
+  const id = input.id;
+  const title = (input.title || '').trim();
+  const language = input.language || 'auto';
+  const ext = (input.fileType || input.filename.split('.').pop() || 'pdf').toLowerCase();
+  const contentType = CONTENT_TYPE_BY_EXT[ext] || ext.toUpperCase();
+  const slug = sortKeySlug(title) || id;
+  const sk = `#${language}#${slug}`;
+  const asciiTitle = asciiFold(title);
+  const contentKey = `documents/${id}/${input.filename}`;
+  const sidecarKey = `metadata/${contentKey}.metadata.json`;
+  const dcSourceUri = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${contentKey}`;
+  const creator = (input.creator || '').trim();
+
+  // Canonical DH 28 Attributes in order, then hyl-media extensions (mirrors entity-to-dc.mjs).
+  const attributes: Record<string, unknown> = {
+    _authors: creator ? [creator] : ['hyl-media'],
+    _category: 'documents',
+    _created_at: now,
+    _document_title: asciiTitle,
+    _explicit_fields: [],
+    _file_type: ext,
+    _last_updated_at: now,
+    s3_bucket: BUCKET,
+    s3_key: contentKey,
+    dc_source_uri: dcSourceUri,
+    sort_key: sk,
+    language_code: language,
+    additional_languages: [],
+    size_estimate: sizeEstimate(input.sizeBytes),
+    daytime_estimate: '',
+    dc_title: title,
+    dc_type: 'Text',
+    dc_abstract: '',
+    dc_subject: [],
+    dc_rights_holder: creator || null,
+    dc_license: 'copyright',
+    dc_accrual_method: 'creation',
+    dc_source: null,
+    dc_relation: null,
+    dc_has_format: null,
+    dc_is_format_of: null,
+    dc_has_part: null,
+    dc_is_part_of: null,
+    // hyl-media extensions
+    _entity_kind: input.kind,
+    _legacy_id: id,
+    _tags: [],
+    _external_links: [],
+    dc_creator: creator ? [creator] : null,
+    dc_contributor: null,
+  };
+  const sidecar = { id, SK: sk, DocumentId: id, Title: asciiTitle, ContentType: contentType, Attributes: attributes };
+  const sidecarJson = JSON.stringify(sidecar, null, 2);
+  const ddbItem = {
+    PK: id, ...sidecar,
+    resource_account: RESOURCE_ACCOUNT,
+    s3_key: sidecarKey,           // top-level s3_key = the sidecar key (CLI ingest shape)
+    s3_bucket: BUCKET,
+    s3_size: Buffer.byteLength(sidecarJson, 'utf8'),
+    s3_last_modified: now,
+    last_synced: now,
+  };
+  return { sidecar, sidecarJson, ddbItem, sidecarKey, contentKey };
+}
+
+async function createDocumentMetadata(input: DocInput) {
+  if (!input?.id || !input?.filename || !input?.title || !input?.kind) {
+    throw new Error('createDocumentMetadata requires kind, id, filename, title');
+  }
+  const now = new Date().toISOString();
+  const rec = buildDocumentRecord(input, now);
+  // S3 sidecar is authoritative (CLAUDE.md) — write it, then mirror to DDB. The PDF itself is
+  // uploaded directly by the browser (Amplify Storage) before this call.
+  await s3.send(new PutObjectCommand({
+    Bucket: BUCKET, Key: rec.sidecarKey, Body: rec.sidecarJson, ContentType: 'application/json',
+  }));
+  await ddb.send(new PutCommand({ TableName: TABLE, Item: rec.ddbItem }));
+  return rec.sidecar;
+}
+
 async function listMetadataByType(dcType: string, limit?: number) {
   if (!dcType) return [];
   const items = await scanAll({
@@ -133,6 +254,10 @@ export const handler = async (event: any) => {
     if (field === 'listMetadataByType' || (args.dcType && !field)) return await listMetadataByType(args.dcType, args.limit);
     if (field === 'searchMetadata' || (args.q && !field)) return await searchMetadata(args.q, args.limit);
     if (field === 'updateMetadata' || (args.pk && args.patch && !field)) return await updateMetadata(args.pk, args.patch);
+    if (field === 'createDocumentMetadata' || (args.input && !field)) {
+      const input = typeof args.input === 'string' ? JSON.parse(args.input) : args.input;
+      return await createDocumentMetadata(input);
+    }
     return { error: `unknown field '${field}'` };
   } catch (err: any) {
     console.error('metadata-api error', field, err);

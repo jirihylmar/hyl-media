@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadData } from 'aws-amplify/storage';
-import { createItem } from '../lib/queries';
+import { createDocument } from '../lib/dcQueries';
 
 type Props = {
   type: 'book' | 'sheet_music';
-  s3Prefix: string;
+  s3Prefix: string;   // legacy prop (kept for call-site compatibility; uploads now go to documents/)
   detailPath: string;
   onCancel: () => void;
 };
@@ -17,11 +17,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function shortHash(): string {
-  return Math.random().toString(36).substring(2, 6);
-}
-
-export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
+export function AssetUpload({ type, detailPath, onCancel }: Props) {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
@@ -49,13 +45,16 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
 
     setUploading(true);
     setError('');
-    const id = `${slugify(name)}_${shortHash()}`;
-    const ext = file.name.split('.').pop() || 'pdf';
-    const s3Key = `${s3Prefix}${id}.${ext}`;
+    // DC layout (17.6c): the document is a real file → documents/<uuid>/<slug>.<ext>, with a
+    // conformant sidecar + metadata-repo row created by createDocumentMetadata. uuid is the DC PK
+    // and _legacy_id (so the detail route /library/<uuid> resolves via getMetadataByLegacyId).
+    const id = crypto.randomUUID();
+    const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+    const filename = `${slugify(name) || 'document'}.${ext}`;
 
     try {
       await uploadData({
-        path: s3Key,
+        path: `documents/${id}/${filename}`,
         data: file,
         options: {
           onProgress: ({ transferredBytes, totalBytes }) => {
@@ -64,18 +63,17 @@ export function AssetUpload({ type, s3Prefix, detailPath, onCancel }: Props) {
         },
       }).result;
 
-      const item: Record<string, unknown> = {
+      const creator = type === 'book' ? author.trim() : artistName.trim();
+      await createDocument({
+        kind: type,
         id,
-        entityType: type,
-        name: name.trim(),
+        filename,
+        title: name.trim(),
+        creator: creator || undefined,
         language,
-        s3Key,
-        format: ext,
-      };
-      if (type === 'book' && author.trim()) item.author = author.trim();
-      if (type === 'sheet_music' && artistName.trim()) item.artistName = artistName.trim();
-
-      await createItem(item);
+        fileType: ext,
+        sizeBytes: file.size,
+      });
       navigate(`${detailPath}/${id}`);
     } catch (err) {
       setError(String(err));
