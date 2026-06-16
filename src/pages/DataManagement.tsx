@@ -261,7 +261,7 @@ export function DataManagement() {
       {/* ========== MOVIES ========== */}
       {tab === 'movies' && (
         <div>
-          <SummaryLine items={movies} label="Movies" createPath="/movies?create=1" />
+          <SummaryLine items={movies} label="Movies" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -302,7 +302,7 @@ export function DataManagement() {
       {/* ========== BANDS ========== */}
       {tab === 'bands' && (
         <div>
-          <SummaryLine items={bands} label="Bands" createPath="/bands?create=1" />
+          <SummaryLine items={bands} label="Bands" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -327,7 +327,7 @@ export function DataManagement() {
       {/* ========== PEOPLE ========== */}
       {tab === 'people' && (
         <div>
-          <SummaryLine items={persons} label="People" createPath="/persons?create=1" />
+          <SummaryLine items={persons} label="People" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>
@@ -362,7 +362,7 @@ export function DataManagement() {
       {/* ========== RECORDINGS ========== */}
       {tab === 'recordings' && (
         <div>
-          <SummaryLine items={recordings} label="Recordings" createPath="/recordings?create=1" />
+          <SummaryLine items={recordings} label="Recordings" />
           <div className="table-wrap">
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr style={{ borderBottom: '1px solid var(--border-bright)' }}>

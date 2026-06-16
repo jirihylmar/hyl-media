@@ -1365,7 +1365,8 @@
         {
           "id": "17.6b",
           "name": "Retire legacy entity-create UI (CreateEntityForm '+ New' for movie/person/band/recording) — agent panel is the DC create path",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-16",
           "size": "medium",
           "verify": "'+ New' removed from EntityList for movie/person/band/recording; no UI writes legacy createItem for entities; lists + agent create still work; deployed",
           "depends_on": ["17.6a"],

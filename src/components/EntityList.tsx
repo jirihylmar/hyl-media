@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { listEntitiesForList } from '../lib/dcQueries';
 import type { KnowledgeGraphItem } from '../lib/client';
-import { CreateEntityForm } from './CreateEntityForm';
 import { Breadcrumb } from './Breadcrumb';
-
-type FieldDef = {
-  name: string;
-  label: string;
-  required?: boolean;
-  placeholder?: string;
-};
 
 type Props = {
   entityType: string;
@@ -19,15 +11,12 @@ type Props = {
   filterFn?: (item: KnowledgeGraphItem) => boolean;
   extraColumns?: { label: string; render: (item: KnowledgeGraphItem) => React.ReactNode }[];
   filters?: React.ReactNode;
-  createFields?: FieldDef[];
   dossierTab?: string;
 };
 
-export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters, createFields, dossierTab }: Props) {
+export function EntityList({ entityType, title, detailPath, filterFn, extraColumns, filters, dossierTab }: Props) {
   const [items, setItems] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const [showCreate, setShowCreate] = useState(searchParams.get('create') === '1');
 
   const refresh = () => {
     listEntitiesForList(entityType).then(data => {
@@ -48,20 +37,8 @@ export function EntityList({ entityType, title, detailPath, filterFn, extraColum
       ]} />
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {title} ({loading ? '...' : filtered.length})
-        {createFields && !showCreate && (
-          <button onClick={() => setShowCreate(true)} className="btn btn-primary btn-sm">+ New</button>
-        )}
       </h1>
       {filters}
-      {showCreate && createFields && (
-        <CreateEntityForm
-          entityType={entityType}
-          title={title.replace(/s$/, '')}
-          fields={createFields}
-          detailPath={detailPath}
-          onCancel={() => setShowCreate(false)}
-        />
-      )}
       {loading ? (
         <p className="loading">Loading</p>
       ) : (

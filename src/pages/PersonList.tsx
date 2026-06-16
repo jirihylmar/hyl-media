@@ -16,12 +16,6 @@ export function PersonList() {
       detailPath="/persons"
       dossierTab="people"
       filterFn={filterFn}
-      createFields={[
-        { name: 'name', label: 'Display Name', required: true },
-        { name: 'givenName', label: 'Given Name' },
-        { name: 'familyName', label: 'Family Name' },
-        { name: 'language', label: 'Language', placeholder: 'en or cs' },
-      ]}
       extraColumns={[
         { label: 'Roles', render: item => item.roles?.join(', ') || '' },
       ]}
