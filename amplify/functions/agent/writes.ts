@@ -171,6 +171,12 @@ async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written
   return { id: rec.id, contentKey: rec.contentKey, sidecarKey: rec.sidecarKey, dcSourceUri: rec.sidecar.Attributes.dc_source_uri };
 }
 
+/** Authoritative link types → "public" enrichment (world knowledge allowed). */
+const AUTHORITATIVE = new Set(['wikipedia', 'imdb', 'musicbrainz', 'discogs', 'openlibrary', 'goodreads', 'databazeknih']);
+
+const RESEARCH_TEXT = (content: any[]): string =>
+  (content || []).filter((b) => b?.type === 'text').map((b) => b.text).join('\n').trim();
+
 /** Read one DC record by PK (the hash key; one row per PK). */
 async function getById(deps: ToolDeps, id: string): Promise<any | null> {
   const r: any = await deps.ddb.send(new QueryCommand({
@@ -211,6 +217,103 @@ async function appendRelation(deps: ToolDeps, id: string, relationUri: string): 
   await deps.s3.send(new PutObjectCommand({
     Bucket: bucket, Key: sidecarKey, Body: JSON.stringify(sidecar, null, 2), ContentType: 'application/json',
   }));
+}
+
+/**
+ * Patch a set of Attributes fields on an existing record in BOTH stores
+ * (DDB UpdateCommand + S3 sidecar read-modify-write), always bumping
+ * _last_updated_at. Used by enrich + set_external_links (21.7) and the edit
+ * tools (21.9). Skips silently if the patch is empty.
+ */
+async function patchAttributes(deps: ToolDeps, id: string, patch: Record<string, unknown>): Promise<void> {
+  if (!deps.s3) throw new Error('S3 client not configured');
+  const keys = Object.keys(patch);
+  if (!keys.length) return;
+  const row = await getById(deps, id);
+  if (!row) throw new Error(`patchAttributes: record not found ${id}`);
+  const now = new Date().toISOString();
+
+  const names: Record<string, string> = { '#lu': '_last_updated_at' };
+  const values: Record<string, unknown> = { ':now': now };
+  const sets: string[] = ['Attributes.#lu = :now'];
+  keys.forEach((k, i) => {
+    names[`#k${i}`] = k;
+    values[`:v${i}`] = patch[k];
+    sets.push(`Attributes.#k${i} = :v${i}`);
+  });
+  await deps.ddb.send(new UpdateCommand({
+    TableName: deps.table, Key: { PK: row.PK, SK: row.SK },
+    UpdateExpression: 'SET ' + sets.join(', '),
+    ExpressionAttributeNames: names, ExpressionAttributeValues: values,
+  }));
+
+  const obj: any = await deps.s3.send(new GetObjectCommand({ Bucket: row.s3_bucket, Key: row.s3_key }));
+  const sidecar = JSON.parse(await obj.Body.transformToString());
+  for (const k of keys) sidecar.Attributes[k] = patch[k];
+  sidecar.Attributes._last_updated_at = now;
+  await deps.s3.send(new PutObjectCommand({
+    Bucket: row.s3_bucket, Key: row.s3_key, Body: JSON.stringify(sidecar, null, 2), ContentType: 'application/json',
+  }));
+}
+
+/** Merge external links (by type) into _external_links on a record (both stores). */
+async function setExternalLinks(deps: ToolDeps, id: string, links: { type: string; url: string }[]): Promise<number> {
+  const row = await getById(deps, id);
+  if (!row) throw new Error(`setExternalLinks: record not found ${id}`);
+  const existing: { type: string; url: string }[] = Array.isArray(row.Attributes?._external_links) ? row.Attributes._external_links : [];
+  const byType = new Map(existing.map((l) => [l.type, l]));
+  for (const l of links) if (l?.type && l?.url) byType.set(l.type, { type: l.type, url: l.url });
+  const merged = [...byType.values()];
+  await patchAttributes(deps, id, { _external_links: merged });
+  return merged.length;
+}
+
+/**
+ * Enrich a record's dc_abstract + dc_subject via Claude (wraps the enrich-dc
+ * engine: public/private branching off resolved authoritative links; respects
+ * operator pins in _explicit_fields). Writes to both stores. No-op without an
+ * Anthropic client. Returns what changed.
+ */
+async function enrichResource(deps: ToolDeps, id: string): Promise<{ abstract?: string; subjects?: string[] }> {
+  if (!deps.anthropic) return {};
+  const row = await getById(deps, id);
+  if (!row) return {};
+  const a = row.Attributes || {};
+  const pinned = new Set<string>(Array.isArray(a._explicit_fields) ? a._explicit_fields : []);
+  const linkTypes: string[] = Array.isArray(a._external_links) ? a._external_links.map((l: any) => l?.type) : [];
+  const visibility = linkTypes.some((t) => AUTHORITATIVE.has(t)) ? 'public' : 'private';
+
+  const facts = {
+    kind: a._entity_kind, title: a.dc_title, language: a.language_code,
+    creators: a.dc_creator, contributors: a.dc_contributor,
+    current_subjects: a.dc_subject, links: linkTypes,
+  };
+  const system = visibility === 'public'
+    ? 'Write a concise Dublin Core abstract (1-2 sentences, ~200-400 chars) and 3-6 topical subject keywords for this catalogued resource. It has authoritative public sources, so you may use well-established world knowledge. Subjects are TOPICS (themes, genre-as-topic), not roles or formats. Never invent specifics you are unsure of.'
+    : 'Write a concise Dublin Core abstract (1-2 sentences) and 3-6 topical subjects using ONLY the supplied fields — this resource has no authoritative public source, so do NOT add world knowledge or invent facts.';
+  const SCHEMA = {
+    type: 'object', additionalProperties: false,
+    properties: { abstract: { type: 'string' }, subjects: { type: 'array', items: { type: 'string' } } },
+    required: ['abstract', 'subjects'],
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const resp: any = await deps.anthropic.messages.create({
+    model: deps.model || 'claude-opus-4-8', max_tokens: 500,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },
+    system, messages: [{ role: 'user', content: JSON.stringify(facts) }],
+  } as any);
+  const data = JSON.parse(RESEARCH_TEXT(resp.content) || '{}');
+
+  const patch: Record<string, unknown> = {};
+  const out: { abstract?: string; subjects?: string[] } = {};
+  if (!pinned.has('dc_abstract') && typeof data.abstract === 'string' && data.abstract.trim()) {
+    patch.dc_abstract = data.abstract.trim(); out.abstract = data.abstract.trim();
+  }
+  if (!pinned.has('dc_subject') && Array.isArray(data.subjects) && data.subjects.length) {
+    patch.dc_subject = data.subjects; out.subjects = data.subjects;
+  }
+  await patchAttributes(deps, id, patch);
+  return out;
 }
 
 /**
@@ -263,11 +366,24 @@ async function executePlan(deps: ToolDeps, plan: CatalogPlan): Promise<{ summary
     }
   }
 
+  // 5. Enrich the new resource (refine abstract + topical subjects; honors pins)
+  //    and ensure external links are merged. Both write to DDB + S3 sidecar, so
+  //    the stores stay reconciled — no separate sync pass needed.
+  const enr = await enrichResource(deps, movie.id);
+  if (Array.isArray(plan.resource.external_links) && plan.resource.external_links.length) {
+    await setExternalLinks(deps, movie.id, plan.resource.external_links);
+  }
+
   const summary = `created ${plan.resource.kind} "${plan.resource.title}" (${movie.id}); ` +
-    `${createdCount} new agent${createdCount === 1 ? '' : 's'} created + linked, ${linkedCount} existing linked`;
+    `${createdCount} new agent${createdCount === 1 ? '' : 's'} created + linked, ${linkedCount} existing linked` +
+    `${enr.subjects ? `; enriched (${enr.subjects.length} subjects)` : ''}`;
   return {
     summary,
-    detail: { resource_id: movie.id, sidecar: movie.sidecarKey, agents_created: createdCount, agents_linked: linkedCount, cast_uris: castUris.length },
+    detail: {
+      resource_id: movie.id, sidecar: movie.sidecarKey,
+      agents_created: createdCount, agents_linked: linkedCount, cast_uris: castUris.length,
+      enriched: !!enr.subjects, abstract_set: !!enr.abstract,
+    },
   };
 }
 
