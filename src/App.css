@@ -458,3 +458,51 @@
   transition: width 0.3s;
   box-shadow: var(--glow);
 }
+
+/* === OPERATOR AGENT PANEL (Phase 21.8) === */
+.assist-tab {
+  position: fixed; right: 0; top: 50%; transform: translateY(-50%) rotate(180deg);
+  writing-mode: vertical-rl; background: var(--bg-panel); color: var(--green);
+  border: 1px solid var(--border); border-right: none; padding: 0.75rem 0.4rem;
+  cursor: pointer; font-family: inherit; letter-spacing: 2px; font-size: 0.8rem; z-index: 50;
+}
+.assist-tab:hover { border-color: var(--green); }
+.assist-panel {
+  position: fixed; right: 0; top: 0; bottom: 0; width: min(420px, 92vw);
+  background: var(--bg-panel); border-left: 1px solid var(--green-dim);
+  display: flex; flex-direction: column; z-index: 50; box-shadow: -8px 0 24px rgba(0,0,0,0.5);
+}
+.assist-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border);
+  color: var(--green); letter-spacing: 2px; font-size: 0.8rem;
+}
+.assist-close { background: none; border: none; color: var(--green-dim); font-size: 1.2rem; cursor: pointer; }
+.assist-close:hover { color: var(--red); }
+.assist-transcript { flex: 1; overflow-y: auto; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.assist-empty { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+.assist-msg { font-size: 0.85rem; line-height: 1.45; }
+.assist-msg-user .assist-text { color: var(--green); border-left: 2px solid var(--green-dim); padding-left: 0.5rem; }
+.assist-msg-assistant .assist-text { color: var(--text); white-space: pre-wrap; }
+.assist-steps { list-style: none; margin: 0 0 0.4rem; padding: 0; color: var(--text-muted); font-size: 0.78rem; }
+.assist-steps li { padding: 0.05rem 0; }
+.assist-step-err { color: var(--red); }
+.assist-busy { color: var(--amber); font-size: 0.8rem; }
+.assist-approve { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg-black); padding: 0.7rem 0.8rem; }
+.assist-approve-prompt { color: var(--amber); font-size: 0.85rem; margin: 0 0 0.5rem; }
+.assist-plan { font-size: 0.82rem; }
+.assist-plan-row { margin-bottom: 0.3rem; }
+.assist-plan-kind { color: var(--green-dim); text-transform: uppercase; font-size: 0.72rem; margin-right: 0.4rem; }
+.assist-plan-dim { color: var(--text-muted); }
+.assist-plan-abstract { color: var(--text-muted); margin-bottom: 0.4rem; line-height: 1.4; }
+.assist-plan-agents { list-style: none; margin: 0 0 0.4rem; padding: 0; max-height: 30vh; overflow-y: auto; }
+.assist-plan-agents li { padding: 0.08rem 0; }
+.assist-tag-new { color: var(--amber); font-size: 0.7rem; }
+.assist-tag-reuse { color: var(--green-dim); font-size: 0.7rem; }
+.assist-plan-links { color: var(--text-muted); font-size: 0.78rem; }
+.assist-preview { background: var(--bg-black); border: 1px solid var(--border); padding: 0.4rem; font-size: 0.72rem; max-height: 30vh; overflow: auto; white-space: pre-wrap; }
+.assist-approve-btns { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.assist-error { color: var(--red); font-size: 0.8rem; padding: 0 0.8rem; }
+.assist-input-row { display: flex; gap: 0.5rem; padding: 0.7rem 0.8rem; border-top: 1px solid var(--border); }
+.assist-input { flex: 1; background: var(--bg-black); color: var(--green); border: 1px solid var(--border); padding: 0.5rem; font-family: inherit; font-size: 0.85rem; resize: vertical; }
+.assist-input:focus { outline: none; border-color: var(--green-dim); }

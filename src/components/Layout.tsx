@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import type { UseAuthenticator } from '@aws-amplify/ui-react';
 import { GlobalSearch } from './GlobalSearch';
+import { AssistPanel } from './AssistPanel';
 
 type Props = {
   signOut?: UseAuthenticator['signOut'];
@@ -21,6 +22,7 @@ export function Layout({ signOut, user }: Props) {
       <main className="main-content">
         <Outlet />
       </main>
+      <AssistPanel />
     </div>
   );
 }
