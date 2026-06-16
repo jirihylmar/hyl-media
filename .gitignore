@@ -40,3 +40,4 @@ __pycache__/
 amplify_outputs.json
 .amplify/
 .dc-audit/
+backups/
