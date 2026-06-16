@@ -108,6 +108,17 @@ const schema = a.schema({
     .returns(a.json())
     .handler(a.handler.function(agent))
     .authorization((allow) => [allow.authenticated()]),
+
+  // Phase 21.8 — async transport. A research-heavy turn runs ~90s, past
+  // AppSync's ~30s synchronous limit, so agentChat returns {status:'pending',
+  // turnId} and the worker persists the result; the frontend polls this query
+  // until it is ready.
+  getAgentTurn: a
+    .query()
+    .arguments({ turnId: a.string().required() })
+    .returns(a.json())
+    .handler(a.handler.function(agent))
+    .authorization((allow) => [allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

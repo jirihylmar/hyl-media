@@ -39,28 +39,49 @@ export interface CallAgentInput {
   approval?: { toolUseId: string; decision: 'approve' | 'decline' };
 }
 
+const parseJson = (data: unknown): any =>
+  data == null ? null : typeof data === 'string' ? JSON.parse(data) : data;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
- * Call the `agentChat` mutation and normalize its `{data, errors}` envelope
- * (data may be a raw object OR a JSON string — a.json() returns either).
- * messages/approval go as JSON strings (AppSync's AWSJSON scalar rejects a
- * top-level array as a variable value); the Lambda JSON.parses them.
+ * Run one agent turn. A research-heavy turn exceeds AppSync's ~30s synchronous
+ * limit, so agentChat is ASYNC: it returns {status:'pending', turnId} fast and
+ * the worker persists the result. We then poll getAgentTurn(turnId) until ready.
+ * messages/approval go as JSON strings (AWSJSON rejects a top-level array).
  */
-export async function callAgent(input: CallAgentInput): Promise<AgentTurn> {
+export async function callAgent(
+  input: CallAgentInput,
+  { pollMs = 2000, timeoutMs = 280000 }: { pollMs?: number; timeoutMs?: number } = {},
+): Promise<AgentTurn> {
   const res = await getClient().mutations.agentChat({
     messages: JSON.stringify(input.messages),
     surfaceContext: input.surfaceContext,
     approval: input.approval !== undefined ? JSON.stringify(input.approval) : undefined,
   });
   if (res.errors?.length) throw new Error(res.errors[0].message);
-  if (res.data == null) throw new Error('agentChat returned no data');
-  const parsed = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-  const turn = parsed as Partial<AgentTurn>;
+  const dispatch = parseJson(res.data);
+  if (!dispatch?.turnId) throw new Error('agentChat did not return a turnId');
+
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    await sleep(pollMs);
+    const r = await getClient().queries.getAgentTurn({ turnId: dispatch.turnId });
+    if (r.errors?.length) throw new Error(r.errors[0].message);
+    const poll = parseJson(r.data);
+    if (poll?.status === 'done') return normalizeTurn(poll.turn);
+    if (poll?.status === 'error') throw new Error(poll.error || 'agent turn failed');
+    if (Date.now() > deadline) throw new Error('agent turn timed out');
+  }
+}
+
+function normalizeTurn(turn: Partial<AgentTurn> | null): AgentTurn {
   return {
-    status: turn.status ?? 'completed',
-    newMessages: turn.newMessages ?? [],
-    assistantText: turn.assistantText ?? '',
-    steps: turn.steps ?? [],
-    proposedTool: turn.proposedTool,
+    status: turn?.status ?? 'completed',
+    newMessages: turn?.newMessages ?? [],
+    assistantText: turn?.assistantText ?? '',
+    steps: turn?.steps ?? [],
+    proposedTool: turn?.proposedTool,
   };
 }
 

@@ -21,24 +21,30 @@
  *
  * 21.1 registers one read tool (`search_catalog`) to prove the loop end-to-end.
  */
+import { randomUUID } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 
 import { createToolRegistry, type OperatorContext } from './assistant';
-import { runAssistantTurn, type ApprovalSignal, type AssistantTurnResult } from './loop';
+import { runAssistantTurn, type ApprovalSignal } from './loop';
 import { buildRegistry } from './tools';
+import { BUCKET } from './dc-emit';
 
 const TABLE = process.env.METADATA_TABLE as string;
 const REGION = process.env.AWS_REGION || 'eu-central-1';
 const SECRET_ID = process.env.ANTHROPIC_SECRET_ID || 'hyl-media/anthropic-api-key';
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8';
+const SELF_FN = process.env.AWS_LAMBDA_FUNCTION_NAME as string;
+const TURN_PREFIX = 'agent-turns/';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
 const sm = new SecretsManagerClient({ region: REGION });
+const lambda = new LambdaClient({});
 
 // Cache the key + client across warm invocations; never log either.
 let anthropicClient: Anthropic | null = null;
@@ -127,24 +133,21 @@ function parseApproval(raw: unknown): ApprovalSignal | undefined {
   return { toolUseId: a.toolUseId, decision: a.decision };
 }
 
-export const handler = async (
-  event: AgentChatEvent,
-): Promise<AssistantTurnResult & { model: string }> => {
-  const { surfaceContext } = event.arguments;
-  const messages = parseJsonArg(event.arguments.messages);
+/** Run one full agent turn (the actual work — can take up to the Lambda timeout). */
+async function runTurn(args: AgentChatEvent['arguments'], identity: AgentChatEvent['identity']) {
+  const messages = parseJsonArg(args.messages);
   if (!Array.isArray(messages)) {
     throw new Error('agentChat: messages must be an array of Anthropic message params');
   }
-
-  const operator = toOperatorContext(event.identity);
+  const operator = toOperatorContext(identity);
 
   // System blocks: stable instructions first (cached), then the volatile
   // surface context AFTER the cache breakpoint so it never invalidates the prefix.
   const system: Anthropic.TextBlockParam[] = [
     { type: 'text', text: SYSTEM_INSTRUCTIONS, cache_control: { type: 'ephemeral' } },
   ];
-  if (surfaceContext && surfaceContext.trim()) {
-    system.push({ type: 'text', text: `<surface_context>\n${surfaceContext}\n</surface_context>` });
+  if (args.surfaceContext && args.surfaceContext.trim()) {
+    system.push({ type: 'text', text: `<surface_context>\n${args.surfaceContext}\n</surface_context>` });
   }
 
   const anthropic = await getAnthropic();
@@ -157,12 +160,86 @@ export const handler = async (
     registry,
     messages: messages as Anthropic.MessageParam[],
     operator,
-    approval: parseApproval(event.arguments.approval),
+    approval: parseApproval(args.approval),
     // The add-resource flow can read + research + resolve many cast agents
     // (one find_agent per name, parallel tool use disabled) before assembling
     // the plan, so allow more internal iterations than DH's conversational 8.
     maxIterations: 20,
   });
-
   return { ...result, model: MODEL };
+}
+
+/**
+ * The async-execution envelope (Phase 21.8). A research-heavy turn runs ~90s,
+ * far past AppSync's ~30s synchronous resolver limit. So agentChat does NOT run
+ * the turn inline: it generates a turnId, fire-and-forget invokes THIS function
+ * in worker mode (InvocationType: Event), and returns {status:'pending',turnId}
+ * in <1s. The worker writes the result to s3://<bucket>/agent-turns/<turnId>.json;
+ * the frontend polls getAgentTurn(turnId) until it is ready.
+ */
+const turnKey = (turnId: string) => `${TURN_PREFIX}${turnId}.json`;
+
+async function writeTurn(turnId: string, body: Record<string, unknown>): Promise<void> {
+  await s3.send(new PutObjectCommand({
+    Bucket: BUCKET, Key: turnKey(turnId), Body: JSON.stringify(body), ContentType: 'application/json',
+  }));
+}
+
+/** Worker mode: run the turn and persist the result (or error) for polling. */
+async function runWorker(event: WorkerEvent): Promise<void> {
+  try {
+    const turn = await runTurn(event.arguments, event.identity);
+    await writeTurn(event.turnId, { status: 'done', turn });
+  } catch (err: any) {
+    await writeTurn(event.turnId, { status: 'error', error: err?.message || String(err) });
+  }
+}
+
+/** Dispatcher: kick off the worker and return a turnId immediately. */
+async function dispatch(event: AgentChatEvent): Promise<{ status: 'pending'; turnId: string }> {
+  const turnId = randomUUID();
+  const payload: WorkerEvent = { __worker: true, turnId, arguments: event.arguments, identity: event.identity };
+  await lambda.send(new InvokeCommand({
+    FunctionName: SELF_FN,
+    InvocationType: 'Event', // async — returns immediately
+    Payload: Buffer.from(JSON.stringify(payload)),
+  }));
+  return { status: 'pending', turnId };
+}
+
+/** Poll: read the stored turn result, or {status:'pending'} if not ready yet. */
+async function pollTurn(turnId: string): Promise<Record<string, unknown>> {
+  if (!turnId) return { status: 'error', error: 'turnId required' };
+  try {
+    const obj: any = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: turnKey(turnId) }));
+    return JSON.parse(await obj.Body.transformToString());
+  } catch (err: any) {
+    if (err?.name === 'NoSuchKey' || err?.Code === 'NoSuchKey') return { status: 'pending' };
+    throw err;
+  }
+}
+
+interface WorkerEvent {
+  __worker: true;
+  turnId: string;
+  arguments: AgentChatEvent['arguments'];
+  identity: AgentChatEvent['identity'];
+}
+
+/**
+ * Entry point. Three modes:
+ *   - worker (self async-invoke, __worker) → run the turn, persist result
+ *   - getAgentTurn(turnId) AppSync query → poll the stored result
+ *   - agentChat(...) AppSync mutation → dispatch + return {pending,turnId}
+ */
+export const handler = async (event: any): Promise<unknown> => {
+  if (event?.__worker) {
+    await runWorker(event as WorkerEvent);
+    return {};
+  }
+  const field = event?.info?.fieldName;
+  if (field === 'getAgentTurn' || (event?.arguments?.turnId && !event?.arguments?.messages)) {
+    return pollTurn(event.arguments.turnId);
+  }
+  return dispatch(event as AgentChatEvent);
 };

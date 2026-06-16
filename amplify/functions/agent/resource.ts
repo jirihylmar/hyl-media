@@ -8,7 +8,10 @@ import { defineFunction } from '@aws-amplify/backend';
 export const agent = defineFunction({
   name: 'agent',
   entry: './handler.ts',
-  timeoutSeconds: 120,
+  // The dispatcher returns in <1s; the async worker runs the full research +
+  // plan turn (web search + multi-cast resolution can take well over a minute),
+  // decoupled from AppSync's ~30s limit (Phase 21.8). Give it generous headroom.
+  timeoutSeconds: 300,
   memoryMB: 512,
   environment: {
     METADATA_TABLE: 'hyl-media-metadata-repository',

@@ -45,3 +45,12 @@ backend.agent.resources.lambda.addToRolePolicy(
   }),
 );
 backend.storage.resources.bucket.grantReadWrite(backend.agent.resources.lambda);
+// Async transport (Phase 21.8): the dispatcher fire-and-forget invokes THIS
+// function in worker mode. Grant invoke on the app's functions by name pattern
+// (referencing the function's own ARN here would create a CDK circular dep).
+backend.agent.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    actions: ['lambda:InvokeFunction'],
+    resources: ['arn:aws:lambda:eu-central-1:299025166536:function:amplify-d2r70lavusnzlx-*'],
+  }),
+);
