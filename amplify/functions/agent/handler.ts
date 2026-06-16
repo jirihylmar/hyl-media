@@ -185,12 +185,27 @@ async function writeTurn(turnId: string, body: Record<string, unknown>): Promise
   }));
 }
 
-/** Worker mode: run the turn and persist the result (or error) for polling. */
+// Opus 4.8 pricing ($/MTok): input 5, output 25, cache-read ~0.1×, cache-write 1.25×.
+function costUsd(u: { inputTokens: number; outputTokens: number; cacheReadInputTokens: number; cacheCreationInputTokens: number }): number {
+  return (u.inputTokens * 5 + u.outputTokens * 25 + u.cacheReadInputTokens * 0.5 + u.cacheCreationInputTokens * 6.25) / 1e6;
+}
+
+/** Worker mode: run the turn, log a per-run cost report, and persist the result. */
 async function runWorker(event: WorkerEvent): Promise<void> {
+  const operator = toOperatorContext(event.identity);
+  const startedAt = Date.now();
   try {
     const turn = await runTurn(event.arguments, event.identity);
+    // Per-run identity + token/cost report (Phase 21.10). Greppable JSON line.
+    console.log(JSON.stringify({
+      tag: 'agent-run', turnId: event.turnId, operator: operator.sub,
+      status: turn.status, steps: turn.steps.length, model: turn.model,
+      usage: turn.usage, cost_usd: Number(costUsd(turn.usage).toFixed(4)),
+      ms: Date.now() - startedAt,
+    }));
     await writeTurn(event.turnId, { status: 'done', turn });
   } catch (err: any) {
+    console.log(JSON.stringify({ tag: 'agent-run', turnId: event.turnId, operator: operator.sub, status: 'error', error: err?.message || String(err), ms: Date.now() - startedAt }));
     await writeTurn(event.turnId, { status: 'error', error: err?.message || String(err) });
   }
 }
