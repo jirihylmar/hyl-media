@@ -24,7 +24,7 @@ import { PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 import type { ToolDeps } from './tools';
 import { canWrite, type ToolDefinition } from './assistant';
-import { buildRecord, type EmitInput } from './dc-emit';
+import { buildRecord, convertToAscii, type EmitInput } from './dc-emit';
 
 /** Roles that map to dc_creator (vs dc_contributor). */
 const CREATOR_ROLES = new Set(['director', 'writer', 'author', 'composer', 'creator', 'screenwriter', 'screenplay', 'director+writer']);
@@ -225,10 +225,16 @@ async function appendRelation(deps: ToolDeps, id: string, relationUri: string): 
  * _last_updated_at. Used by enrich + set_external_links (21.7) and the edit
  * tools (21.9). Skips silently if the patch is empty.
  */
-async function patchAttributes(deps: ToolDeps, id: string, patch: Record<string, unknown>): Promise<void> {
+async function patchAttributes(
+  deps: ToolDeps,
+  id: string,
+  patch: Record<string, unknown>,
+  topLevel: Record<string, unknown> = {},
+): Promise<void> {
   if (!deps.s3) throw new Error('S3 client not configured');
   const keys = Object.keys(patch);
-  if (!keys.length) return;
+  const topKeys = Object.keys(topLevel);
+  if (!keys.length && !topKeys.length) return;
   const row = await getById(deps, id);
   if (!row) throw new Error(`patchAttributes: record not found ${id}`);
   const now = new Date().toISOString();
@@ -241,6 +247,11 @@ async function patchAttributes(deps: ToolDeps, id: string, patch: Record<string,
     values[`:v${i}`] = patch[k];
     sets.push(`Attributes.#k${i} = :v${i}`);
   });
+  topKeys.forEach((k, i) => {
+    names[`#t${i}`] = k;
+    values[`:t${i}`] = topLevel[k];
+    sets.push(`#t${i} = :t${i}`);
+  });
   await deps.ddb.send(new UpdateCommand({
     TableName: deps.table, Key: { PK: row.PK, SK: row.SK },
     UpdateExpression: 'SET ' + sets.join(', '),
@@ -250,6 +261,7 @@ async function patchAttributes(deps: ToolDeps, id: string, patch: Record<string,
   const obj: any = await deps.s3.send(new GetObjectCommand({ Bucket: row.s3_bucket, Key: row.s3_key }));
   const sidecar = JSON.parse(await obj.Body.transformToString());
   for (const k of keys) sidecar.Attributes[k] = patch[k];
+  for (const k of topKeys) sidecar[k] = topLevel[k];
   sidecar.Attributes._last_updated_at = now;
   await deps.s3.send(new PutObjectCommand({
     Bucket: row.s3_bucket, Key: row.s3_key, Body: JSON.stringify(sidecar, null, 2), ContentType: 'application/json',
@@ -385,6 +397,110 @@ async function executePlan(deps: ToolDeps, plan: CatalogPlan): Promise<{ summary
       enriched: !!enr.subjects, abstract_set: !!enr.abstract,
     },
   };
+}
+
+// --- Edit tools (Phase 21.9 — realizes the superseded 18.4 + 18.5) ---
+// Each is an individual mutating tool: editing an existing record goes through
+// its own propose→approve gate (distinct from the create batch in commit_plan).
+
+const EDITABLE = new Set(['dc_abstract', 'dc_title', 'dc_subject', 'language_code', '_tags', 'dc_creator', 'dc_contributor']);
+
+/** update_metadata(id, fields) — SET explicit values and PIN them in _explicit_fields. */
+function updateMetadataTool(deps: ToolDeps): ToolDefinition {
+  return {
+    name: 'update_metadata',
+    description:
+      'Set explicit field values on an existing catalog record (by id) and PIN them so future ' +
+      'regeneration never overwrites them. Use when the operator dictates a specific value (e.g. ' +
+      '"set the Easy Virtue abstract to …"). Editable fields: dc_abstract, dc_title, dc_subject ' +
+      '(array), language_code, _tags (array), dc_creator (array), dc_contributor (array).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Record id (PK/UUID).' },
+        fields: { type: 'object', description: 'Field→value map of the editable fields to set.' },
+      },
+      required: ['id', 'fields'],
+    },
+    mutating: true,
+    handler: async (input, operator) => {
+      if (!canWrite(operator)) return { content: 'Not permitted.', isError: true };
+      const id = typeof input.id === 'string' ? input.id : '';
+      const fields = input.fields && typeof input.fields === 'object' ? (input.fields as Record<string, unknown>) : {};
+      if (!id) return { content: 'Provide a record id.', isError: true };
+      const row = await getById(deps, id);
+      if (!row) return { content: `Not found: ${id}`, summary: `no record ${id}`, isError: true };
+      const attrPatch: Record<string, unknown> = {};
+      const topLevel: Record<string, unknown> = {};
+      const setKeys: string[] = [];
+      for (const [k, v] of Object.entries(fields)) {
+        if (!EDITABLE.has(k)) continue;
+        attrPatch[k] = v;
+        setKeys.push(k);
+        if (k === 'dc_title' && typeof v === 'string') {
+          const folded = convertToAscii(v);
+          attrPatch._document_title = folded;
+          topLevel.Title = folded;
+        }
+      }
+      if (!setKeys.length) {
+        return { content: `No editable fields in patch (allowed: ${[...EDITABLE].join(', ')}).`, summary: 'nothing to update', isError: true };
+      }
+      const pinned = new Set<string>(Array.isArray(row.Attributes?._explicit_fields) ? row.Attributes._explicit_fields : []);
+      setKeys.forEach((k) => pinned.add(k));
+      attrPatch._explicit_fields = [...pinned].sort();
+      await patchAttributes(deps, id, attrPatch, topLevel);
+      return { content: JSON.stringify({ id, updated: setKeys, pinned: [...pinned].sort() }), summary: `set + pinned ${setKeys.join(', ')} on ${id.slice(0, 8)}` };
+    },
+  };
+}
+
+/** regenerate(id) — re-derive abstract + subjects, preserving operator pins. */
+function regenerateTool(deps: ToolDeps): ToolDefinition {
+  return {
+    name: 'regenerate',
+    description:
+      'Re-derive a record\'s abstract and subjects from enrichment, PRESERVING any operator-pinned ' +
+      'fields (_explicit_fields). Use to refresh auto-generated metadata after edits or when facts changed.',
+    inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+    mutating: true,
+    handler: async (input, operator) => {
+      if (!canWrite(operator)) return { content: 'Not permitted.', isError: true };
+      const id = typeof input.id === 'string' ? input.id : '';
+      if (!id) return { content: 'Provide a record id.', isError: true };
+      const out = await enrichResource(deps, id);
+      const changed = [out.abstract ? 'abstract' : '', out.subjects ? 'subjects' : ''].filter(Boolean);
+      return {
+        content: JSON.stringify({ id, regenerated: changed }),
+        summary: changed.length ? `regenerated ${changed.join(' + ')} on ${id.slice(0, 8)}` : `${id.slice(0, 8)}: all fields pinned — no change`,
+      };
+    },
+  };
+}
+
+/** approve(id) — mark a record operator-approved. */
+function approveTool(deps: ToolDeps): ToolDefinition {
+  return {
+    name: 'approve',
+    description: 'Mark a catalog record as operator-approved (sets _approval_status=approved, with who/when).',
+    inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+    mutating: true,
+    handler: async (input, operator) => {
+      if (!canWrite(operator)) return { content: 'Not permitted.', isError: true };
+      const id = typeof input.id === 'string' ? input.id : '';
+      if (!id) return { content: 'Provide a record id.', isError: true };
+      const row = await getById(deps, id);
+      if (!row) return { content: `Not found: ${id}`, isError: true };
+      const now = new Date().toISOString();
+      await patchAttributes(deps, id, { _approval_status: 'approved', _approved_by: operator.sub, _approved_at: now });
+      return { content: JSON.stringify({ id, _approval_status: 'approved' }), summary: `approved ${id.slice(0, 8)}` };
+    },
+  };
+}
+
+/** The Phase 21.9 edit tools (each individually approval-gated). */
+export function editTools(deps: ToolDeps): ToolDefinition[] {
+  return [updateMetadataTool(deps), regenerateTool(deps), approveTool(deps)];
 }
 
 export function commitPlanTool(deps: ToolDeps): ToolDefinition {
