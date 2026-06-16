@@ -43,17 +43,21 @@ try {
   ok(/elliott|firth|biel|scott thomas/.test(transcript), 'read intent: answer names director/cast');
   await page.screenshot({ path: 'scripts/_agent-panel-read.png' });
 
-  // 3. Propose flow for a create intent → Approve/Decline card appears → Decline (no write)
-  try {
-    await page.fill('[data-testid="assist-input"]', 'Add the movie The Grand Budapest Hotel.');
-    await page.click('[data-testid="assist-send"]');
-    await page.waitForSelector('[data-testid="assist-approve"]', { timeout: 150000 });
-    ok(true, 'create intent: propose→Approve/Decline card appears');
+  // 3. Propose flow for a create intent → research runs async (~90s) and the
+  //    Approve/Decline card appears (this previously timed out at AppSync's 30s
+  //    limit; the async transport fixes it). Decline → no write. PRIMARY check.
+  await page.fill('[data-testid="assist-input"]', 'Add the movie The Grand Budapest Hotel.');
+  await page.click('[data-testid="assist-send"]');
+  let proposed = true;
+  await page.waitForSelector('[data-testid="assist-approve"]', { timeout: 220000 }).catch(() => { proposed = false; });
+  ok(proposed, 'create intent: async research → propose → Approve/Decline card appears');
+  if (proposed) {
     await page.screenshot({ path: 'scripts/_agent-panel-propose.png' });
     await page.click('[data-testid="assist-approve-no"]'); // decline — no write
     out('  (declined the proposal — no record created)');
-  } catch (e) {
-    out(`SKIP propose-flow (research timed out or model declined to propose): ${e.message.split('\n')[0]}`);
+  } else {
+    const tx = await page.locator('[data-testid="assist-transcript"]').innerText().catch(() => '');
+    out('  transcript tail: ' + tx.slice(-300));
   }
 
   // 4. Created movie + cast appear in the live lists
