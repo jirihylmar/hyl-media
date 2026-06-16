@@ -1375,7 +1375,8 @@
         {
           "id": "17.6c",
           "name": "Rebuild book/sheet-music upload on the DC store (file → documents/<uuid>/ + sidecar + metadata-repo row)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-16",
           "size": "medium",
           "verify": "Upload a new book PDF via UI → appears in DC-backed Library list + downloads from documents/<uuid>/; metadata-repo row conformant (audit PASS); no legacy write",
           "depends_on": ["17.6a"],
