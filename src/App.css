@@ -506,3 +506,7 @@
 .assist-input-row { display: flex; gap: 0.5rem; padding: 0.7rem 0.8rem; border-top: 1px solid var(--border); }
 .assist-input { flex: 1; background: var(--bg-black); color: var(--green); border: 1px solid var(--border); padding: 0.5rem; font-family: inherit; font-size: 0.85rem; resize: vertical; }
 .assist-input:focus { outline: none; border-color: var(--green-dim); }
+.assist-header-btns { display: flex; align-items: center; gap: 0.6rem; }
+.assist-reset { background: none; border: 1px solid var(--border); color: var(--green-dim); font-family: inherit; font-size: 0.7rem; padding: 0.1rem 0.4rem; cursor: pointer; }
+.assist-reset:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+.assist-reset:disabled { opacity: 0.4; cursor: default; }

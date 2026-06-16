@@ -130,7 +130,16 @@ export function AssistPanel() {
     <aside className="assist-panel" data-testid="assist-panel">
       <div className="assist-header">
         <span>OPERATOR AGENT</span>
-        <button className="assist-close" onClick={() => setOpen(false)} data-testid="assist-close">×</button>
+        <span className="assist-header-btns">
+          <button
+            className="assist-reset"
+            onClick={() => { historyRef.current = []; setDisplay([]); setPending(null); setError(null); setInput(''); }}
+            disabled={busy}
+            title="New conversation"
+            data-testid="assist-reset"
+          >⟲ reset</button>
+          <button className="assist-close" onClick={() => setOpen(false)} data-testid="assist-close">×</button>
+        </span>
       </div>
 
       <div className="assist-transcript" data-testid="assist-transcript">

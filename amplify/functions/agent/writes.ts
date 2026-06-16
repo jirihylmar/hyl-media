@@ -20,11 +20,11 @@
  * new relation to dc_relation in DDB + the S3 sidecar.
  */
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 import type { ToolDeps } from './tools';
 import { canWrite, type ToolDefinition } from './assistant';
-import { buildRecord, convertToAscii, type EmitInput } from './dc-emit';
+import { buildRecord, convertToAscii, derivedId, kindSpec, type EmitInput } from './dc-emit';
 
 /** Roles that map to dc_creator (vs dc_contributor). */
 const CREATOR_ROLES = new Set(['director', 'writer', 'author', 'composer', 'creator', 'screenwriter', 'screenplay', 'director+writer']);
@@ -153,9 +153,30 @@ interface Written {
   dcSourceUri: string;
 }
 
-/** Write a conformant record: S3 content descriptor + S3 sidecar + DDB item. */
+/** All rows for a PK (normally ≤1; used to detect/clean up stale-SK duplicates). */
+async function queryAllByPK(deps: ToolDeps, id: string): Promise<any[]> {
+  const r: any = await deps.ddb.send(new QueryCommand({
+    TableName: deps.table, KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': id },
+  }));
+  return r.Items ?? [];
+}
+
+/**
+ * Write a conformant record as a true upsert-by-PK: S3 content + sidecar + DDB.
+ * The table key is composite (PK, SK) and SK = #<language>#<slug>, so the
+ * deterministic PK alone is NOT enough for idempotency — a re-create under a
+ * different language would land at a new SK and DUPLICATE the row. So: reuse an
+ * existing row's language (stable SK) when the caller didn't pin one, and delete
+ * any leftover rows at this PK with a different SK. The S3 sidecar/content are
+ * keyed by PK (shared), so only the stale DDB row is removed.
+ */
 async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written> {
   if (!deps.s3) throw new Error('S3 client not configured');
+  const id = derivedId(kindSpec(input.kind).entityKind, input.title.trim(), input.year || '');
+  const existing = await queryAllByPK(deps, id);
+  if (existing.length && !input.language) {
+    input = { ...input, language: existing[0].Attributes?.language_code };
+  }
   const now = new Date().toISOString();
   const rec = buildRecord(input, now);
   // S3 is the source of truth; write content + sidecar, then mirror to DDB.
@@ -168,6 +189,11 @@ async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written
     Body: JSON.stringify(rec.sidecar, null, 2), ContentType: 'application/json',
   }));
   await deps.ddb.send(new PutCommand({ TableName: deps.table, Item: rec.ddbItem }));
+  for (const it of existing) {
+    if (it.SK !== rec.ddbItem.SK) {
+      await deps.ddb.send(new DeleteCommand({ TableName: deps.table, Key: { PK: it.PK, SK: it.SK } }));
+    }
+  }
   return { id: rec.id, contentKey: rec.contentKey, sidecarKey: rec.sidecarKey, dcSourceUri: rec.sidecar.Attributes.dc_source_uri };
 }
 
