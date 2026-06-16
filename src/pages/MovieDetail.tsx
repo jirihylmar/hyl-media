@@ -28,7 +28,7 @@ export function MovieDetail() {
         { label: 'Movies', to: '/movies' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType="movie" onPatch={patch} />
+      <DcEntityHeader vm={vm} onPatch={patch} />
 
       {vm.creators.length > 0 && (
         <p><strong>Director{vm.creators.length > 1 ? 's' : ''}:</strong> {vm.creators.join(', ')}</p>

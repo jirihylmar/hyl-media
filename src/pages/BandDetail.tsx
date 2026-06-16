@@ -17,7 +17,6 @@ export function BandDetail() {
   const [detail, setDetail] = useState<DcDetail | null>(null);
 
   const isCollab = location.pathname.startsWith('/collaborations');
-  const entityType = isCollab ? 'collaboration' : 'band';
 
   useEffect(() => {
     if (!id) return;
@@ -40,7 +39,7 @@ export function BandDetail() {
         { label: isCollab ? 'Collaborations' : 'Bands', to: isCollab ? '/collaborations' : '/bands' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType={entityType} onPatch={patch} />
+      <DcEntityHeader vm={vm} onPatch={patch} />
 
       {SECTIONS.map(({ kind, label, path }) => {
         const items = grouped[kind] || [];

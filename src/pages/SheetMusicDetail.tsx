@@ -35,7 +35,7 @@ export function SheetMusicDetail() {
         { label: 'Sheet Music', to: '/sheet-music' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType="sheet_music" onPatch={patch}>
+      <DcEntityHeader vm={vm} onPatch={patch}>
         {detail.creatorsResolved.length > 0 ? (
           <p>Artist: {detail.creatorsResolved.map((p, i) => (
             <span key={p.id}>

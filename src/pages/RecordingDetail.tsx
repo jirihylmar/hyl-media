@@ -28,7 +28,7 @@ export function RecordingDetail() {
         { label: 'Recordings', to: '/recordings' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType="recording" onPatch={patch} />
+      <DcEntityHeader vm={vm} onPatch={patch} />
 
       {detail.creatorsResolved.length > 0 && (
         <>

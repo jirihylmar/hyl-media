@@ -1,16 +1,12 @@
 import { useState } from 'react';
-import { updateItem } from '../lib/queries';
-import { useUserId } from '../lib/UserContext';
 
 export type ExternalLink = { url: string; type: string };
 
 type Props = {
-  id: string;
-  entityType: string;
   externalLinks?: string | null;
   onUpdate: (externalLinks: string) => void;
-  // When provided (DC-backed pages), persist the parsed link array via this.
-  save?: (links: ExternalLink[]) => Promise<void>;
+  // Persist the parsed link array to the DC store (17.6e — legacy updateItem fallback removed).
+  save: (links: ExternalLink[]) => Promise<void>;
 };
 
 const KNOWN_TYPES: Record<string, { label: string; icon: string; color: string }> = {
@@ -35,8 +31,7 @@ function serializeLinks(links: ExternalLink[]): string {
   return JSON.stringify(links);
 }
 
-export function ExternalLinks({ id, entityType, externalLinks, onUpdate, save }: Props) {
-  const userId = useUserId();
+export function ExternalLinks({ externalLinks, onUpdate, save }: Props) {
   const [editing, setEditing] = useState<{ index: number; url: string; type: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [newUrl, setNewUrl] = useState('');
@@ -49,8 +44,7 @@ export function ExternalLinks({ id, entityType, externalLinks, onUpdate, save }:
     setSaving(true);
     const json = serializeLinks(updated);
     try {
-      if (save) await save(updated);
-      else await updateItem(id, entityType, { externalLinks: json }, userId);
+      await save(updated);
       onUpdate(json);
     } catch (e) {
       console.error('Save failed:', e);

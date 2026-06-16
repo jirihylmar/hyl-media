@@ -35,7 +35,7 @@ export function LibraryDetail() {
         { label: 'Library', to: '/library' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType="book" onPatch={patch}>
+      <DcEntityHeader vm={vm} onPatch={patch}>
         {vm.creators.length > 0 && <p>Author: {vm.creators.join(', ')}</p>}
       </DcEntityHeader>
 

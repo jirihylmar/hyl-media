@@ -1,25 +1,19 @@
 import { useState } from 'react';
-import { updateItem } from '../lib/queries';
-import { useUserId } from '../lib/UserContext';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
 
 type Props = {
-  id: string;
-  entityType: string;
   tags: string[];
   onUpdate: (tags: string[]) => void;
-  // When provided (DC-backed pages), persist via this instead of the legacy updateItem.
-  save?: (tags: string[]) => Promise<void>;
+  // Persist the new tag array to the DC store (17.6e — the legacy updateItem fallback is gone).
+  save: (tags: string[]) => Promise<void>;
 };
 
-export function TagManager({ id, entityType, tags, onUpdate, save }: Props) {
-  const userId = useUserId();
+export function TagManager({ tags, onUpdate, save }: Props) {
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const persist = async (newTags: string[]) => {
-    if (save) await save(newTags);
-    else await updateItem(id, entityType, { tags: newTags as unknown as string }, userId);
+    await save(newTags);
     onUpdate(newTags);
   };
 

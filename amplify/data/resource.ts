@@ -2,59 +2,11 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { metadataApi } from '../functions/metadata-api/resource';
 import { agent } from '../functions/agent/resource';
 
+// Phase 17.6e — the legacy KnowledgeGraphItem model + its DynamoDB table were decommissioned.
+// The catalog lives entirely in the CLI-created hyl-media-metadata-repository (Dublin Core) table,
+// exposed through the custom queries/mutations below (metadata-api + agent). A verified export of
+// the old table is preserved in s3 backups/ (see scripts/backup-legacy-kg-table.mjs).
 const schema = a.schema({
-  KnowledgeGraphItem: a.model({
-    id: a.string().required(),
-    entityType: a.string().required(),
-    name: a.string(),
-    language: a.string(),
-    // Person fields
-    givenName: a.string(),
-    familyName: a.string(),
-    roles: a.string().array(),
-    // Relationship fields (movie_cast)
-    role: a.string(),
-    movieId: a.string(),
-    movieName: a.string(),
-    personId: a.string(),
-    personName: a.string(),
-    // Relationship fields (recording_performer)
-    recordingId: a.string(),
-    recordingName: a.string(),
-    performerId: a.string(),
-    performerName: a.string(),
-    performerType: a.string(),
-    // Book fields
-    author: a.string(),
-    format: a.string(),
-    s3Key: a.string(),
-    // Sheet music fields
-    artistName: a.string(),
-    sheetMusicId: a.string(),
-    // External links — JSON-serialized Array<{url: string, type: string}>
-    externalLinks: a.string(),
-    // Legacy link fields (kept for schema compatibility, frontend uses externalLinks)
-    wikiUrl: a.string(),
-    imdbUrl: a.string(),
-    spotifyUrl: a.string(),
-    youtubeUrl: a.string(),
-    // Tags (controlled vocabulary)
-    tags: a.string().array(),
-    // Audit fields
-    updatedAt: a.datetime(),
-    updatedBy: a.string(),
-  })
-    .identifier(['id', 'entityType'])
-    .secondaryIndexes((index) => [
-      index('entityType').sortKeys(['name']).name('byType'),
-      index('movieId').sortKeys(['role']).name('byCastMovie'),
-      index('personId').sortKeys(['movieName']).name('byPersonFilm'),
-      index('recordingId').sortKeys(['performerName']).name('byRecording'),
-      index('performerId').sortKeys(['recordingName']).name('byPerformer'),
-      index('language').sortKeys(['name']).name('byLanguage'),
-    ])
-    .authorization((allow) => [allow.authenticated()]),
-
   // Phase 17.1 — read API over the CLI-created hyl-media-metadata-repository (DC) table.
   // Returns raw DC records as AWSJSON; the frontend maps them to view models.
   getMetadata: a

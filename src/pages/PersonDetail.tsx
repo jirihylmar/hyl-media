@@ -36,7 +36,7 @@ export function PersonDetail() {
         { label: 'People', to: '/persons' },
         { label: vm.name },
       ]} />
-      <DcEntityHeader vm={vm} entityType="person" onPatch={patch}>
+      <DcEntityHeader vm={vm} onPatch={patch}>
         {(vm.givenName || vm.familyName || vm.roles.length > 0) && (
           <p>
             {[vm.givenName, vm.familyName].filter(Boolean).join(' ')}

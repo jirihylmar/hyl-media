@@ -6,7 +6,6 @@ import type { DcViewModel } from '../lib/dcMap';
 
 type Props = {
   vm: DcViewModel;
-  entityType: string;
   onPatch: (fields: Record<string, unknown>) => Promise<void>;
   /** Extra rows rendered between the title and the links (e.g. author/artist line). */
   children?: React.ReactNode;
@@ -14,7 +13,7 @@ type Props = {
 
 /** Shared editable header for DC-backed detail pages: title + language + abstract + links + tags,
  *  all writing to the DC store via onPatch. */
-export function DcEntityHeader({ vm, entityType, onPatch, children }: Props) {
+export function DcEntityHeader({ vm, onPatch, children }: Props) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -26,14 +25,12 @@ export function DcEntityHeader({ vm, entityType, onPatch, children }: Props) {
       {vm.abstract && <p>{vm.abstract}</p>}
 
       <ExternalLinks
-        id={vm.id} entityType={entityType}
         externalLinks={JSON.stringify(vm.externalLinks)}
         save={(links: ExternalLink[]) => onPatch({ _external_links: links })}
         onUpdate={() => {}}
       />
 
       <TagManager
-        id={vm.id} entityType={entityType}
         tags={vm.tags}
         save={(tags) => onPatch({ _tags: tags })}
         onUpdate={() => {}}
