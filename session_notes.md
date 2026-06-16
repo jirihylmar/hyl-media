@@ -4,6 +4,32 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+## Session 2026-06-16 — PHASE 21 COMPLETE (agent operator panel, deployed + E2E)
+
+All 10 Phase 21 tasks (21.1–21.10) built, deployed (Amplify jobs 78/79/80 SUCCEED), and
+verified end-to-end in the live Cognito-gated app. The operator types an intent on the right-side
+AssistPanel ("add movie X"); the agent researches (web search), disambiguates, proposes a plan,
+and on one Approve creates the conformant DC record + cast agents + links + abstract + external
+links + reconcile. Authoritative detail: progress.json `last_session_summary` + the per-task notes.
+
+- **21.6** find_or_create_agent + link_relationship — cast agents created (agents/, dc_type=Agent)
+  + movie dc_creator/dc_contributor/_cast_uris + reverse dc_relation filmography edges.
+- **21.7** enrich + set_external_links + reconcile — shared patchAttributes keeps DDB+S3 in lockstep;
+  enrichResource wraps enrich-dc (public/private + pins).
+- **21.8** AssistPanel (global, terminal-themed) + **deploy** + Playwright E2E. **Key finding:** a
+  research-heavy turn runs ~87s but AppSync caps synchronous resolvers at ~30s → re-architected to
+  **async**: agentChat dispatches a worker (async self-invoke) + returns a turnId; worker writes the
+  result to `s3 agent-turns/<turnId>.json`; getAgentTurn query polls. E2E ALL PASS.
+- **21.9** update_metadata (pin) / regenerate (preserve pins) / approve — individual approval-gated tools.
+- **21.10** per-run identity + token/cost logging (confirmed live in CloudWatch: $0.029/turn, caching
+  active); unauthorized blocked; conformance audit ALL PASS 1198/1198.
+
+**Production:** live app has the operator agent; catalog has a real Easy Virtue (2008) movie + 3 cast
+agents (1198 records, all conformant). All commits pushed to main.
+**Remaining/optional:** 17.6 legacy KnowledgeGraphItem decommission (deferred, destructive). **TODO: rotate the Anthropic key.**
+
+---
+
 ## Session 2026-06-15 (cont.) — Phase 21.1–21.5: agent operator panel backend
 
 Built and verified (locally, end-to-end) the backend half of the Phase 21 agent operator panel.
