@@ -55,9 +55,12 @@ export interface KindSpec {
   category: 'datasets' | 'documents' | 'agents';
   entityKind: string;
 }
+// Phase 22 metadata-only model: every agent-created kind is VIRTUAL (no media file). ContentType
+// is the honest entity kind (not DATASET); the row carries s3_key=null, dc_source_uri=null,
+// _file_type=null, _virtual=true, and NO content descriptor object is written to S3.
 const KIND_SPECS: Record<string, KindSpec> = {
-  movie: { dcType: 'MovingImage', contentType: 'DATASET', category: 'datasets', entityKind: 'movie' },
-  recording: { dcType: 'Sound', contentType: 'DATASET', category: 'datasets', entityKind: 'recording' },
+  movie: { dcType: 'MovingImage', contentType: 'MOVIE', category: 'datasets', entityKind: 'movie' },
+  recording: { dcType: 'Sound', contentType: 'RECORDING', category: 'datasets', entityKind: 'recording' },
   person: { dcType: 'Agent', contentType: 'PERSON', category: 'agents', entityKind: 'person' },
   band: { dcType: 'Agent', contentType: 'BAND', category: 'agents', entityKind: 'band' },
   collaboration: { dcType: 'Agent', contentType: 'COLLABORATION', category: 'agents', entityKind: 'collaboration' },
@@ -93,9 +96,13 @@ export interface EmittedRecord {
   id: string;
   contentKey: string;
   sidecarKey: string;
+  logicalUri: string; // https form of contentKey — stable cross-link IDENTITY (uuid-parsed by
+                      // consumers); NOT a fetchable object for virtual rows. Distinct from the
+                      // row's own dc_source_uri, which is null when virtual.
+  virtual: boolean;
   sidecar: any; // 6-key envelope, Attributes in DH order + extensions (S3-authoritative)
   ddbItem: any; // metadata-repository ingest shape
-  descriptor: any; // JSON content artifact at contentKey
+  descriptor: any; // null for virtual rows (Phase 22 metadata-only — no content object written)
 }
 
 /**
@@ -113,7 +120,9 @@ export function buildRecord(input: EmitInput, now: string): EmittedRecord {
   const filename = `${slug || id}.json`;
   const contentKey = `${ks.category}/${id}/${filename}`;
   const sidecarKey = `metadata/${contentKey}.metadata.json`;
-  const dcSourceUri = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${contentKey}`;
+  // Logical identity URI (uuid-parsed by consumers). The row itself is virtual, so its own
+  // dc_source_uri is null; this value is used ONLY to seed cross-link references between rows.
+  const logicalUri = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${contentKey}`;
   const links = input.externalLinks || [];
   const creators = input.creators || [];
   const contributors = input.contributors || [];
@@ -125,11 +134,11 @@ export function buildRecord(input: EmitInput, now: string): EmittedRecord {
     _created_at: now,
     _document_title: asciiTitle,
     _explicit_fields: [],
-    _file_type: 'json',
+    _file_type: null,
     _last_updated_at: now,
     s3_bucket: BUCKET,
-    s3_key: contentKey,
-    dc_source_uri: dcSourceUri,
+    s3_key: null,
+    dc_source_uri: null,
     sort_key: sk,
     language_code: language,
     additional_languages: [],
@@ -155,6 +164,7 @@ export function buildRecord(input: EmitInput, now: string): EmittedRecord {
     _external_links: links,
     dc_creator: creators.length ? creators : null,
     dc_contributor: contributors.length ? contributors : null,
+    _virtual: true, // Phase 22: metadata-only resource, no content object
   };
   if (ks.category === 'agents') {
     attributes._given_name = input.givenName || '';
@@ -179,17 +189,6 @@ export function buildRecord(input: EmitInput, now: string): EmittedRecord {
     last_synced: now,
   };
 
-  const descriptor = {
-    kind: ks.entityKind,
-    title,
-    year: input.year || '',
-    language,
-    genre: input.subjects || [],
-    abstract: input.abstract || '',
-    creators,
-    contributors,
-    external_links: links,
-  };
-
-  return { id, contentKey, sidecarKey, sidecar, ddbItem, descriptor };
+  // Phase 22: virtual resources are metadata-only — no content descriptor object is written.
+  return { id, contentKey, sidecarKey, logicalUri, virtual: true, sidecar, ddbItem, descriptor: null };
 }

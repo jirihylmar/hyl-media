@@ -62,7 +62,12 @@ function fail(rule, id) {
     if (n >= LIMIT) break; n++;
     const a = it.Attributes || {};
     const id = a._legacy_id || it.id;
-    const key = `metadata/${a.s3_key}.metadata.json`;
+    // Locate the sidecar by its own S3 key (top-level s3_key on the DDB row), which holds the
+    // metadata/… address. Phase 22: virtual rows have Attributes.s3_key=null, so the old
+    // `metadata/<content_key>…` derivation no longer works; fall back to it for any legacy row.
+    const key = (typeof it.s3_key === 'string' && it.s3_key.startsWith('metadata/'))
+      ? it.s3_key
+      : `metadata/${a.s3_key}.metadata.json`;
     let sc;
     try {
       const r = await s3.send(new GetObjectCommand({ Bucket: a.s3_bucket, Key: key }));
@@ -87,10 +92,19 @@ function fail(rule, id) {
     // --- value rules ---
     if (!DCMI_TYPES.has(sa.dc_type)) fail('val:dc_type-not-DCMI', id);
     if (!CATEGORIES.has(sa._category)) fail('val:_category-invalid', id);
-    if (!sa.s3_key) fail('val:s3_key-empty', id);
-    const expUri = `https://${sa.s3_bucket}.s3.${REGION}.amazonaws.com/${sa.s3_key}`;
-    if (sa.dc_source_uri !== expUri) fail('val:dc_source_uri-derivation', id);
-    if (!sa._file_type) fail('val:_file_type-empty', id);
+    // Phase 22: a VIRTUAL (metadata-only) resource carries no content object — s3_key,
+    // dc_source_uri and _file_type are all null. A file-backed resource (documents/ with a real
+    // PDF) keeps its content key + derived source URI + file type.
+    if (sa._virtual === true) {
+      if (sa.s3_key !== null) fail('val:virtual-s3_key-not-null', id);
+      if (sa.dc_source_uri !== null) fail('val:virtual-dc_source_uri-not-null', id);
+      if (sa._file_type !== null) fail('val:virtual-_file_type-not-null', id);
+    } else {
+      if (!sa.s3_key) fail('val:s3_key-empty', id);
+      const expUri = `https://${sa.s3_bucket}.s3.${REGION}.amazonaws.com/${sa.s3_key}`;
+      if (sa.dc_source_uri !== expUri) fail('val:dc_source_uri-derivation', id);
+      if (!sa._file_type) fail('val:_file_type-empty', id);
+    }
     if (!sa._created_at) fail('val:_created_at-empty', id);
     if (!sa._last_updated_at) fail('val:_last_updated_at-empty', id);
     // --- types ---

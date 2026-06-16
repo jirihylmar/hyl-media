@@ -24,7 +24,7 @@ import { DeleteCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk
 
 import type { ToolDeps } from './tools';
 import { canWrite, type ToolDefinition } from './assistant';
-import { buildRecord, convertToAscii, derivedId, kindSpec, type EmitInput } from './dc-emit';
+import { buildRecord, convertToAscii, derivedId, kindSpec, BUCKET, REGION, type EmitInput } from './dc-emit';
 
 /** Roles that map to dc_creator (vs dc_contributor). */
 const CREATOR_ROLES = new Set(['director', 'writer', 'author', 'composer', 'creator', 'screenwriter', 'screenplay', 'director+writer']);
@@ -179,11 +179,14 @@ async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written
   }
   const now = new Date().toISOString();
   const rec = buildRecord(input, now);
-  // S3 is the source of truth; write content + sidecar, then mirror to DDB.
-  await deps.s3.send(new PutObjectCommand({
-    Bucket: rec.ddbItem.s3_bucket, Key: rec.contentKey,
-    Body: JSON.stringify(rec.descriptor, null, 2), ContentType: 'application/json',
-  }));
+  // S3 is the source of truth. Phase 22: virtual resources are metadata-only — only the sidecar
+  // is written (no content descriptor object). The guard keeps a file-backed path possible.
+  if (rec.descriptor) {
+    await deps.s3.send(new PutObjectCommand({
+      Bucket: rec.ddbItem.s3_bucket, Key: rec.contentKey,
+      Body: JSON.stringify(rec.descriptor, null, 2), ContentType: 'application/json',
+    }));
+  }
   await deps.s3.send(new PutObjectCommand({
     Bucket: rec.ddbItem.s3_bucket, Key: rec.sidecarKey,
     Body: JSON.stringify(rec.sidecar, null, 2), ContentType: 'application/json',
@@ -194,7 +197,23 @@ async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written
       await deps.ddb.send(new DeleteCommand({ TableName: deps.table, Key: { PK: it.PK, SK: it.SK } }));
     }
   }
-  return { id: rec.id, contentKey: rec.contentKey, sidecarKey: rec.sidecarKey, dcSourceUri: rec.sidecar.Attributes.dc_source_uri };
+  return { id: rec.id, contentKey: rec.contentKey, sidecarKey: rec.sidecarKey, dcSourceUri: rec.logicalUri };
+}
+
+/**
+ * Reconstruct the logical identity URI for an existing row (Phase 22). Virtual rows carry
+ * dc_source_uri=null, so cross-link references are rebuilt from the row's category + PK + slug —
+ * the same `https://…/<category>/<uuid>/<slug>.json` form consumers uuid-parse. Falls back to a
+ * stored dc_source_uri when present (file-backed rows keep theirs).
+ */
+function logicalUriForRow(row: any): string | undefined {
+  const a = row?.Attributes ?? {};
+  if (a.dc_source_uri) return a.dc_source_uri;
+  const cat = a._category;
+  const pk = row?.PK ?? row?.id;
+  const slug = typeof row?.SK === 'string' ? row.SK.split('#')[2] : undefined;
+  if (!cat || !pk || !slug) return undefined;
+  return `https://${row.s3_bucket ?? BUCKET}.s3.${REGION}.amazonaws.com/${cat}/${pk}/${slug}.json`;
 }
 
 /** Authoritative link types → "public" enrichment (world knowledge allowed). */
@@ -365,19 +384,18 @@ async function enrichResource(deps: ToolDeps, id: string): Promise<{ abstract?: 
 async function executePlan(deps: ToolDeps, plan: CatalogPlan): Promise<{ summary: string; detail: any }> {
   // 1. Derive the movie identity/URI without writing yet.
   const resourceInput = resourceToEmitInput(plan.resource);
-  const movieProbe = buildRecord(resourceInput, '1970-01-01T00:00:00.000Z');
-  const movieUri = movieProbe.sidecar.Attributes.dc_source_uri;
+  buildRecord(resourceInput, '1970-01-01T00:00:00.000Z'); // validate the resource shape early
 
   // Resolve each agent → { name, role, uri, isNew, input? }
   const resolved = await Promise.all(plan.agents.map(async (a) => {
     const kind = ['person', 'band', 'collaboration'].includes((a.kind || '').toLowerCase()) ? a.kind.toLowerCase() : 'person';
     if (a.existing_id) {
       const row = await getById(deps, a.existing_id);
-      const uri = row?.Attributes?.dc_source_uri;
+      const uri = logicalUriForRow(row);
       return { name: a.name, role: a.role, kind, uri, isNew: false, existing_id: a.existing_id, found: !!row };
     }
     const probe = buildRecord({ kind, title: a.name }, '1970-01-01T00:00:00.000Z');
-    return { name: a.name, role: a.role, kind, uri: probe.sidecar.Attributes.dc_source_uri, isNew: true, found: true };
+    return { name: a.name, role: a.role, kind, uri: probe.logicalUri, isNew: true, found: true };
   }));
 
   // 2. Movie edges from resolved agents.

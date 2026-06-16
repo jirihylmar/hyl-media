@@ -99,7 +99,9 @@ export function buildDublinCoreSidecar(spec, enrichment, resource, now, region, 
   const slug = sortKeySlug(effectiveTitle) || spec.resourceId;
   const sk = `#${languageCode}#${slug}`;
   const asciiTitle = convertToAscii(effectiveTitle);
-  const dcSourceUri = dcSourceUriFor(resource.s3Bucket, region, spec.s3Key);
+  // Virtual / metadata-only resources carry no content object (Phase 22): s3_key and
+  // dc_source_uri are null. A real DH row always has spec.s3Key, so this is a no-op there.
+  const dcSourceUri = spec.s3Key ? dcSourceUriFor(resource.s3Bucket, region, spec.s3Key) : null;
   return {
     id: spec.resourceId,
     SK: sk,
@@ -115,7 +117,7 @@ export function buildDublinCoreSidecar(spec, enrichment, resource, now, region, 
       _file_type: spec.fileType,
       _last_updated_at: now,
       s3_bucket: resource.s3Bucket,
-      s3_key: spec.s3Key,
+      s3_key: spec.s3Key ?? null,
       dc_source_uri: dcSourceUri,
       sort_key: sk,
       language_code: languageCode,

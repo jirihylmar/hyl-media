@@ -25,14 +25,24 @@ import {
 // Agent entities (person/band/collaboration) are typed dc_type=Agent (dcterms:Agent — DC-Terms
 // compatible; the DCMI Type Vocabulary has no agent type) and live in the agents/ partition;
 // ContentType carries the human-readable kind.
+// Phase 22: virtual (file-less) resources carry NO content object — their ContentType is the
+// honest entity kind (not DATASET), s3_key/dc_source_uri are null, _file_type is null. Only
+// file-backed documents (book/sheet_music WITH a PDF) keep a real content object + PDF typing.
 const ENTITY_DC = {
-  movie:         { dcType: 'MovingImage', fileType: 'json', contentType: 'DATASET' },
-  recording:     { dcType: 'Sound',       fileType: 'json', contentType: 'DATASET' },
+  movie:         { dcType: 'MovingImage', fileType: 'json', contentType: 'MOVIE' },
+  recording:     { dcType: 'Sound',       fileType: 'json', contentType: 'RECORDING' },
   person:        { dcType: 'Agent',       fileType: 'json', contentType: 'PERSON' },
   band:          { dcType: 'Agent',       fileType: 'json', contentType: 'BAND' },
   collaboration: { dcType: 'Agent',       fileType: 'json', contentType: 'COLLABORATION' },
   book:          { dcType: 'Text',        fileType: 'pdf',  contentType: 'PDF' },
   sheet_music:   { dcType: 'Text',        fileType: 'pdf',  contentType: 'PDF' },
+};
+
+// ContentType for a virtual (content-less) row: honest entity kind. Agents already use their
+// kind; movie/recording use MOVIE/RECORDING; a file-less book/sheet falls back to its kind too.
+const VIRTUAL_CONTENT_TYPE = {
+  movie: 'MOVIE', recording: 'RECORDING', person: 'PERSON', band: 'BAND',
+  collaboration: 'COLLABORATION', book: 'BOOK', sheet_music: 'SHEET_MUSIC',
 };
 
 // Tags excluded from dc_subject (kept in _tags): role + curation categories (provenance/internal).
@@ -54,10 +64,13 @@ function descriptorFilename(name, fallbackId) {
 }
 
 /**
- * Resolve the artifact shape for an entity. A file-backed entity (book/sheet_music) WITH an s3Key
- * → its PDF in documents/. A file-LESS book/sheet_music (e.g. a catalog entry with no upload) →
- * a JSON descriptor in datasets/ (dc_type preserved, e.g. Text), so nothing is skipped. All other
- * entities → JSON descriptor in datasets/.
+ * Resolve the artifact shape for an entity (Phase 22 metadata-only model).
+ *   - A file-backed entity (book/sheet_music) WITH an s3Key → its real PDF in documents/.
+ *   - Everything else (movie, recording, person/band/collaboration, and the file-less
+ *     book/sheet_music edge case) is VIRTUAL: a metadata-only sidecar, NO content object.
+ *     `virtual` rows carry s3_key=null, dc_source_uri=null, _file_type=null, _virtual=true.
+ * `filename` on a virtual row is only the slug stem used to place the sidecar key
+ * (metadata/<category>/<uuid>/<filename>.metadata.json); no object is written there.
  */
 export function resolveArtifact(entity) {
   const meta = ENTITY_DC[entity.entityType];
@@ -65,18 +78,18 @@ export function resolveArtifact(entity) {
   const nativeCat = categoryForEntityType(entity.entityType);
   const pdf = nativeCat === 'documents' ? basename(entity.s3Key) : '';
   if (nativeCat === 'documents' && pdf) {
-    return { category: 'documents', filename: pdf, fileType: meta.fileType, contentType: meta.contentType, dcType: meta.dcType, isDescriptor: false, fileMissing: false };
+    return { category: 'documents', filename: pdf, fileType: meta.fileType, contentType: meta.contentType, dcType: meta.dcType, virtual: false };
   }
-  // Agent descriptors live in agents/ with their kind ContentType; other descriptors (movie,
-  // recording, and the file-less book/sheet edge case) stay JSON datasets.
-  const descriptorCat = nativeCat === 'agents' ? 'agents' : 'datasets';
-  const descriptorContentType = nativeCat === 'agents' ? meta.contentType : 'DATASET';
+  // Virtual / metadata-only: agents stay in the agents/ partition; movie/recording and the
+  // file-less book/sheet edge case stay in datasets/. ContentType is the honest entity kind.
+  const cat = nativeCat === 'agents' ? 'agents' : 'datasets';
   return {
-    category: descriptorCat,
+    category: cat,
     filename: descriptorFilename(entity.name, entity.id),
-    fileType: 'json', contentType: descriptorContentType, dcType: meta.dcType,
-    isDescriptor: true,
-    fileMissing: nativeCat === 'documents', // a book/sheet_music with no PDF
+    fileType: null,
+    contentType: VIRTUAL_CONTENT_TYPE[entity.entityType] ?? meta.contentType,
+    dcType: meta.dcType,
+    virtual: true,
   };
 }
 
@@ -119,6 +132,9 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   const cat = art.category;
   const uuid = entityUuid(entity.id, entity.entityType);
   const filename = art.filename;
+  // cKey is the logical content path. For a virtual row no object lives there, but the path
+  // still derives the sidecar key and is the basis for cross-link identity URIs (uuid-parsed
+  // by consumers). The row's OWN s3_key/dc_source_uri are null when virtual.
   const cKey = contentKey(cat, uuid, filename);
   const sKey = sidecarKey(cat, uuid, filename);
 
@@ -187,7 +203,7 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
       contentType: art.contentType,
       dcType: art.dcType,
       category: cat,
-      s3Key: cKey,
+      s3Key: art.virtual ? null : cKey,   // virtual rows carry no content object
       fileType: art.fileType,
     },
     { title: entity.name || entity.id, abstract: '', keywords: subject },
@@ -218,32 +234,13 @@ export function entityToDc(entity, crossRefs = [], opts = {}) {
   if (entity.givenName) sidecar.Attributes._given_name = entity.givenName;
   if (entity.familyName) sidecar.Attributes._family_name = entity.familyName;
   if (Array.isArray(entity.roles) && entity.roles.length) sidecar.Attributes._roles = entity.roles;
-  // Flag a file-backed entity that had no actual PDF (emitted as a descriptor instead).
-  if (art.fileMissing) sidecar.Attributes._file_missing = true;
+  // Phase 22 metadata-only model: a virtual (file-less) resource has no content object. The flag
+  // supersedes the old _file_missing marker; consumers use it to gate file-backed behaviour.
+  if (art.virtual) sidecar.Attributes._virtual = true;
 
-  // Descriptor content — emitted whenever the artifact is a JSON descriptor (datasets/ or a
-  // file-less book/sheet_music); null when the content object is a real PDF.
-  const descriptor = art.isDescriptor ? {
-    id: uuid,
-    legacy_id: entity.id,
-    entity_kind: entity.entityType,
-    name: entity.name,
-    language: entity.language ?? null,
-    given_name: entity.givenName ?? null,
-    family_name: entity.familyName ?? null,
-    roles: entity.roles ?? null,
-    tags: tagsAll,
-    external_links: externalLinks,
-    creators: dcCreator,
-    contributors: dcContributor,
-    performer_uris: performerUris,
-    cast_uris: castUris,
-    is_part_of: dcIsPartOf,
-    has_part: dcHasPart,
-    relation: dcRelation,
-  } : null;
-
-  return { contentKey: cKey, sidecarKey: sKey, descriptor, sidecar };
+  // No content descriptor object is emitted (Phase 22): virtual resources are metadata-only.
+  // contentKey is returned only as the logical path/identity basis, never written to S3.
+  return { contentKey: cKey, sidecarKey: sKey, descriptor: null, virtual: art.virtual, sidecar };
 }
 
 // --- self-test: `node scripts/lib/entity-to-dc.mjs --selftest` ---
@@ -276,6 +273,11 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
 
   eq('dc_type Sound', A.dc_type, 'Sound');
   eq('_category datasets', A._category, 'datasets');
+  eq('recording ContentType RECORDING (not DATASET)', out.sidecar.ContentType, 'RECORDING');
+  eq('recording virtual: s3_key null', A.s3_key, null);
+  eq('recording virtual: dc_source_uri null', A.dc_source_uri, null);
+  eq('recording virtual: _file_type null', A._file_type, null);
+  eq('recording virtual: _virtual flag', A._virtual, true);
   eq('dc_creator = performer name', A.dc_creator, ['Bill Medley']);
   eq('dc_is_part_of = movie URI', A.dc_is_part_of, movieUri);
   eq('_performer_uris', A._performer_uris, [performerUri]);
@@ -284,8 +286,8 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   eq('_entity_kind', A._entity_kind, 'recording');
   eq('_legacy_id', A._legacy_id, recording.id);
   eq('SK', out.sidecar.SK, '#en#ive-had-the-time-of-my-life');
-  check('descriptor present for non-file entity', out.descriptor && out.descriptor.creators[0] === 'Bill Medley');
-  check('contentKey under datasets/', out.contentKey.startsWith('datasets/') && out.contentKey.endsWith('.json'), out.contentKey);
+  check('no descriptor emitted (metadata-only)', out.descriptor === null && out.virtual === true);
+  check('contentKey (logical) under datasets/', out.contentKey.startsWith('datasets/') && out.contentKey.endsWith('.json'), out.contentKey);
 
   // Reverse direction: the performer person sees the recording in dc_relation.
   const person = { id: 'bill-medley_aa01', entityType: 'person', name: 'Bill Medley', language: 'en', tags: ['artist'], roles: ['artist'] };
@@ -309,7 +311,8 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   eq('book dc_creator', BA.dc_creator, ['Eliška Sovová']);
   eq('book dc_rights_holder', BA.dc_rights_holder, 'Eliška Sovová');
   eq('book contentKey keeps PDF basename', bout.contentKey, `documents/${entityUuid(book.id, 'book')}/100+1 otázek by Eliška Sovová.pdf`);
-  check('book descriptor is null (uses PDF)', bout.descriptor === null);
+  check('book file-backed: descriptor null, not virtual', bout.descriptor === null && bout.virtual === false);
+  eq('book file-backed: s3_key is PDF content key', BA.s3_key, `documents/${entityUuid(book.id, 'book')}/100+1 otázek by Eliška Sovová.pdf`);
 
   // Movie reverse: has_part includes the recording; movie_cast → dc_creator(director)+dc_contributor(actor).
   const movie = { id: 'the-graduate_nsvc', entityType: 'movie', name: 'The Graduate', language: 'en', tags: ['entertainment'] };
@@ -327,10 +330,12 @@ if (process.argv[1] && process.argv[1].endsWith('entity-to-dc.mjs') && process.a
   const fb = entityToDc(filelessBook, [], { now: NOW });
   eq('fileless book dc_type still Text', fb.sidecar.Attributes.dc_type, 'Text');
   eq('fileless book _category datasets', fb.sidecar.Attributes._category, 'datasets');
-  eq('fileless book _file_type json', fb.sidecar.Attributes._file_type, 'json');
-  eq('fileless book _file_missing flag', fb.sidecar.Attributes._file_missing, true);
+  eq('fileless book _file_type null (no file)', fb.sidecar.Attributes._file_type, null);
+  eq('fileless book _virtual flag', fb.sidecar.Attributes._virtual, true);
+  eq('fileless book ContentType BOOK', fb.sidecar.ContentType, 'BOOK');
+  eq('fileless book s3_key null', fb.sidecar.Attributes.s3_key, null);
   eq('fileless book dc_creator', fb.sidecar.Attributes.dc_creator, ['Leoš Kýša']);
-  check('fileless book emits descriptor', fb.descriptor !== null && fb.contentKey.startsWith('datasets/') && fb.contentKey.endsWith('.json'), fb.contentKey);
+  check('fileless book metadata-only (no descriptor)', fb.descriptor === null && fb.virtual === true);
 
   // Person filmography: movie_cast reverse → dc_relation has movie URI.
   const director = { id: 'mike-nichols_oa5z', entityType: 'person', name: 'Mike Nichols', language: 'en', roles: ['director'], tags: ['director'] };

@@ -14,8 +14,8 @@ export type DcAttributes = {
   dc_contributor?: string[] | null;
   dc_rights_holder?: string | null;
   dc_license: string;
-  dc_source_uri: string;
-  s3_key?: string;
+  dc_source_uri: string | null;
+  s3_key?: string | null;
   language_code: string;
   _category: string;
   _entity_kind: string;
@@ -30,7 +30,8 @@ export type DcAttributes = {
   dc_relation?: string[] | null;
   dc_has_part?: string[] | null;
   dc_is_part_of?: string | null;
-  _file_missing?: boolean;
+  _file_missing?: boolean; // legacy marker (pre-Phase-22); superseded by _virtual
+  _virtual?: boolean;      // Phase 22: metadata-only resource, no content object
 };
 
 export type DcRecord = {
@@ -58,7 +59,7 @@ export type DcViewModel = {
   givenName: string | null;
   familyName: string | null;
   roles: string[];
-  sourceUri: string;     // the artifact (PDF or JSON descriptor)
+  sourceUri: string | null;  // the artifact URI (real PDF for documents; null for virtual rows)
   s3Key: string;         // Attributes.s3_key — the content object key (for Storage.getUrl)
   category: string;      // documents | datasets
   fileBacked: boolean;   // true → sourceUri is a real PDF to open/download
@@ -109,7 +110,9 @@ export function dcToViewModel(rec: DcRecord): DcViewModel {
     sourceUri: a.dc_source_uri,
     s3Key: a.s3_key ?? '',
     category: a._category,
-    fileBacked: a._category === 'documents' && a._file_missing !== true,
+    // file-backed only when it's a documents row that is NOT virtual (Phase 22). Tolerates the
+    // legacy _file_missing marker on un-migrated rows until the migration runs.
+    fileBacked: a._category === 'documents' && a._virtual !== true && a._file_missing !== true,
     relationUris: arr(a.dc_relation),
     hasPartUris: arr(a.dc_has_part),
     isPartOfUri: a.dc_is_part_of ?? null,
