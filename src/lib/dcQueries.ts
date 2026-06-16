@@ -25,8 +25,10 @@ function toListItem(vm: DcViewModel): KnowledgeGraphItem {
     author: vm.creators[0] ?? null,
     artistName: vm.creators[0] ?? null,
     format: vm.fileBacked ? 'pdf' : '',
-    // non-schema helper field (ignored by the UI, handy for 17.3a detail lookups):
+    // non-schema helper fields (ignored by the UI, used by DC-native consumers like the Dossier):
     _dcId: vm.id,
+    _creators: vm.creators,        // dc_creator names (director / performer / author)
+    _contributors: vm.contributors, // dc_contributor names (actors)
   } as unknown as KnowledgeGraphItem;
 }
 

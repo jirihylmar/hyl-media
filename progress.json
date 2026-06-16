@@ -1384,7 +1384,8 @@
         {
           "id": "17.6d",
           "name": "Migrate Dossier relationship display (movie_cast/recording_performer/sheet_music_performer) to DC cross-links",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-16",
           "size": "medium",
           "verify": "DataManagement no longer calls listByType on legacy relationship rows; cast/performer columns render from DC _cast_uris/_performer_uris/dc_relation; deployed; Dossier parity",
           "depends_on": ["17.6a"],

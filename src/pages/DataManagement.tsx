@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listByType } from '../lib/queries';
 import { listEntitiesForList } from '../lib/dcQueries';
 import type { KnowledgeGraphItem } from '../lib/client';
 import { TAG_DICTIONARY, TAG_COLORS, getTagCategory } from '../lib/tagDictionary';
@@ -15,9 +14,6 @@ export function DataManagement() {
   const [recordings, setRecordings] = useState<KnowledgeGraphItem[]>([]);
   const [bookItems, setBookItems] = useState<KnowledgeGraphItem[]>([]);
   const [sheetItems, setSheetItems] = useState<KnowledgeGraphItem[]>([]);
-  const [castRefs, setCastRefs] = useState<KnowledgeGraphItem[]>([]);
-  const [perfRefs, setPerfRefs] = useState<KnowledgeGraphItem[]>([]);
-  const [sheetPerfRefs, setSheetPerfRefs] = useState<KnowledgeGraphItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as TabId) || 'overview';
@@ -25,21 +21,19 @@ export function DataManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    // All Dossier data — entities AND their relationships — comes from the DC store (17.6d).
+    // Cast/performer/artist links are read from each entity's own dc_creator/dc_contributor
+    // (exposed as _creators/_contributors), not from legacy cross-ref rows.
     Promise.all([
-      // Entity data from the DC store (drives counts/tags/links/tabs).
       listEntitiesForList('person'),
       listEntitiesForList('band'),
       listEntitiesForList('movie'),
       listEntitiesForList('recording'),
       listEntitiesForList('book'),
       listEntitiesForList('sheet_music'),
-      // Relationship cross-refs stay on the (intact, read-only) legacy table for display.
-      listByType('movie_cast'),
-      listByType('recording_performer'),
-      listByType('sheet_music_performer'),
-    ]).then(([p, b, m, r, bk, sh, mc, rp, sp]) => {
+    ]).then(([p, b, m, r, bk, sh]) => {
       setPersons(p); setBands(b); setMovies(m); setRecordings(r);
-      setBookItems(bk); setSheetItems(sh); setCastRefs(mc); setPerfRefs(rp); setSheetPerfRefs(sp);
+      setBookItems(bk); setSheetItems(sh);
       setLoading(false);
     });
   }, []);
@@ -47,7 +41,6 @@ export function DataManagement() {
   if (loading) return <p>Loading data...</p>;
 
   // Lookup maps
-  const personById = new Map(persons.map(p => [p.id, p]));
   const personByName = new Map(persons.map(p => [p.name, p]));
   const bandByName = new Map(bands.map(b => [b.name, b]));
 
@@ -98,23 +91,14 @@ export function DataManagement() {
   // Person role stats
   const roleCount = (role: string) => persons.filter(p => (p.roles as string[] | null)?.includes(role)).length;
 
-  // Cast and performer maps for movies/recordings
-  const castByMovie = new Map<string, KnowledgeGraphItem[]>();
-  for (const c of castRefs) {
-    const arr = castByMovie.get(c.movieId as string) || [];
-    arr.push(c);
-    castByMovie.set(c.movieId as string, arr);
-  }
-  const perfByRecording = new Map<string, KnowledgeGraphItem[]>();
-  for (const p of perfRefs) {
-    const arr = perfByRecording.get(p.recordingId as string) || [];
-    arr.push(p);
-    perfByRecording.set(p.recordingId as string, arr);
-  }
-  const sheetPerfBySheet = new Map<string, string>();
-  for (const sp of sheetPerfRefs) {
-    sheetPerfBySheet.set(sp.sheetMusicId as string, sp.performerName as string);
-  }
+  // Cast / performer names come from each entity's own DC creator+contributor arrays (17.6d).
+  // _creators = dc_creator (director / performer / author); _contributors = dc_contributor (actors).
+  const creatorsOf = (it: KnowledgeGraphItem): string[] => {
+    const c = (it as unknown as { _creators?: string[] })._creators || [];
+    const k = (it as unknown as { _contributors?: string[] })._contributors || [];
+    // de-dupe while preserving order (creator names first)
+    return [...new Set([...c, ...k])];
+  };
 
   const TABS: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -253,7 +237,7 @@ export function DataManagement() {
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
             People roles: authors {roleCount('author')}, artists {roleCount('artist')}, actors {roleCount('actor')}, directors {roleCount('director')}, musicians {roleCount('musician')}
-            &nbsp;|&nbsp; Cross-refs: {castRefs.length} cast, {perfRefs.length} rec. performers, {sheetPerfRefs.length} sheet performers
+            &nbsp;|&nbsp; Relations (DC): {movies.reduce((n, m) => n + creatorsOf(m).length, 0)} cast, {recordings.reduce((n, r) => n + creatorsOf(r).length, 0)} rec. performers, {sheetItems.filter(s => creatorsOf(s)[0] || s.artistName).length} sheet artists
           </p>
         </div>
       )}
@@ -273,16 +257,16 @@ export function DataManagement() {
             </tr></thead>
             <tbody>
               {movies.map(m => {
-                const cast = castByMovie.get(m.id) || [];
+                const cast = creatorsOf(m);
                 return (
                   <tr key={m.id}>
                     <td style={cellStyle}><Link to={`/movies/${m.id}`}>{m.name}</Link></td>
                     <td style={cellStyle}>{m.language || '—'}</td>
                     <td style={{ ...cellStyle, maxWidth: 200 }}>
                       {cast.length > 0
-                        ? cast.slice(0, 4).map((c, i) => {
-                            const p = personById.get(c.personId as string);
-                            return <span key={i}>{i > 0 && ', '}{p ? <Link to={`/persons/${p.id}`}>{c.personName}</Link> : c.personName}</span>;
+                        ? cast.slice(0, 4).map((name, i) => {
+                            const p = findPerson(name);
+                            return <span key={i}>{i > 0 && ', '}{p ? <Link to={`/persons/${p.id}`}>{name}</Link> : name}</span>;
                           })
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
@@ -373,16 +357,16 @@ export function DataManagement() {
             </tr></thead>
             <tbody>
               {recordings.map(r => {
-                const perfs = perfByRecording.get(r.id) || [];
+                const perfs = creatorsOf(r);
                 return (
                   <tr key={r.id}>
                     <td style={cellStyle}><Link to={`/recordings/${r.id}`}>{r.name}</Link></td>
                     <td style={cellStyle}>
                       {perfs.length > 0
-                        ? perfs.map((pf, i) => {
-                            const entity = findBandOrPerson(pf.performerName as string);
+                        ? perfs.map((name, i) => {
+                            const entity = findBandOrPerson(name);
                             const route = entity ? ((entity as KnowledgeGraphItem).entityType === 'band' ? `/bands/${entity.id}` : `/persons/${entity.id}`) : null;
-                            return <span key={i}>{i > 0 && ', '}{route ? <Link to={route}>{pf.performerName}</Link> : pf.performerName}</span>;
+                            return <span key={i}>{i > 0 && ', '}{route ? <Link to={route}>{name}</Link> : name}</span>;
                           })
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>
                       }
@@ -447,7 +431,7 @@ export function DataManagement() {
             </tr></thead>
             <tbody>
               {sheetItems.map(s => {
-                const perfName = sheetPerfBySheet.get(s.id) || s.artistName;
+                const perfName = creatorsOf(s)[0] || s.artistName;
                 const entity = perfName ? findBandOrPerson(perfName as string) : undefined;
                 const route = entity ? ((entity as KnowledgeGraphItem).entityType === 'band' ? `/bands/${entity.id}` : `/persons/${entity.id}`) : null;
                 return (
