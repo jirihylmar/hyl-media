@@ -10,20 +10,35 @@
  * approval the loop invokes this handler, which executes the whole batch and
  * returns a summary step-log — not per-write confirmation.
  *
- * 21.4 lands the plan schema + the proposal/approval protocol. The executor is
- * filled in incrementally:
- *   21.5 create_resource — conformant emit → S3 sidecar + DDB
- *   21.6 find_or_create_agent + link_relationship — agents/ + dc_type=Agent
- *   21.7 enrich + set_external_links + reconcile (sync-dc-to-s3) + audit
- * Until those land, the executor validates the plan and reports what it WOULD
- * do (executed:false) rather than silently claiming success.
+ * Executor status:
+ *   21.5 create_resource — conformant emit → S3 sidecar + DDB           [done]
+ *   21.6 find_or_create_agent + link_relationship — agents/ + dc_type=Agent,
+ *        dc_creator/dc_contributor/_cast_uris + reverse dc_relation edges  [done]
+ *   21.7 enrich + set_external_links + reconcile (sync-dc-to-s3) + audit  [pending]
+ * New agents are created WITH their reverse filmography edge inline (both stores
+ * conformant); existing agents (reused) get a read-modify-write that appends the
+ * new relation to dc_relation in DDB + the S3 sidecar.
  */
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { PutCommand } from '@aws-sdk/lib-dynamodb';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 import type { ToolDeps } from './tools';
 import { canWrite, type ToolDefinition } from './assistant';
 import { buildRecord, type EmitInput } from './dc-emit';
+
+/** Roles that map to dc_creator (vs dc_contributor). */
+const CREATOR_ROLES = new Set(['director', 'writer', 'author', 'composer', 'creator', 'screenwriter', 'screenplay', 'director+writer']);
+function isCreatorRole(role: string): boolean {
+  const r = (role || '').toLowerCase();
+  return [...CREATOR_ROLES].some((cr) => r.includes(cr));
+}
+
+/** Split a person name into given/family for the agent _given_name/_family_name. */
+function splitName(name: string): { given: string; family: string } {
+  const parts = (name || '').trim().split(/\s+/);
+  if (parts.length <= 1) return { given: name, family: '' };
+  return { given: parts.slice(0, -1).join(' '), family: parts[parts.length - 1] };
+}
 
 /** A person/band/collaboration the plan touches (created if `existing_id` empty). */
 export interface PlanAgent {
@@ -131,8 +146,15 @@ function resourceToEmitInput(r: PlanResource): EmitInput {
   };
 }
 
+interface Written {
+  id: string;
+  contentKey: string;
+  sidecarKey: string;
+  dcSourceUri: string;
+}
+
 /** Write a conformant record: S3 content descriptor + S3 sidecar + DDB item. */
-async function createResource(deps: ToolDeps, input: EmitInput): Promise<{ id: string; sidecarKey: string }> {
+async function createResource(deps: ToolDeps, input: EmitInput): Promise<Written> {
   if (!deps.s3) throw new Error('S3 client not configured');
   const now = new Date().toISOString();
   const rec = buildRecord(input, now);
@@ -146,22 +168,106 @@ async function createResource(deps: ToolDeps, input: EmitInput): Promise<{ id: s
     Body: JSON.stringify(rec.sidecar, null, 2), ContentType: 'application/json',
   }));
   await deps.ddb.send(new PutCommand({ TableName: deps.table, Item: rec.ddbItem }));
-  return { id: rec.id, sidecarKey: rec.sidecarKey };
+  return { id: rec.id, contentKey: rec.contentKey, sidecarKey: rec.sidecarKey, dcSourceUri: rec.sidecar.Attributes.dc_source_uri };
+}
+
+/** Read one DC record by PK (the hash key; one row per PK). */
+async function getById(deps: ToolDeps, id: string): Promise<any | null> {
+  const r: any = await deps.ddb.send(new QueryCommand({
+    TableName: deps.table,
+    KeyConditionExpression: 'PK = :pk',
+    ExpressionAttributeValues: { ':pk': id },
+    Limit: 1,
+  }));
+  return r.Items?.[0] ?? null;
 }
 
 /**
- * Execute the approved plan as a batch. Phase 21.5 creates the primary resource;
- * agent creation + relationship linking (21.6) and enrich + external links +
- * reconcile (21.7) extend this executor.
+ * Append a relation URI to an EXISTING record's dc_relation, in BOTH stores
+ * (DDB + S3 sidecar) so neither drifts. Idempotent: skips if already present.
+ */
+async function appendRelation(deps: ToolDeps, id: string, relationUri: string): Promise<void> {
+  if (!deps.s3) throw new Error('S3 client not configured');
+  const row = await getById(deps, id);
+  if (!row) throw new Error(`appendRelation: record not found ${id}`);
+  const existing: string[] = Array.isArray(row.Attributes?.dc_relation) ? row.Attributes.dc_relation : [];
+  if (existing.includes(relationUri)) return;
+  const next = [...existing, relationUri];
+  const now = new Date().toISOString();
+  await deps.ddb.send(new UpdateCommand({
+    TableName: deps.table,
+    Key: { PK: row.PK, SK: row.SK },
+    UpdateExpression: 'SET Attributes.dc_relation = :r, Attributes.#lu = :now',
+    ExpressionAttributeNames: { '#lu': '_last_updated_at' },
+    ExpressionAttributeValues: { ':r': next, ':now': now },
+  }));
+  // Mirror into the S3 sidecar (read-modify-write preserves key order + enrichment).
+  const sidecarKey: string = row.s3_key;
+  const bucket: string = row.s3_bucket;
+  const obj: any = await deps.s3.send(new GetObjectCommand({ Bucket: bucket, Key: sidecarKey }));
+  const sidecar = JSON.parse(await obj.Body.transformToString());
+  sidecar.Attributes.dc_relation = next;
+  sidecar.Attributes._last_updated_at = now;
+  await deps.s3.send(new PutObjectCommand({
+    Bucket: bucket, Key: sidecarKey, Body: JSON.stringify(sidecar, null, 2), ContentType: 'application/json',
+  }));
+}
+
+/**
+ * Execute the approved plan as a batch (21.5 resource + 21.6 agents/links).
+ *  1. Resolve the movie's URI + each agent's URI (existing → read; new → derive).
+ *  2. Create the resource WITH dc_creator/dc_contributor/_cast_uris.
+ *  3. Create new agents WITH their reverse dc_relation → resource (inline edge).
+ *  4. Append the reverse edge to existing (reused) agents in both stores.
+ * Enrichment + external-link writes + a final reconcile/audit land in 21.7.
  */
 async function executePlan(deps: ToolDeps, plan: CatalogPlan): Promise<{ summary: string; detail: any }> {
-  const steps: string[] = [];
-  const created = await createResource(deps, resourceToEmitInput(plan.resource));
-  steps.push(`created ${plan.resource.kind} "${plan.resource.title}" (${created.id})`);
-  const pendingAgents = plan.agents.length;
+  // 1. Derive the movie identity/URI without writing yet.
+  const resourceInput = resourceToEmitInput(plan.resource);
+  const movieProbe = buildRecord(resourceInput, '1970-01-01T00:00:00.000Z');
+  const movieUri = movieProbe.sidecar.Attributes.dc_source_uri;
+
+  // Resolve each agent → { name, role, uri, isNew, input? }
+  const resolved = await Promise.all(plan.agents.map(async (a) => {
+    const kind = ['person', 'band', 'collaboration'].includes((a.kind || '').toLowerCase()) ? a.kind.toLowerCase() : 'person';
+    if (a.existing_id) {
+      const row = await getById(deps, a.existing_id);
+      const uri = row?.Attributes?.dc_source_uri;
+      return { name: a.name, role: a.role, kind, uri, isNew: false, existing_id: a.existing_id, found: !!row };
+    }
+    const probe = buildRecord({ kind, title: a.name }, '1970-01-01T00:00:00.000Z');
+    return { name: a.name, role: a.role, kind, uri: probe.sidecar.Attributes.dc_source_uri, isNew: true, found: true };
+  }));
+
+  // 2. Movie edges from resolved agents.
+  const creators = resolved.filter((a) => isCreatorRole(a.role)).map((a) => a.name);
+  const contributors = resolved.filter((a) => !isCreatorRole(a.role)).map((a) => a.name);
+  const castUris = resolved.filter((a) => a.uri).map((a) => a.uri as string);
+  const movie = await createResource(deps, { ...resourceInput, creators, contributors, castUris });
+
+  // 3 + 4. Create new agents with the reverse edge; append to existing ones.
+  let createdCount = 0;
+  let linkedCount = 0;
+  for (const a of resolved) {
+    if (a.isNew) {
+      const nm = a.kind === 'person' ? splitName(a.name) : { given: '', family: '' };
+      await createResource(deps, {
+        kind: a.kind, title: a.name, language: 'en',
+        roles: [a.role], givenName: nm.given, familyName: nm.family,
+        tags: [a.role.toLowerCase()], relations: [movie.dcSourceUri],
+      });
+      createdCount++;
+    } else if (a.found) {
+      await appendRelation(deps, a.existing_id as string, movie.dcSourceUri);
+      linkedCount++;
+    }
+  }
+
+  const summary = `created ${plan.resource.kind} "${plan.resource.title}" (${movie.id}); ` +
+    `${createdCount} new agent${createdCount === 1 ? '' : 's'} created + linked, ${linkedCount} existing linked`;
   return {
-    summary: `${steps.join('; ')}${pendingAgents ? ` — ${pendingAgents} agents + links pending (Phase 21.6)` : ''}`,
-    detail: { resource_id: created.id, sidecar: created.sidecarKey, agents_pending: pendingAgents },
+    summary,
+    detail: { resource_id: movie.id, sidecar: movie.sidecarKey, agents_created: createdCount, agents_linked: linkedCount, cast_uris: castUris.length },
   };
 }
 

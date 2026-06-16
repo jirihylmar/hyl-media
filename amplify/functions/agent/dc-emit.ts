@@ -86,6 +86,7 @@ export interface EmitInput {
   contributors?: string[]; // dc_contributor
   castUris?: string[]; // _cast_uris
   performerUris?: string[]; // _performer_uris
+  relations?: string[]; // dc_relation (reverse edges, e.g. an agent's filmography)
 }
 
 export interface EmittedRecord {
@@ -142,7 +143,7 @@ export function buildRecord(input: EmitInput, now: string): EmittedRecord {
     dc_license: 'copyright',
     dc_accrual_method: 'creation',
     dc_source: null,
-    dc_relation: null,
+    dc_relation: input.relations && input.relations.length ? input.relations : null,
     dc_has_format: null,
     dc_is_format_of: null,
     dc_has_part: null,
