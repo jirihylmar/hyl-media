@@ -77,10 +77,11 @@ const PLAN_SCHEMA = {
         title: { type: 'string' },
         year: { type: 'string' },
         language: { type: 'string', description: 'en, cs, … (best guess).' },
-        genre: { type: 'array', items: { type: 'string' } },
+        genre: { type: 'array', items: { type: 'string' }, description: 'Genres/topics from research_entity (e.g. ["Drama","Romance"]). These become the record\'s tags (_tags) — populate whenever research returned any; do not leave empty.' },
         abstract: { type: 'string', description: '1-3 sentence Dublin Core abstract.' },
         external_links: {
           type: 'array',
+          description: 'Authoritative external links from research_entity, copied verbatim (type+url): IMDb, Wikipedia, MusicBrainz, Discogs, Open Library, Goodreads, … Populate whenever research returned any; do not drop them.',
           items: { type: 'object', properties: { type: { type: 'string' }, url: { type: 'string' } }, required: ['type', 'url'] },
         },
       },
