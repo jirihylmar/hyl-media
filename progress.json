@@ -1620,8 +1620,8 @@
     "orchestration": {
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
-      "status": "needs_push",
-      "notes": "Phase 22 + 17.6 decommission deployed (jobs 85-91 SUCCEED). Legacy KnowledgeGraphItem table DELETED (verified gone; backup in s3 backups/). Final docs/progress commit pending push. Nested DH platform repo still has local-only commit (table_name CLI support)."
+      "status": "pushed",
+      "notes": "Phase 22 + 17.6 decommission deployed (jobs 85-91 SUCCEED) and all commits pushed to main (HEAD 2928ce9, clean, 0 ahead). Legacy KnowledgeGraphItem table DELETED (verified gone; backup in s3 backups/). Nested DH platform repo still has local-only commit (table_name CLI support)."
     }
   },
   "context_hints": {
