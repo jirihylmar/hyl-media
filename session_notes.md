@@ -4,6 +4,28 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+## ⮕ NEXT SESSION — START HERE (2026-06-16)
+
+Phases 0–21 COMPLETE (agent operator panel live + deployed). **Start at `current_task` 22.1.**
+
+**Phase 22 — Metadata structure review & cleaning (PENDING, operator-requested):** virtual/file-less
+resources (movies & recordings → `datasets/`, agents → `agents/`) are emitted with a JSON **content
+descriptor** object + the `metadata/` sidecar. The operator questions whether a file-less resource
+should be **metadata-only** (no content object). Affects ALL ~94 movies + ~94 recordings + ~509 agents
+(Phase 15-20 design). **22.1 first:** study the DH reference (`/home/ubuntu/digital-horizon-playbook`)
+for how virtual/metadata-only resources are modelled, document the canonical pattern, then 22.2 decide
++ **get operator approval** before changing emit code (22.3) / migrating (22.4) / re-auditing (22.5).
+Full detail: `tasks/phase_22_metadata_structure_review.md`.
+
+**Also (post Phase 21):** fixed a duplicate-record bug — table key is composite (PK,SK), SK=`#<lang>#<slug>`;
+the agent omitting language → `auto` made a 2nd row at the same PK. `createResource` is now upsert-by-PK
+(reuse existing language, delete stale-SK rows); existing dup consolidated; AssistPanel got a **⟲ reset**
+button. Deployed (job 83), audit ALL PASS 1199/1199.
+
+**Open TODO:** rotate the Anthropic key. **Deferred:** 17.6 legacy KnowledgeGraphItem decommission.
+
+---
+
 ## Session 2026-06-16 — PHASE 21 COMPLETE (agent operator panel, deployed + E2E)
 
 All 10 Phase 21 tasks (21.1–21.10) built, deployed (Amplify jobs 78/79/80 SUCCEED), and
