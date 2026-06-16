@@ -6,23 +6,57 @@ This file tracks session history for context continuity between Claude Code sess
 
 ## ⮕ NEXT SESSION — START HERE (2026-06-16)
 
-Phases 0–21 COMPLETE (agent operator panel live + deployed). **Start at `current_task` 22.1.**
+**Phases 0–22 COMPLETE.** The app is live + deployed (Amplify job 85). No pending tracked tasks.
 
-**Phase 22 — Metadata structure review & cleaning (PENDING, operator-requested):** virtual/file-less
-resources (movies & recordings → `datasets/`, agents → `agents/`) are emitted with a JSON **content
-descriptor** object + the `metadata/` sidecar. The operator questions whether a file-less resource
-should be **metadata-only** (no content object). Affects ALL ~94 movies + ~94 recordings + ~509 agents
-(Phase 15-20 design). **22.1 first:** study the DH reference (`/home/ubuntu/digital-horizon-playbook`)
-for how virtual/metadata-only resources are modelled, document the canonical pattern, then 22.2 decide
-+ **get operator approval** before changing emit code (22.3) / migrating (22.4) / re-auditing (22.5).
-Full detail: `tasks/phase_22_metadata_structure_review.md`.
+**Open TODO:** rotate the Anthropic key (pasted in chat once during Phase 21).
+**Deferred / needs approval:** 17.6 legacy `KnowledgeGraphItem` decommission (destructive — the
+create path + relationship cross-refs still reference it; confirm nothing reads it before dropping).
 
-**Also (post Phase 21):** fixed a duplicate-record bug — table key is composite (PK,SK), SK=`#<lang>#<slug>`;
-the agent omitting language → `auto` made a 2nd row at the same PK. `createResource` is now upsert-by-PK
-(reuse existing language, delete stale-SK rows); existing dup consolidated; AssistPanel got a **⟲ reset**
-button. Deployed (job 83), audit ALL PASS 1199/1199.
+If new work is requested, use `/add-work` to track it. The DC store
+(`hyl-media-metadata-repository`) is the primary catalog; lifecycle = `/managed-resource` skill.
 
-**Open TODO:** rotate the Anthropic key. **Deferred:** 17.6 legacy KnowledgeGraphItem decommission.
+---
+
+## Session 2026-06-16 — PHASE 22 COMPLETE (virtual resources → metadata-only)
+
+The operator flagged that a virtual (file-less) resource — e.g. the Easy Virtue movie — carried a
+`ContentType=DATASET` content-descriptor object in `datasets/`, and questioned whether a resource
+with no media should have a content object at all. Investigated, got approval, fixed, migrated,
+re-verified. **Phases 0–22 now COMPLETE.**
+
+- **22.1 — DH reference study.** Digital Horizon has **no metadata-only concept**: every sidecar
+  mirrors a real S3 artifact (`s3_key = <category>/<uuid>/<filename>`, 1:1). DH's `_category` enum has
+  no `agents`; `dc_type=Agent`/`_category=agents` are hyl-media inventions. So hyl-media had been
+  **fabricating a redundant content-descriptor object** for ~697 virtual resources, carrying nothing
+  the sidecar didn't already hold. The operator's instinct was correct. Findings:
+  `docs/phase-22-dh-reference-findings.md`.
+- **22.2 — operator APPROVED Option A (metadata-only).** A virtual resource has NO content object:
+  `s3_key=null`, `dc_source_uri=null`, `_file_type=null`, add `_virtual=true` (supersedes the old
+  `_file_missing`), keep `_category=datasets/agents` facets, and `ContentType` becomes the honest
+  entity kind (`MOVIE`/`RECORDING`; agents already `PERSON`/`BAND`/`COLLABORATION`) — not `DATASET`.
+- **22.3 — emit code.** `build-dc-sidecar.mjs` (null s3Key → null s3_key+dc_source_uri),
+  `entity-to-dc.mjs` (`VIRTUAL_CONTENT_TYPE`, `resolveArtifact.virtual`, descriptor always null,
+  `_virtual`), agent `dc-emit.ts` (typed port + new `logicalUri` for cross-link identity since
+  `dc_source_uri` is now null), `writes.ts` (skip descriptor PutObject; `logicalUriForRow()` rebuilds
+  graph URIs from category+PK+slug), `dcMap.ts` (nullable source/s3_key; `fileBacked` gates on
+  `_virtual`; new `vm.sidecarKey`), `MetadataLink.tsx`+`DcEntityHeader.tsx` (take `sidecarKey` directly
+  so the DC-metadata link still works on virtual rows), `audit-dc-conformance.mjs` (locate sidecar via
+  top-level `it.s3_key`; virtual rows must null s3_key/dc_source_uri/_file_type). All lib self-tests +
+  agent dc-emit shape check (canonical 28-key order intact) + frontend tsc clean.
+- **22.4 — migration.** `scripts/migrate-virtual-metadata-only.mjs` (dry-run default, `--apply`,
+  `--limit`). Migrated **781 rows** (94 movies + 94 recordings + 513 agents + ~80 file-less
+  books/sheets in `datasets/`), deleted **781 descriptor objects**, 0 errors. Idempotent re-run =
+  no-op; 0 orphaned S3 objects; 781 sidecars intact.
+- **22.5 — re-verify + deploy.** Conformance audit **ALL PASS 1199/1199**; redeployed (Amplify job 85
+  SUCCEED). **Live Playwright ALL PASS:** `verify-metadata-link.mjs` (virtual movie + virtual agent +
+  file-backed book render; metadata link resolves to a conformant sidecar) and
+  `verify-frontend-detail.mjs` (Soundtrack / Featured-in / Filmography cross-links resolve; book
+  Download intact).
+
+**Why the migration was safe (key insight):** consumers UUID-PARSE cross-link URIs from the path
+(`pkFromUri` in `dcMap.ts`; agent tools) — they never **fetch** the descriptor object. So deleting
+descriptors and nulling each row's own `dc_source_uri` does **not** break the knowledge graph; the
+`…/<category>/<uuid>/<slug>.json` strings keep working as logical identities.
 
 ---
 
