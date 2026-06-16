@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { getUrl } from 'aws-amplify/storage';
 
 /** Phase 19 — link to the raw Dublin Core metadata sidecar (the conformant example artifact) for a
- *  resource. The sidecar lives at metadata/<s3Key>.metadata.json (DH layout); we resolve a
- *  Cognito-signed URL and render a small "metadata" link next to the resource. */
-export function MetadataLink({ s3Key }: { s3Key: string }) {
+ *  resource. `sidecarKey` is the sidecar's own S3 key (metadata/…metadata.json, DH layout). Phase
+ *  22: virtual rows have no content object, so the caller passes the sidecar key directly rather
+ *  than deriving it from a (now-null) content key. We resolve a Cognito-signed URL and render it. */
+export function MetadataLink({ sidecarKey }: { sidecarKey: string }) {
   const [url, setUrl] = useState('');
   useEffect(() => {
-    if (!s3Key) return;
-    const path = `metadata/${s3Key}.metadata.json`;
-    getUrl({ path }).then((r) => setUrl(r.url.toString())).catch(() => setUrl(''));
-  }, [s3Key]);
+    if (!sidecarKey) return;
+    getUrl({ path: sidecarKey }).then((r) => setUrl(r.url.toString())).catch(() => setUrl(''));
+  }, [sidecarKey]);
 
-  if (!s3Key || !url) return null;
+  if (!sidecarKey || !url) return null;
   return (
     <a
       href={url}

@@ -19,7 +19,7 @@ export function DcEntityHeader({ vm, entityType, onPatch, children }: Props) {
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <InlineEdit value={vm.name} onSave={(v) => onPatch({ dc_title: v })} as="h1" />
-        <MetadataLink s3Key={vm.s3Key} />
+        <MetadataLink sidecarKey={vm.sidecarKey} />
       </div>
       {children}
       <p><InlineEdit value={vm.language || ''} onSave={(v) => onPatch({ language_code: v })} label="Language" /></p>

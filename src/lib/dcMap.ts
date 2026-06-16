@@ -40,6 +40,7 @@ export type DcRecord = {
   id: string;
   Title: string;
   ContentType: string;
+  s3_key?: string | null; // top-level: the sidecar's own S3 key (metadata/…metadata.json)
   Attributes: DcAttributes;
 };
 
@@ -60,7 +61,8 @@ export type DcViewModel = {
   familyName: string | null;
   roles: string[];
   sourceUri: string | null;  // the artifact URI (real PDF for documents; null for virtual rows)
-  s3Key: string;         // Attributes.s3_key — the content object key (for Storage.getUrl)
+  s3Key: string;         // Attributes.s3_key — the content object key (for Storage.getUrl); '' if virtual
+  sidecarKey: string;    // the DC sidecar's own S3 key (metadata/…metadata.json) — always present
   category: string;      // documents | datasets
   fileBacked: boolean;   // true → sourceUri is a real PDF to open/download
   // relationship URIs (resolve to records via pkFromUri + getMetadata)
@@ -109,6 +111,11 @@ export function dcToViewModel(rec: DcRecord): DcViewModel {
     roles: arr(a._roles),
     sourceUri: a.dc_source_uri,
     s3Key: a.s3_key ?? '',
+    // The sidecar's own key: prefer the top-level s3_key (the metadata/… address the producer
+    // wrote); fall back to deriving it from the content key for older/file-backed rows.
+    sidecarKey: (typeof rec.s3_key === 'string' && rec.s3_key.startsWith('metadata/'))
+      ? rec.s3_key
+      : (a.s3_key ? `metadata/${a.s3_key}.metadata.json` : ''),
     category: a._category,
     // file-backed only when it's a documents row that is NOT virtual (Phase 22). Tolerates the
     // legacy _file_missing marker on un-migrated rows until the migration runs.
