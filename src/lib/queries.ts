@@ -17,36 +17,6 @@ export async function listByType(entityType: string) {
   return filterNulls(result.data);
 }
 
-export async function getItem(id: string, entityType: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .get({ id, entityType });
-  return result.data;
-}
-
-export async function listByCastMovie(movieId: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByMovieIdAndRole({ movieId });
-  return filterNulls(result.data);
-}
-
-export async function listByPersonFilm(personId: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByPersonIdAndMovieName({ personId });
-  return filterNulls(result.data);
-}
-
-export async function listByRecording(recordingId: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByRecordingIdAndPerformerName({ recordingId });
-  return filterNulls(result.data);
-}
-
-export async function listByPerformer(performerId: string) {
-  const result = await getClient().models.KnowledgeGraphItem
-    .listKnowledgeGraphItemByPerformerIdAndRecordingName({ performerId });
-  return filterNulls(result.data);
-}
-
 export async function createItem(fields: Record<string, unknown>) {
   const result = await getClient().models.KnowledgeGraphItem.create({
     ...fields,
@@ -55,15 +25,6 @@ export async function createItem(fields: Record<string, unknown>) {
   } as never);
   if (result.errors?.length) {
     console.error('createItem errors:', result.errors);
-    throw new Error(result.errors[0].message);
-  }
-  return result.data;
-}
-
-export async function deleteItem(id: string, entityType: string) {
-  const result = await getClient().models.KnowledgeGraphItem.delete({ id, entityType });
-  if (result.errors?.length) {
-    console.error('deleteItem errors:', result.errors);
     throw new Error(result.errors[0].message);
   }
   return result.data;

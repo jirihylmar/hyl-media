@@ -1350,7 +1350,53 @@
           "depends_on": [
             "17.5"
           ],
-          "notes": "Only after 17.5 parity passes. Back up (export) the old table first; keep it recoverable. Do NOT delete library//sheet-music/ until documents/ download is confirmed in prod. DEFERRED/BLOCKED: decommission must wait until the CREATE path (CreateEntityForm/AssetUpload still write legacy) and Dossier relationship cross-refs (still read legacy movie_cast/recording_performer/sheet_music_performer) are moved to DC — otherwise create + relationship display break. Also destructive (delete table + S3 prefixes) → requires explicit user approval + a verified backup/export first. Recommend doing after Phase 18 (create+editor on DC)."
+          "notes": "Only after 17.5 parity passes. Back up (export) the old table first; keep it recoverable. Do NOT delete library//sheet-music/ until documents/ download is confirmed in prod. DEFERRED/BLOCKED: decommission must wait until the CREATE path (CreateEntityForm/AssetUpload still write legacy) and Dossier relationship cross-refs (still read legacy movie_cast/recording_performer/sheet_music_performer) are moved to DC — otherwise create + relationship display break. Also destructive (delete table + S3 prefixes) → requires explicit user approval + a verified backup/export first. Recommend doing after Phase 18 (create+editor on DC). [2026-06-16] Operator approved proceeding; dependency sweep confirmed table still load-bearing (1825 items). Backup VERIFIED (scripts/backup-legacy-kg-table.mjs → s3 backups/ + local, 1825 items). Broken into sub-tasks 17.6a–e (operator guidance: be the expert, don't break working features, remove dead/unused code; entity creation→agent panel is fine, but file upload must stay since the agent can't process PDFs → rebuild upload on DC, don't remove)."
+        },
+        {
+          "id": "17.6a",
+          "name": "Delete confirmed-dead legacy code (CastManager, PerformerManager, unused queries.ts fns)",
+          "status": "complete",
+          "completed_at": "2026-06-16",
+          "size": "small",
+          "verify": "CastManager.tsx + PerformerManager.tsx removed (zero importers); queries.ts keeps only listByType/createItem/updateItem; tsc clean; build deploys",
+          "depends_on": ["17.5"],
+          "notes": "Pure maintenance cleanup — zero runtime risk. Dead: CastManager.tsx + PerformerManager.tsx (unimported, never mounted) + queries.ts getItem/listByCastMovie/listByPersonFilm/listByRecording/listByPerformer/deleteItem (zero live callers)."
+        },
+        {
+          "id": "17.6b",
+          "name": "Retire legacy entity-create UI (CreateEntityForm '+ New' for movie/person/band/recording) — agent panel is the DC create path",
+          "status": "pending",
+          "size": "medium",
+          "verify": "'+ New' removed from EntityList for movie/person/band/recording; no UI writes legacy createItem for entities; lists + agent create still work; deployed",
+          "depends_on": ["17.6a"],
+          "notes": "The legacy create form writes KnowledgeGraphItem, but lists read DC → created items never appeared (already orphaned/broken). Operator OK with the agent (AssistPanel) as the create path."
+        },
+        {
+          "id": "17.6c",
+          "name": "Rebuild book/sheet-music upload on the DC store (file → documents/<uuid>/ + sidecar + metadata-repo row)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "Upload a new book PDF via UI → appears in DC-backed Library list + downloads from documents/<uuid>/; metadata-repo row conformant (audit PASS); no legacy write",
+          "depends_on": ["17.6a"],
+          "notes": "Agent can't accept/process files, so KEEP a manual upload form but rewire AssetUpload from legacy createItem (+ library//sheet-music/ S3) to DC: PUT PDF to documents/<uuid>/, emit conformant sidecar + metadata-repo row (reuse build-dc-sidecar/entity-to-dc or the metadata-api). FIXES the currently-broken upload (legacy-written uploads don't show in DC lists)."
+        },
+        {
+          "id": "17.6d",
+          "name": "Migrate Dossier relationship display (movie_cast/recording_performer/sheet_music_performer) to DC cross-links",
+          "status": "pending",
+          "size": "medium",
+          "verify": "DataManagement no longer calls listByType on legacy relationship rows; cast/performer columns render from DC _cast_uris/_performer_uris/dc_relation; deployed; Dossier parity",
+          "depends_on": ["17.6a"],
+          "notes": "Last live legacy READ. DC already holds these relationships forward (_cast_uris on movies, _performer_uris on recordings, dc_relation) — resolve via the DC client instead of legacy cross-ref rows."
+        },
+        {
+          "id": "17.6e",
+          "name": "Drop legacy table + remove KnowledgeGraphItem schema model + final legacy-code removal (DESTRUCTIVE — backup verified)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "No app code reads/writes KnowledgeGraphItem; schema model removed from amplify/data/resource.ts; table deleted (backup in s3 backups/ confirmed); queries.ts/legacy client removed; build + deploy + audit PASS",
+          "depends_on": ["17.6b", "17.6c", "17.6d"],
+          "notes": "FINAL destructive step — only after 17.6b/c/d clear all live deps. Verified backup already exists. Confirm with operator before the actual table delete."
         }
       ],
       "artifacts": [],
