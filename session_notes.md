@@ -6,14 +6,56 @@ This file tracks session history for context continuity between Claude Code sess
 
 ## ⮕ NEXT SESSION — START HERE (2026-06-16)
 
-**Phases 0–22 COMPLETE.** The app is live + deployed (Amplify job 85). No pending tracked tasks.
+**Phases 0–22 COMPLETE + the legacy decommission (17.6) is DONE.** The app runs entirely on the
+Dublin Core store (`hyl-media-metadata-repository`); the legacy `KnowledgeGraphItem` table is
+deleted. Live + deployed (Amplify job 91). **No pending tracked tasks.**
 
 **Open TODO:** rotate the Anthropic key (pasted in chat once during Phase 21).
-**Deferred / needs approval:** 17.6 legacy `KnowledgeGraphItem` decommission (destructive — the
-create path + relationship cross-refs still reference it; confirm nothing reads it before dropping).
+**Backups:** the old KnowledgeGraphItem table (1825 items) is exported to `s3://…/backups/` and
+local `backups/` (gitignored) — recoverable if ever needed.
 
-If new work is requested, use `/add-work` to track it. The DC store
-(`hyl-media-metadata-repository`) is the primary catalog; lifecycle = `/managed-resource` skill.
+If new work is requested, use `/add-work` to track it. The DC store is the primary catalog;
+lifecycle = `/managed-resource` skill. There is no longer any legacy table or `queries.ts`.
+
+---
+
+## Session 2026-06-16 (cont.) — PHASE 17.6 COMPLETE (legacy KnowledgeGraphItem decommission)
+
+The long-deferred, destructive 17.6 — done safely and incrementally. A dependency sweep (Explore
+agent) found the legacy table was **still load-bearing**: book/sheet **upload** + entity **create**
+wrote it, and the **Dossier** read its relationship cross-ref rows. So "drop the table" was really a
+mini-migration. Broken into 17.6a–e, each verified + deployed; the destructive drop ran last.
+
+- **Backup first** — `scripts/backup-legacy-kg-table.mjs` exported all **1825 items** →
+  `s3://…/backups/` + local `backups/` (verified recoverable). Precondition for any deletion.
+- **17.6a** — deleted confirmed-dead code: `CastManager`, `PerformerManager`, 6 unused `queries.ts`
+  fns. Pure maintenance, zero runtime risk.
+- **17.6b** — retired the orphaned legacy **entity-create** UI (`CreateEntityForm` + the `+ New`
+  buttons). It wrote `KnowledgeGraphItem` while the lists read DC → created items never appeared
+  (already broken). The AssistPanel agent is the DC-native create path.
+- **17.6c** — rebuilt book/sheet **upload** on DC (the agent can't process files, so manual upload
+  stays — but now writes DC). New `metadata-api` mutation `createDocumentMetadata` builds the
+  conformant file-backed record (S3 sidecar + metadata-repo row; `dc_type=Text`,
+  `_category=documents`, real `s3_key`); `AssetUpload` uploads the PDF to `documents/<uuid>/` then
+  calls it. `documents/*` made authenticated-writable; metadata-api granted DDB PutItem + S3 write.
+  This also **fixed** the previously-broken upload.
+- **17.6d** — migrated the **Dossier** relationship display to DC. Cast/performer/artist now come
+  from each entity's own `dc_creator`/`dc_contributor` (exposed as `_creators`/`_contributors` via
+  `dcQueries.toListItem`); removed the last legacy **read** (`listByType`). Parity verified vs the DC
+  store: 330 movie cast names (legacy 327), 159 recording performers (163), 110 sheet artists (83).
+- **17.6e (destructive)** — removed the `KnowledgeGraphItem` model from `amplify/data/resource.ts`
+  → CFN **deleted the table** on deploy. Decoupled the `KnowledgeGraphItem` TYPE into a standalone
+  interface in `client.ts` (frontend still uses the shape; data is DC). Removed the last legacy
+  **write** (Tag/ExternalLinks now require a DC `save` cb; deleted `queries.ts`; `DcEntityHeader` +
+  6 detail pages no longer thread `entityType`).
+
+**Verified live post-decommission (jobs 87/89/90/91 SUCCEED):** legacy table **gone** (`list-tables`
+empty), DC table intact; `verify-frontend-detail` + `verify-frontend-dossier` +
+`verify-dossier-relations` + `verify-document-upload` **ALL PASS**; conformance audit **ALL PASS
+1208/1208**. Two test uploads were created and cleaned up (DDB + S3).
+
+**Why safe:** consumers UUID-parse cross-link URIs (never fetch the target object), so the DC graph
+is self-contained — dropping the legacy table broke nothing.
 
 ---
 
