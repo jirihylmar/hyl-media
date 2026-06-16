@@ -26,7 +26,13 @@ try {
   await page.waitForFunction(() => !/Loading data/.test(document.body.textContent || ''), { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(1500);
   const body = (await page.textContent('body').catch(() => '')) || '';
-  check(/94/.test(body) && /442|44[0-9]/.test(body), `Dossier overview shows entity counts (movies 94, people ~442)`);
+  // Count-agnostic: the overview tab renders the "Entity Overview" table with the entity labels
+  // and is not stuck loading. (Hardcoding exact counts is brittle — the catalog grows via the
+  // agent; exact counts are asserted directly against the DC store, not the rendered HTML.)
+  const overviewOk = !/Loading data/.test(body)
+    && /Entity Overview/.test(body)
+    && /Movies/.test(body) && /People/.test(body) && /Recordings/.test(body);
+  check(overviewOk, `Dossier overview table renders (not stuck loading; entity rows present)`);
 
   // GlobalSearch via the DC searchMetadata query.
   await page.fill('input.global-search-input', 'dirty', { timeout: 20000 });
