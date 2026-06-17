@@ -10,6 +10,27 @@ This file tracks session history for context continuity between Claude Code sess
 Dublin Core store (`hyl-media-metadata-repository`); the legacy `KnowledgeGraphItem` table is
 deleted. Live + deployed (Amplify job 91). **No pending tracked tasks.**
 
+---
+
+## Session 2026-06-17 — maintenance-agent skill + agent links/tags fix (deployed + live-verified)
+
+- **New skill `/maintenance-agent`** (`.claude/commands/maintenance-agent.md`): playbook for changing
+  the Phase 21 operator agent (`amplify/functions/agent/`) — anatomy file-map, robustness invariants,
+  a data-flow-trace recipe (what the agent fills in) + an add-tool recipe (delete w/ orphan cleanup),
+  deploy + live-verify loop. (commit 1b2a61e)
+- **Fix: agent now carries research links + genre into the create plan** (commit a145923). Root cause
+  was a prompt gap: `SYSTEM_INSTRUCTIONS` step 4 never told the agent to copy `research_entity`'s
+  `links`/`genre` into `commit_plan.resource.external_links`/`genre`, so created movies had
+  genre-derived subjects but empty `_external_links`. Fix = prompt instruction + `PLAN_SCHEMA` field
+  descriptions (both cache-stable). Persist path (`executePlan`→`setExternalLinks`, `genre`→`_tags`)
+  was already correct.
+- **Verified:** local loop test; throwaway-record write test (both DDB + S3 sidecar got
+  `_external_links` + `_tags`, self-cleaned) via `scripts/verify-agent-links-tags.mts`; **live** —
+  deployed Lambda (Amplify job **94** SUCCEED) invoked with "add movie The Lives of Others" proposed a
+  `commit_plan` carrying 3 external links + genre `["Drama","Political thriller"]` (not approved → no
+  catalog write; verification turn artifact cleaned from S3).
+- **No pending tracked tasks.** `main` pushed through a145923.
+
 **Open TODO:** rotate the Anthropic key (pasted in chat once during Phase 21).
 **Backups:** the old KnowledgeGraphItem table (1825 items) is exported to `s3://…/backups/` and
 local `backups/` (gitignored) — recoverable if ever needed.
