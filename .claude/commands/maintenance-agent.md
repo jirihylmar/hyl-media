@@ -212,6 +212,14 @@ Choose the checks the change needs; do all that apply.
 
 ---
 
+## Related skills
+
+- `/managed-resource` — the operator-facing DC resource lifecycle (create→sync→enrich→reconcile→
+  edit/pin→approve→verify). The agent's write path mirrors it; when changing what the agent persists,
+  keep both in lockstep and reuse its conformance rules.
+- `/enrich-connections` — detect + add knowledge-graph connections for new entities (the relationship
+  edges the agent's `commit_plan` also writes).
+
 ## Completion checklist
 
 - [ ] AWS identity verified `299025166536` before any AWS call.

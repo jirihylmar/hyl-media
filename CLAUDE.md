@@ -58,7 +58,15 @@ aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
 /check-aws               # Verify AWS resources
 /managed-resource        # DC resource lifecycle: create→sync→enrich→reconcile→edit/pin→approve→verify
 /enrich-connections      # Detect + add knowledge-graph connections for new entities
+/maintenance-agent       # Change/extend the operator agent (amplify/functions/agent) — trace, fix, deploy, verify
 ```
+
+## Project Skills
+| Skill | When to Use | Purpose |
+|-------|-------------|---------|
+| `/managed-resource` | Any DC resource lifecycle work | Create→sync→enrich→reconcile→edit/pin→approve→verify on the metadata-repository |
+| `/enrich-connections` | After new entities exist | Detect + add knowledge-graph connections |
+| `/maintenance-agent` | "Make the agent able to…" / "the agent doesn't…" / add a capability | Playbook to change the Phase 21 operator agent (`amplify/functions/agent/`): anatomy map, robustness invariants, change recipes, deploy + live-verify loop |
 
 ## Dublin Core metadata-repository (Phases 15–19 — PRIMARY store)
 The catalog now lives in `hyl-media-metadata-repository` (DynamoDB) as **conformant DH sidecars**
