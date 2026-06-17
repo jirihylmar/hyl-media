@@ -1621,8 +1621,8 @@
     "orchestration": {
       "local": ".",
       "remote": "https://github.com/jirihylmar/hyl-media",
-      "status": "needs_push",
-      "notes": "Task 21.11 (agent links+tags fix) + /maintenance-agent skill deployed (Amplify job 94 SUCCEED) and pushed to main (1b2a61e/a145923/5aa2a12); progress.json pending this update commit. Phase 22 + 17.6 decommission previously deployed (jobs 85-91 SUCCEED). Legacy KnowledgeGraphItem table DELETED (verified gone; backup in s3 backups/). Nested DH platform repo still has local-only commit (table_name CLI support)."
+      "status": "pushed",
+      "notes": "Task 21.11 (agent links+tags fix) + /maintenance-agent skill deployed (Amplify job 94 SUCCEED) and all commits pushed to main (clean, 0 ahead post-21.11). Phase 22 + 17.6 decommission previously deployed (jobs 85-91 SUCCEED). Legacy KnowledgeGraphItem table DELETED (verified gone; backup in s3 backups/). Nested DH platform repo still has local-only commit (table_name CLI support)."
     }
   },
   "context_hints": {
