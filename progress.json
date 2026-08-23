@@ -1628,10 +1628,11 @@
   "context_hints": {
     "aws_account": "299025166536",
     "aws_region": "eu-central-1",
-    "mcp_tool": "mcp__aws-vsb-299__call_aws",
+    "mcp_tool": "mcp__aws-mcp__aws___call_aws",
     "naming_pattern": "hyl-media-{component}-{env}",
     "playbook_template": "playbook-aws-serverless-multirepo (adapted to Amplify Gen 2 mono-repo)",
-    "aws_profile": "JiHy__vsb__299",
+    "aws_profile": "vsb-299",
+    "aws_profile_cli": "JiHy__vsb__299",
     "amplify_app_id": "d2r70lavusnzlx",
     "amplify_url": "https://main.d2r70lavusnzlx.amplifyapp.com"
   },

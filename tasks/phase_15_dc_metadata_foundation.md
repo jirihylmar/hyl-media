@@ -142,5 +142,6 @@ JSON descriptors → `datasets`. Rows tagged with a `resource_account` registry 
 - **Verify**: `scripts/audit-dc-migration.mjs` writes would-be sidecars to a local dir (no S3/DDB writes), reports counts per `dc_type`/category, flags SK collisions + unmapped fields
 - **Deliverable**: `scripts/audit-dc-migration.mjs` + report
 - **Depends on**: 15.4, 15.5
-- Read real DynamoDB via `mcp__aws-vsb-299__call_aws` (read-only). Run builder + resolver across
+- Read real DynamoDB via `mcp__aws-mcp__aws___call_aws` (tool parameter `aws_profile="vsb-299"`,
+  `--region eu-central-1` inside `cli_command`) (read-only). Run builder + resolver across
   all entities. Surface SK collisions (same `#lang#slug`) and source fields not mapped to a DC field.

@@ -7,7 +7,8 @@ allowed-tools:
   - Grep
   - Edit
   - Write
-  - mcp__aws-vsb-299__call_aws
+  - mcp__aws-mcp__aws___call_aws
+  - mcp__aws-mcp__aws___run_script
 ---
 
 # Maintenance Agent
@@ -23,8 +24,12 @@ that those edits land in *every* layer the change touches, never break the two r
 and keep the S3 sidecar authoritative. A half-applied change (e.g. a new field in the plan schema
 but not in the emit) ships a silently broken agent.
 
-> **AWS:** every AWS read/write goes through `mcp__aws-vsb-299__call_aws` (account `299025166536`,
-> region `eu-central-1`). Verify identity first. Never the default profile.
+> **AWS:** every AWS read/write goes through `mcp__aws-mcp__aws___call_aws` (or
+> `mcp__aws-mcp__aws___run_script` for two or more calls). The account is the **tool parameter**
+> `aws_profile="vsb-299"` — never a `--profile` flag inside `cli_command`, which is hard-rejected.
+> Account `299025166536`; region `eu-central-1`, which must be given as `--region eu-central-1`
+> inside `cli_command` (the profile's own default is `eu-west-1`). Verify identity first, and never
+> omit `aws_profile` — that silently reaches the WRONG account.
 
 ---
 
@@ -82,7 +87,8 @@ These are the rules that make the agent trustworthy. Every change must preserve 
 
 ## Procedure (every change)
 
-1. **Verify AWS** — `mcp__aws-vsb-299__call_aws sts get-caller-identity` → must be `299025166536`.
+1. **Verify AWS** — `mcp__aws-mcp__aws___call_aws  cli_command="aws sts get-caller-identity"  aws_profile="vsb-299"`
+   → must be `299025166536`.
 2. **Locate** the change in the anatomy map. List *every* layer it touches (gather → schema → emit →
    prompt → register → frontend label). Trace the data flow end-to-end before editing.
 3. **Edit all layers** in one pass. Match surrounding style and comment density.
@@ -205,10 +211,12 @@ Choose the checks the change needs; do all that apply.
   `https://main.d2r70lavusnzlx.amplifyapp.com`, log in (test account in CLAUDE.md / Quick Reference),
   open the AssistPanel, issue the natural-language command, watch the propose → approve → execute
   step-log, then **confirm both stores via MCP**:
-  - DDB: `mcp__aws-vsb-299__call_aws dynamodb query` (or scan-filter) on
-    `hyl-media-metadata-repository` for the PK.
-  - S3: `mcp__aws-vsb-299__call_aws s3api get-object` /`list-objects-v2` on the sidecar key
-    under `metadata/<category>/<uuid>/`. (Playwright is installed for the gated UI.)
+  - DDB: `mcp__aws-mcp__aws___call_aws` with
+    `cli_command="aws dynamodb query ... --region eu-central-1"` (or scan-filter) and
+    `aws_profile="vsb-299"`, on `hyl-media-metadata-repository` for the PK.
+  - S3: same tool with `cli_command="aws s3api get-object ... --region eu-central-1"` /
+    `list-objects-v2` on the sidecar key under `metadata/<category>/<uuid>/`.
+    (Playwright is installed for the gated UI.)
 
 ---
 

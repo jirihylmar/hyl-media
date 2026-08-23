@@ -7,7 +7,8 @@ allowed-tools:
   - Grep
   - Edit
   - Write
-  - mcp__aws-vsb-299__call_aws
+  - mcp__aws-mcp__aws___call_aws
+  - mcp__aws-mcp__aws___run_script
 ---
 
 # Managed Resource
@@ -59,9 +60,14 @@ A sidecar is `{ id, SK, DocumentId, Title, ContentType, Attributes }` and MUST s
 
 ### 0. Verify AWS access (ALWAYS)
 ```
-mcp__aws-vsb-299__call_aws aws sts get-caller-identity
+mcp__aws-mcp__aws___call_aws  cli_command="aws sts get-caller-identity"  aws_profile="vsb-299"
 ```
-Must return `299025166536` / `eu-central-1`. STOP if wrong.
+Must return `299025166536`. STOP if wrong. (STS is global — this one call needs no region;
+every regional call below needs `--region eu-central-1` inside `cli_command`.)
+
+> The account comes from the **tool parameter** `aws_profile="vsb-299"`. A `--profile` flag inside
+> `cli_command` is hard-rejected, and omitting `aws_profile` silently hits the WRONG account
+> (`vsb-030`). See CLAUDE.md § CRITICAL: AWS Access Rules.
 
 ### 1. Create / register a resource (emit conformant sidecar + content)
 Non-file entities (person, band, movie, recording, collaboration) → a JSON descriptor under
@@ -76,7 +82,10 @@ The table is populated by the reused DH CLI (registered bucket key `hylm`):
 # in tools/metadata-repository (DH CLI); --dry-run is the opt-out, it writes by default
 update-metadata --resource hylm
 ```
-Confirm: `mcp__aws-vsb-299__call_aws aws dynamodb scan --table-name hyl-media-metadata-repository --select COUNT`.
+Confirm with `mcp__aws-mcp__aws___call_aws`, passing
+`cli_command="aws dynamodb scan --table-name hyl-media-metadata-repository --select COUNT --region eu-central-1"`
+and `aws_profile="vsb-299"`. **`--region` is mandatory** — without it the profile resolves to
+`eu-west-1` and the call returns `ResourceNotFoundException`.
 
 ### 3. Enrich Dublin Core (Claude — public/private aware)
 ```
@@ -121,5 +130,6 @@ Spot-check a private + a public record (abstract sensible, correct language, vis
 - **Never** hardcode/print/commit the Anthropic key.
 - **Never** write to DDB without reconciling to S3 (Step 4).
 - **Never** break the 28-key order or the structural rules — the auditor (Step 7) is the gate.
-- Decommissioning the legacy `KnowledgeGraphItem` table / `library/` + `sheet-music/` prefixes is
-  **destructive** — back up first and get explicit user approval (tracked as Phase 17.6).
+- The legacy `KnowledgeGraphItem` table is already **DELETED** (Phase 17.6e; backup in the bucket's
+  `backups/` prefix). Retiring the `library/` + `sheet-music/` S3 prefixes is still **destructive** —
+  back up first and get explicit user approval.

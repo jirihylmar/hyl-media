@@ -11,7 +11,7 @@
     "test:crud": "node scripts/test-crud.mjs",
     "test:cleanup": "node scripts/test-cleanup.mjs",
     "test:dc-lib": "node scripts/lib/dc-paths.mjs --selftest && node scripts/lib/build-dc-sidecar.mjs --selftest && node scripts/lib/entity-to-dc.mjs --selftest",
-    "audit:dc": "node scripts/audit-dc-migration.mjs",
+    "audit:dc": "node scripts/audit-dc-conformance.mjs",
     "verify:dc-ui": "node scripts/verify-frontend-dc.mjs && node scripts/verify-frontend-detail.mjs && node scripts/verify-frontend-dossier.mjs"
   },
   "dependencies": {

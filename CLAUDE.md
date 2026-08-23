@@ -10,8 +10,8 @@ Personal media catalog — movies, music, books, sheet music. DynamoDB single-ta
 |------|-------|
 | AWS Account | `299025166536` (alias: 299) |
 | AWS Region | `eu-central-1` |
-| AWS Profile | `JiHy__vsb__299` |
-| MCP Tool | `mcp__aws-vsb-299__call_aws` |
+| AWS Profile | `vsb-299` (MCP tool parameter) · `JiHy__vsb__299` (Bash `aws` CLI) — same key, either name works in Bash |
+| MCP Tool | `mcp__aws-mcp__aws___call_aws` — account via the tool parameter `aws_profile="vsb-299"`, region via `--region eu-central-1` inside `cli_command` (2+ calls: `mcp__aws-mcp__aws___run_script`) |
 | Amplify App ID | `d2r70lavusnzlx` |
 | Amplify URL | `https://main.d2r70lavusnzlx.amplifyapp.com` |
 | GitHub Repo | `jirihylmar/hyl-media` |
@@ -22,13 +22,27 @@ Personal media catalog — movies, music, books, sheet music. DynamoDB single-ta
 
 **USE MCP TOOL FOR ALL AWS OPERATIONS:**
 ```
-mcp__aws-vsb-299__call_aws
+mcp__aws-mcp__aws___call_aws     # one API call    — aws_profile is a TOOL PARAMETER, not a CLI flag
+mcp__aws-mcp__aws___run_script   # two or more     — same aws_profile parameter
 ```
 
-This MCP tool is pre-configured with profile `JiHy__vsb__299` and region `eu-central-1`.
+**The server is NOT pre-configured for this project — you must name the account and the region on every call.**
+
+- **Account** comes from the tool parameter `aws_profile="vsb-299"`. Passing `--profile` *inside*
+  `cli_command` is hard-rejected: `The following global arguments cannot be set: --profile`.
+- **Omitting `aws_profile` does not error.** It silently returns account `030062527147` (`vsb-030`)
+  with a 200 OK — a different AWS account. This is the single most dangerous mistake here.
+- **Region must be explicit** as `--region eu-central-1` inside `cli_command` for every regional
+  service (DynamoDB, S3, Lambda, AppSync, Amplify, CloudWatch). Both `vsb-299` and
+  `JiHy__vsb__299` default to `eu-west-1`, where none of this project's resources exist — so
+  forgetting it yields `ResourceNotFoundException`, which reads like a missing resource rather
+  than a missing flag. `sts get-caller-identity` is global and is the one exemption.
 
 **NEVER use:**
-- `aws` CLI without `--profile JiHy__vsb__299 --region eu-central-1`
+- `--profile ...` inside an MCP `cli_command` (hard-rejected)
+- an MCP call with `aws_profile` omitted (silently hits the WRONG account, `vsb-030`)
+- an MCP `cli_command` for a regional service without `--region eu-central-1`
+- `aws` CLI in Bash without `--profile JiHy__vsb__299 --region eu-central-1`
 - Default AWS profile (goes to WRONG account)
 - `export AWS_PROFILE=...`
 - Any hardcoded region other than `eu-central-1`
@@ -36,7 +50,7 @@ This MCP tool is pre-configured with profile `JiHy__vsb__299` and region `eu-cen
 **ALWAYS verify before any AWS operation:**
 ```bash
 # Via MCP (preferred)
-mcp__aws-vsb-299__call_aws sts get-caller-identity
+mcp__aws-mcp__aws___call_aws  cli_command="aws sts get-caller-identity"  aws_profile="vsb-299"
 # Must return account 299025166536
 
 # Via CLI (if MCP unavailable)
@@ -57,7 +71,7 @@ aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
 /add-work                # Add phases or tasks mid-project
 /check-aws               # Verify AWS resources
 /managed-resource        # DC resource lifecycle: create→sync→enrich→reconcile→edit/pin→approve→verify
-/enrich-connections      # Detect + add knowledge-graph connections for new entities
+/enrich-connections      # BLOCKED — do not run (built on the deleted cross-ref table; see the skill file)
 /maintenance-agent       # Change/extend the operator agent (amplify/functions/agent) — trace, fix, deploy, verify
 ```
 
@@ -65,14 +79,14 @@ aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
 | Skill | When to Use | Purpose |
 |-------|-------------|---------|
 | `/managed-resource` | Any DC resource lifecycle work | Create→sync→enrich→reconcile→edit/pin→approve→verify on the metadata-repository |
-| `/enrich-connections` | After new entities exist | Detect + add knowledge-graph connections |
+| `/enrich-connections` | **BLOCKED — do not run** | Relationship linking. Built on the deleted `KnowledgeGraphItem` cross-ref-row model; needs a relation-field writer before it can be rewritten (see the banner in the skill file) |
 | `/maintenance-agent` | "Make the agent able to…" / "the agent doesn't…" / add a capability | Playbook to change the Phase 21 operator agent (`amplify/functions/agent/`): anatomy map, robustness invariants, change recipes, deploy + live-verify loop |
 
 ## Dublin Core metadata-repository (Phases 15–19 — PRIMARY store)
 The catalog now lives in `hyl-media-metadata-repository` (DynamoDB) as **conformant DH sidecars**
 (S3 `metadata/<category>/<uuid>/<file>.metadata.json`; content in `datasets/`+`documents/`). The
-frontend reads/edits from this DC store via the metadata-api Lambda; the legacy `KnowledgeGraphItem`
-table stays live only for the create path + relationship cross-refs (Phase 17.6 decommission pending).
+frontend reads/edits from this DC store via the metadata-api Lambda. The legacy `KnowledgeGraphItem`
+table was **DELETED** in Phase 17.6e — the decommission is COMPLETE and nothing reads or writes it.
 The full lifecycle (public/private Claude enrichment + S3 reconcile + structural conformance rules)
 is the **`/managed-resource` skill** — use it for any DC resource work. **Source-of-truth rule:** the
 S3 sidecar is authoritative; never leave a write DDB-only — reconcile with `scripts/sync-dc-to-s3.mjs`.
@@ -170,8 +184,11 @@ Before adding task to progress.json:
 ## Critical Rules
 
 ### 1. AWS Account — USE MCP TOOL
-**ALL AWS operations via `mcp__aws-vsb-299__call_aws`.**
-Never use default profile. Never hardcode regions in scripts.
+**ALL AWS operations via `mcp__aws-mcp__aws___call_aws`** (or `mcp__aws-mcp__aws___run_script` for
+two or more calls), **account via the tool parameter `aws_profile="vsb-299"`.**
+Never omit `aws_profile` (silent fallback to the WRONG account). Never put `--profile` in
+`cli_command` (hard-rejected). In *scripts*, take the region from `AWS_REGION` rather than
+hardcoding it; in an *MCP* `cli_command`, `--region eu-central-1` is REQUIRED.
 Account: 299025166536, Region: eu-central-1.
 
 ### 2. Pre-Work Verification
@@ -217,4 +234,4 @@ you can verify yourself. Only stop for genuine branch-point decisions that are t
 | Read files | `Read` | `cat` |
 | Edit files | `Edit` | `sed` |
 | Search files | `Glob`/`Grep` | `find`/`grep` |
-| AWS operations | `mcp__aws-vsb-299__call_aws` | `aws` CLI without profile |
+| AWS operations | `mcp__aws-mcp__aws___call_aws` + `aws_profile="vsb-299"` + `--region eu-central-1` | `--profile` inside `cli_command`; omitting `aws_profile` |
