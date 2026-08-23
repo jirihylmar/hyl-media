@@ -15,7 +15,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = process.env.AWS_REGION || 'eu-central-1';
 const APPLY = process.argv.includes('--apply');
 const LEGACY = { youtubeUrl: 'youtube', wikiUrl: 'wikipedia', spotifyUrl: 'spotify', imdbUrl: 'imdb' };

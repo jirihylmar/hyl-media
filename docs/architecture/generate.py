@@ -67,21 +67,19 @@ with Diagram(
         appsync = Appsync(
             "AppSync GraphQL\n\nDC custom resolvers:\n"
             "getMetadata / listMetadataByType\nsearchMetadata / getMetadataByLegacyId\n"
-            "updateMetadata (SET, pin)\n+ legacy CRUD (create path)"
+            "updateMetadata (SET)\ncreateDocumentMetadata\nagentChat / getAgentTurn"
         )
         meta_lambda = Lambda("metadata-api Lambda\nDC read/write over the\nmetadata-repository table")
 
     with Cluster("DynamoDB"):
         dc_table = Dynamodb(
-            "hyl-media-metadata-repository\n\n1194 DC records (PK=id)\n"
+            "hyl-media-metadata-repository\n\n1242 DC records (PK=id)\n"
             "conformant sidecar shape\n28 canonical Attributes + ext\ndc_abstract enriched"
         )
-        legacy_table = Dynamodb(
-            "KnowledgeGraphItem-*\n(legacy, still live)\n\nrelationship cross-refs\n+ create path"
-        )
+        # The legacy KnowledgeGraphItem table was DELETED in Phase 17.6e — node removed.
 
     with Cluster("S3 — hylmediastoragebucketefb-* (Amplify-managed)"):
-        s3_content = S3("Content\ndatasets/ (movie,recording)\nagents/ (person,band)\ndocuments/ (book,sheet)")
+        s3_content = S3("Content\ndocuments/ (book, sheet)\n\n824 of 1242 records are\nvirtual — no content object")
         s3_sidecars = S3("DC sidecars\nmetadata/<cat>/<uuid>/\n*.metadata.json")
         s3_legacy = S3("Legacy originals\nlibrary/ · sheet-music/")
 
@@ -97,7 +95,7 @@ with Diagram(
     user >> Edge(label="HTTPS") >> cloudfront >> Edge(label="serves") >> react
     react >> Edge(label="Amplify Auth") >> cognito >> Edge(label="JWT") >> appsync
     appsync >> Edge(label="DC queries/mutations") >> meta_lambda >> dc_table
-    appsync >> Edge(label="cross-refs / create", style="dashed", color="#999999") >> legacy_table
+    # legacy CRUD edge removed with the KnowledgeGraphItem table (Phase 17.6e)
     react >> Edge(label="Storage getUrl\n(PDF + sidecar JSON)") >> s3_content
     react >> Edge(label="metadata link") >> s3_sidecars
 

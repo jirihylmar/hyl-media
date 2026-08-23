@@ -10,7 +10,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { readFileSync } from 'fs';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = process.env.AWS_REGION || 'eu-central-1';
 const DRY_RUN = process.argv.includes('--dry-run');
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));

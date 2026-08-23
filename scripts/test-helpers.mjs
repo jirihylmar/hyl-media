@@ -29,6 +29,9 @@ export async function setup() {
 
 // --- CRUD ---
 export async function createItem(fields) {
+  // DEAD: the KnowledgeGraphItem model + table were removed in Phase 17.6e — amplify/data/resource.ts
+  // declares no a.model(), so `.models.KnowledgeGraphItem` is undefined and npm run test:crud /
+  // test:cleanup die with a TypeError. Every call site in this file fails for the same reason.
   const result = await getClient().models.KnowledgeGraphItem.create(fields);
   if (result.errors?.length) throw new Error(`Create failed: ${result.errors[0].message}`);
   return result.data;

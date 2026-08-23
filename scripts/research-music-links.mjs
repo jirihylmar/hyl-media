@@ -16,7 +16,7 @@ import {
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = 'eu-central-1';
 const DRY_RUN = process.argv.includes('--dry-run');
 

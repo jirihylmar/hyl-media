@@ -15,7 +15,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { createHash } from 'crypto';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = 'eu-central-1';
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
 

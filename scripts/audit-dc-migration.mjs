@@ -21,7 +21,7 @@ import { dirname } from 'node:path';
 import { entityToDc, entityContentKey, defaultUriFor } from './lib/entity-to-dc.mjs';
 import { dcSourceUri } from './lib/dc-paths.mjs';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = process.env.AWS_REGION || 'eu-central-1';
 const OUT = (() => { const i = process.argv.indexOf('--out'); return i >= 0 ? process.argv[i + 1] : '.dc-audit'; })();
 

@@ -25,7 +25,7 @@ import { S3Client, PutObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s
 import { entityToDc, entityContentKey, defaultUriFor, resolveArtifact } from './lib/entity-to-dc.mjs';
 import { BUCKET, dcSourceUri } from './lib/dc-paths.mjs';
 
-const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';
+const TABLE = 'KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE';  // DEAD: this table was DELETED in Phase 17.6e — this script can no longer run.
 const REGION = process.env.AWS_REGION || 'eu-central-1';
 const APPLY = process.argv.includes('--apply');
 const LIMIT = (() => { const i = process.argv.indexOf('--limit'); return i >= 0 ? parseInt(process.argv[i + 1], 10) : Infinity; })();
