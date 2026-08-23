@@ -26,24 +26,33 @@ See [Architecture Documentation](docs/architecture/README.md) for details.
 
 ## Data
 
+Counts measured live against `hyl-media-metadata-repository` (2026-08-23).
+
 | Entity Type | Count | Description |
 |-------------|-------|-------------|
-| Movies | 94 | Films with cast, soundtrack links |
-| People | 416 | Actors, directors, authors, artists, musicians |
-| Bands | 45 | Music groups |
-| Collaborations | 8 | Music collaborations |
-| Recordings | 94 | Songs/tracks with performer links |
-| Books | 306 | PDF/epub library with S3 storage |
+| People | 484 | Actors, directors, authors, artists, musicians |
+| Books | 307 | PDF library with S3 storage |
+| Recordings | 172 | Songs/tracks with performer links |
 | Sheet Music | 112 | Chord sheet PDFs with S3 storage |
+| Movies | 100 | Films with cast, soundtrack links |
+| Bands | 59 | Music groups |
+| Collaborations | 8 | Music collaborations |
 
-~1,600 total items. 85% have external links (Wikipedia, IMDB, NKP, MusicBrainz, etc.).
+**1,242 records total**, all conformant Dublin Core sidecars. 824 are *virtual*
+(metadata-only, no S3 content object); the 418 with real PDF bytes are the books and sheet music.
+External-link coverage was last surveyed in Phase 8 (85% of 1,067 items then) and has **not**
+been re-measured since the Dublin Core migration.
 
 ## Features
 
 - **Dossier hub** — single-page overview with tabs for all entity types, stats, tag coverage
 - **Inline editing** — click any field to edit (name, language, tags, external links)
 - **Relationship navigation** — movies link to cast, recordings to performers, books to authors
-- **Create forms** — add new entities or upload book/sheet music PDFs
+- **Operator agent panel** — a Claude tool-use agent creates and edits catalog entries from
+  natural language, with a propose → approve → execute gate on every write
+- **Global search** — full-text across the catalog
+- **Uploads** — add book / sheet music PDFs (entity creation goes through the agent panel;
+  the standalone create form was retired in Phase 17.6b)
 - **External links** — flexible `{url, type}` system, 10+ source types
 - **Tag system** — controlled vocabulary with genre, role, instrument categories
 - **Breadcrumb navigation** — `DOSSIER > Movies > [name]` on every page
@@ -58,8 +67,10 @@ See [Architecture Documentation](docs/architecture/README.md) for details.
 /persons       People list + create
 /bands         Band list + create
 /recordings    Recording list + create
+/collaborations Collaboration list
 /library       Book list + upload
 /sheet-music   Sheet music list + upload
+/dossier       Alias for / (backward compat)
 ```
 
 All pages have breadcrumb navigation back to the Dossier.
@@ -83,4 +94,9 @@ npm run build
 
 ## Project Status
 
-All 63 tasks across 11 phases complete. See [progress.json](progress.json) for full history.
+**145 of 148 tasks complete across 24 phases** (1 superseded, 2 pending in Phase 18 — both
+realized by Phase 21's agent tools and awaiting a bookkeeping disposition). See
+[progress.json](progress.json) for full history.
+
+The catalog runs entirely on the Dublin Core metadata-repository; the legacy `KnowledgeGraphItem`
+table was deleted in Phase 17.6e.

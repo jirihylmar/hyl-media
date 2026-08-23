@@ -4,11 +4,101 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
-## ⮕ NEXT SESSION — START HERE (2026-06-16)
+## ⮕ NEXT SESSION — START HERE (2026-08-23)
 
-**Phases 0–22 COMPLETE + the legacy decommission (17.6) is DONE.** The app runs entirely on the
-Dublin Core store (`hyl-media-metadata-repository`); the legacy `KnowledgeGraphItem` table is
-deleted. Live + deployed (Amplify job 91). **No pending tracked tasks.**
+**Phases 0–22 complete + the legacy decommission (17.6) is DONE.** The app runs entirely on the
+Dublin Core store (`hyl-media-metadata-repository`, 1242 records); the legacy `KnowledgeGraphItem`
+table is deleted. Live + deployed (Amplify job **140** SUCCEED, 2026-08-21); site HTTP 200.
+
+**AWS access changed shape — read CLAUDE.md § CRITICAL: AWS Access Rules before any AWS call.**
+The tool is `mcp__aws-mcp__aws___call_aws`; the account is the **tool parameter**
+`aws_profile="vsb-299"`, never a `--profile` flag; `--region eu-central-1` must be inside
+`cli_command`. Omitting `aws_profile` silently hits the WRONG account (`vsb-030`).
+
+**Open, needing a decision (not blocked work):**
+- Phase 18's tasks 18.5 (regenerate + approve) and 18.6 (end-to-end lifecycle + cost report) are
+  still `pending`, but both were delivered by Phase 21 (21.9 / 21.10, complete). They need a
+  disposition — almost certainly `superseded`. `current_task` also holds prose, not a task id.
+- **Nothing can write a relation field.** 310 creator/contributor names sit on records whose agent
+  record already exists with no link between them. `/enrich-connections` is BLOCKED until a relation
+  writer exists (build on `appendRelation`, `amplify/functions/agent/writes.ts`).
+- Destructive cleanups awaiting approval: delete the 20 DEAD-marked scripts in `scripts/`, and
+  `npm run test:crud` / `test:cleanup` (they call an Amplify model removed in 17.6e).
+- `/repo-hygiene` has never run here. `.claude/hygiene-state.json` now exists but has no `last_pass`.
+
+---
+
+## Session 2026-08-23 — AWS access documentation repair + architecture grounding
+
+No tracked task; docs and config only — **no `amplify/` or `src/` change, so no redeploy needed.**
+
+### Pre-work verification (start-session Step 6) — PASSED
+| Check | Result |
+|---|---|
+| `audit-dc-conformance.mjs` | ALL PASS — 1242 records, 0 unreadable sidecars |
+| metadata table | ACTIVE, 1242 records; legacy `KnowledgeGraphItem` confirmed absent |
+| Amplify | job 140 SUCCEED (2026-08-21); site HTTP 200 |
+| `npm run build` | clean (after generating the gitignored `amplify_outputs.json`) |
+
+### The defect
+This repo's AWS instructions named a tool that does not exist. Only `aws-mcp` is configured
+(`mcp__aws-mcp__aws___call_aws` / `___run_script`); both `mcp__aws-vsb-299__call_aws` (committed)
+and `mcp__aws-api__call_aws` (uncommitted work-in-progress) are dead names. **Measured:**
+
+| Behaviour | Result |
+|---|---|
+| `--profile vsb-299` inside `cli_command` — what every doc said to do | hard error: `global arguments cannot be set: --profile` |
+| `aws_profile` parameter omitted | **silently returns account `030062527147` (`vsb-030`)** with 200 OK |
+| region left implicit | both `vsb-299` and `JiHy__vsb__299` default to `eu-west-1` → `ResourceNotFoundException` |
+
+The second is the serious one: it is exactly the wrong-account failure the INCIDENT HISTORY in
+CLAUDE.md exists to prevent, and the instructions had stopped defending against it. The third bit
+this session for real — `npx ampx generate outputs` failed with "stack does not exist" until
+`AWS_REGION` was pinned; the stack was there all along.
+
+### Commits
+- **1f65fef** — canonical AWS rules in `CLAUDE.md`, `managed-resource.md`, `maintenance-agent.md`,
+  `tasks/phase_15`; `context_hints.mcp_tool` corrected, `aws_profile` → `vsb-299` (the MCP enum
+  value) with `aws_profile_cli` added for the Bash/`ampx` path; `package.json` `audit:dc` repointed
+  off the deleted-table script; `/enrich-connections` marked **BLOCKED**.
+- **0c6ba0c** — `docs/architecture/` README + `generate.py` grounded against measured reality,
+  diagram regenerated (legacy node **and** its edge removed — dropping only one leaves an orphan);
+  `managed-resource.md` operator contract corrected; 21 scripts marked DEAD.
+- **(this)** — root `README.md` grounded; `CLAUDE.md` commands section healed from a hardcoded list
+  to a live-inventory pointer; `.claude/hygiene-state.json` bootstrapped.
+
+### Key decisions
+- **`/enrich-connections` was BLOCKED, not repaired and not deleted.** Repointing it at the live
+  table would be worse than leaving it broken: it would then *run* and emit standalone cross-ref
+  rows with `{slug}_{md5}` ids — a model the DC store does not have — which the conformance auditor
+  rejects. A command that fails loudly beats one that corrupts the store quietly. It was not deleted
+  because the job is real and unowned (see the 310-link gap above).
+- **Dead scripts annotated, not repointed.** The DC table's key schema is incompatible with their
+  `{id, entityType}` access pattern, so a rename would turn a loud `ResourceNotFoundException` into
+  silent wrong behaviour.
+- **Numbers were measured, never carried forward.** Where a figure could not be re-measured (the
+  Phase 8 external-link coverage percentages) it was date-stamped as a past survey rather than
+  restated as current.
+
+### Issues encountered
+- A multi-line YAML `description:` written into `enrich-connections.md` broke its frontmatter and
+  silently dropped the skill from the command listing. Caught by noticing the skill vanish, fixed by
+  collapsing to a single-line scalar; all three edited frontmatters are now parse-validated.
+- Three of the audit's own proposed fixes were **refuted** by adversarial verification and not
+  applied. The sharpest: the proposed extension-key wording would have asserted `_virtual` on every
+  record — false for 418 of them — writing factually wrong documentation about a third of the store.
+
+### Measured counts now recorded in the docs
+1242 records (824 virtual / 418 file-backed) · 566 public / 534 private / 142 neither ·
+person 484, book 307, recording 172, sheet_music 112, movie 100, band 59, collaboration 8 ·
+categories agents 551, documents 418, datasets 273 · bucket top-level prefixes `agent-turns/`,
+`backups/`, `documents/`, `library/`, `metadata/`, `sheet-music/` — **no `datasets/` or `agents/`
+content prefix**.
+
+### Grounding (update-progress Steps 2a + 2b)
+Grounded and stamped in `.claude/hygiene-state.json`: `CLAUDE.md`, `README.md`,
+`docs/architecture/README.md`, and the three project commands. Everything else in the rotation set
+is ungrounded and at the front of the queue. No `last_pass` recorded — `/repo-hygiene` has never run.
 
 ---
 

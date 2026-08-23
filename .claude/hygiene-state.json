@@ -1,0 +1,11 @@
+{
+  "grounded": {
+    "CLAUDE.md": "2026-08-23",
+    "README.md": "2026-08-23",
+    "docs/architecture/README.md": "2026-08-23",
+    ".claude/commands/managed-resource.md": "2026-08-23",
+    ".claude/commands/maintenance-agent.md": "2026-08-23",
+    ".claude/commands/enrich-connections.md": "2026-08-23"
+  },
+  "note": "Bootstrapped 2026-08-23 by /update-progress Step 2b. last_pass is deliberately absent: no full /repo-hygiene pass has ever run on this project, and only the six files above have been grounded against the implementation. Everything else in the rotation set (IMPLEMENTATION_PLAN.md, docs/dc-metadata-mapping.md, docs/migration-reports/**, the remaining .claude/commands/*.md) is UNGROUNDED and sits at the front of the queue."
+}

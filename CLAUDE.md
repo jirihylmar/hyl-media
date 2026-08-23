@@ -62,18 +62,11 @@ aws sts get-caller-identity --profile JiHy__vsb__299 --region eu-central-1
 ---
 
 ## Commands
-```
-/start-session           # Begin work session with verification
-/update-progress         # Save progress at end of session
-/generate-phases         # Create progress.json from approved plan
-/generate-architecture   # Generate architecture diagram
-/setup                   # Environment + repository setup
-/add-work                # Add phases or tasks mid-project
-/check-aws               # Verify AWS resources
-/managed-resource        # DC resource lifecycle: create→sync→enrich→reconcile→edit/pin→approve→verify
-/enrich-connections      # BLOCKED — do not run (built on the deleted cross-ref table; see the skill file)
-/maintenance-agent       # Change/extend the operator agent (amplify/functions/agent) — trace, fix, deploy, verify
-```
+
+The live command inventory is `.claude/commands/*.md` — read that directory rather than any list
+written here. Each file's `description:` frontmatter says what the command does. A hand-maintained
+list in this file drifts the moment a command is added, renamed, or blocked, so there deliberately
+isn't one; the project-specific skills are described in the table below.
 
 ## Project Skills
 | Skill | When to Use | Purpose |
