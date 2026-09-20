@@ -11,8 +11,10 @@ Tasks 30.2 / 30.3.  Usage:
 
 What it does, in order:
   1. Reads ~/.claude.json  ->  projects["<abs project>"].mcpServers
-     Candidates are the entries whose COMMAND is the awslabs aws-api MCP server.
-     By command, never by name: server names encode no account (rule 4 of the estate).
+     Candidates are the entries that LAUNCH the awslabs aws-api MCP server: a container
+     named by content address (the shape policy section 9 mandates), or the legacy pipx
+     console script / `uvx` package it replaced.
+     By what it runs, never by name: server names encode no account (rule 4 of the estate).
   2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary).
   3. Binds exactly one account-bound candidate, or refuses:
         ACCOUNT-AMBIGUOUS  more than one candidate and no way to pick   (exit 3)
@@ -64,6 +66,8 @@ AWSLABS_PINS = ["--with", "fastmcp==3.4.7", "--with", "mcp==1.29.1"]
 # the process, with a perfect install on disk. Pinning cannot reach that; a container that
 # starts clean per invocation can.
 AWSLABS_IMAGE = "syndicate/aws-api-mcp-server:pinned"
+AWSLABS_IMAGE_REPO = "syndicate/aws-api-mcp-server"
+IMAGE_REF = re.compile(r"^(?:sha256:[0-9a-f]{64}|%s(?::[A-Za-z0-9._-]+)?)$" % re.escape(AWSLABS_IMAGE_REPO))
 
 
 def image_id(tag):
@@ -81,6 +85,38 @@ def image_id(tag):
     return out if r.returncode == 0 and out.startswith("sha256:") else None
 
 
+_IMAGE_IS_AWSLABS = {}
+
+
+def image_is_awslabs(ref):
+    """Does this image reference run the awslabs aws-api MCP server? Asked of DOCKER.
+
+    A container binding names BYTES (`sha256:<64hex>`) or the estate tag, and the ledger
+    that records every id this repo has produced — config/mcp-image/known-ids.json — lives
+    in syndicate-playbooks-examples, which is LOCAL-ONLY and is never present in a project.
+    So the only thing on hand that knows what an id is, is the daemon holding it: its repo
+    tag answers for the generation currently tagged, and its entrypoint answers for every
+    older generation still on the host after the tag moved on.
+
+    Cached per reference: a consult with several candidates would otherwise pay the timeout
+    once per arg per candidate."""
+    if ref in _IMAGE_IS_AWSLABS:
+        return _IMAGE_IS_AWSLABS[ref]
+    import subprocess
+    verdict = False
+    try:
+        r = subprocess.run(["docker", "image", "inspect", ref, "--format",
+                            "{{json .RepoTags}}|{{json .Config.Entrypoint}}"],
+                           capture_output=True, text=True, timeout=20)
+        if r.returncode == 0:
+            tags, _, entry = r.stdout.strip().partition("|")
+            verdict = (AWSLABS_IMAGE_REPO in tags) or (AWSLABS in entry)
+    except (OSError, subprocess.SubprocessError):
+        verdict = False
+    _IMAGE_IS_AWSLABS[ref] = verdict
+    return verdict
+
+
 def container_server(home=None):
     """The one sanctioned shape for an AWS MCP server in this estate."""
     img = image_id(AWSLABS_IMAGE)
@@ -95,6 +131,15 @@ def container_server(home=None):
                      "-e", "AWS_SHARED_CREDENTIALS_FILE=/aws/credentials",
                      "-e", "AWS_PROFILE", "-e", "AWS_REGION", "-e", "READ_OPERATIONS_ONLY",
                      "-e", "AWS_API_MCP_WORKING_DIR=/home/mcp",
+                     # The vendor's end-of-development notice, off. The image sets this ENV
+                     # itself (config/mcp-image/aws-api-mcp-server/Dockerfile, with a build
+                     # assertion); it is repeated here so a binding minted against an older
+                     # image is quiet too. The VALUE IS WRITTEN OUT and must stay that way:
+                     # a bare `-e VAR` whose value is unset in the launching process sets it
+                     # to the EMPTY STRING in the container and OVERRIDES the image ENV —
+                     # measured 2026-09-20. The three bare `-e` above are legitimate because
+                     # this launcher does set them, from the bound server's env.
+                     "-e", "AWS_API_MCP_SUPPRESS_DEPRECATION_WARNING=true",
                      "--tmpfs", "/home/mcp:rw,size=64m",
                      img]}
 
@@ -140,16 +185,33 @@ def main(argv):
     except FileNotFoundError:
         cj = {}
     servers = ((cj.get("projects") or {}).get(bind_from) or {}).get("mcpServers") or {}
-    def is_awslabs(s):  # the pipx binary, or `uvx [pins...] awslabs.aws-api-mcp-server[@ver|==ver]`
+    def is_awslabs(s):  # a container by content address; or the legacy pipx / uvx shapes
         # Scan EVERY arg, not args[0]. Once a host pins per docs/mcp-server-pinning-policy.md the
         # package stops being first: `uvx --with fastmcp==3.4.7 --with mcp==1.29.1 <pkg>==1.5.4`.
         # Matching on args[0] would silently stop recognising exactly the configs we now prescribe,
         # and codex-here would fall through to profile-scan with no account binding.
+        #
+        # That warning then came true in the other direction and went unnoticed for a fortnight.
+        # The 2026-09-06 migration moved every binding in the estate to `"command": "docker"`
+        # (policy § 9), and this function knew only the two venv shapes § 9 abolished. Measured
+        # 2026-09-20 by replaying it over ~/.claude.json: it recognised 0 of 22 live bindings.
+        # A consult then either fell to profile-scan — discarding the project's curated binding
+        # and paying up to 25 s per profile — or, for a project with no declared aws_account,
+        # launched the reviewer with no AWS server at all. The estate's own launcher had stopped
+        # recognising the only shape the estate is allowed to have.
         cmd = os.path.basename(str(s.get("command", ""))); args = s.get("args") or []
         if cmd == AWSLABS:
             return True
         if cmd in ("uvx", "uv"):
             return any(re.split(r"[@=<>!]", str(a), 1)[0] == AWSLABS for a in args)
+        if cmd == "docker":
+            # By CONTENT, in two steps. The estate tag is a pure-config answer and costs
+            # nothing; an id is bytes and only the daemon can say what they are, so it is asked
+            # about the image references only — never about every argument.
+            refs = [str(a) for a in args if IMAGE_REF.match(str(a))]
+            if any(a.startswith(AWSLABS_IMAGE_REPO) for a in refs):
+                return True
+            return any(image_is_awslabs(a) for a in refs)
         return False
     cands = {n: s for n, s in servers.items() if is_awslabs(s)}
 

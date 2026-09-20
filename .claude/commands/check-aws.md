@@ -186,8 +186,14 @@ resource finding** — *zero found* and *could not look* are different facts.
 machines, where it would be a nickname true on only one. Resolving costs one call; a stale nickname
 costs a silent wrong answer.
 
-**Expected-resource lists come from THIS project** — derive them from `IMPLEMENTATION_PLAN.md`
-(and `resource_inventory` in progress.json if it exists), never from this template's examples.
+**Expected-resource lists come from what THIS project has actually built** — derive them from
+`resource_inventory` in progress.json and from the completed tasks that created the resources,
+never from this template's examples. `IMPLEMENTATION_PLAN.md` is the Phase-0 origin record of what
+was intended, not a statement of what exists; fall back to it only when no inventory exists, and
+say in the report that the expectation came from it. A resource deployed in phase 4 is absent from
+a specification frozen at Phase 0, so a spec-derived expectation reports a live resource as
+unexpected and a Phase-0 resource that was cancelled during implementation as missing — both false
+findings.
 
 ### 3. Check S3 Buckets
 ```
@@ -283,6 +289,9 @@ and printing the first when the second is true is a false report.
 - **Verify the account number before reading any resource** — reaching *an* account is not reaching
   the *right* one
 - Use MCP tools, never raw aws CLI
-- Compare against expected resources from IMPLEMENTATION_PLAN.md
+- Compare against expected resources derived from `resource_inventory` in progress.json and the
+  completed tasks that deployed them
+- Fall back to IMPLEMENTATION_PLAN.md only when no inventory exists — it is the Phase-0 origin
+  record of what was intended, not a list of what exists — and say in the report that the
+  expectation came from it
 - Add project-specific resource types via `.claude/local-overlays/check-aws.md` (splice fragment), not by hand-editing this distributed default
-- Use resource_inventory in progress.json as reference if it exists

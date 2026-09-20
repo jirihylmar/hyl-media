@@ -88,14 +88,26 @@ for d in sorted((root/"docs").glob("*")) if (root/"docs").exists() else []:
 
 # (C) broken repo-relative doc refs from live surfaces (docs + commands)
 ref_re = re.compile(r"(?<![\w/])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|html))")
-# The rotation set must be every file a reader takes as current — see
+# The live-surface set must be every file a reader takes as CURRENT — see
 # /update-progress Step 2b. Restricting it to docs/ + .claude/commands/ silently
-# excluded README.md, CLAUDE.md, IMPLEMENTATION_PLAN.md and every ops/ runbook,
-# which is how one project's README went on describing a deleted host for days.
+# excluded README.md, CLAUDE.md and every ops/ runbook, which is how one project's
+# README went on describing a deleted host for days.
+#
+# IMPLEMENTATION_PLAN.md is deliberately NOT in this set, and the exclusion is stated rather
+# than assumed: the approved specification is the Phase-0 origin record of what was intended
+# (PROJECT_CHARTER.md § The specification is an origin record), not a statement of what exists
+# now, so a reader who takes it as current has already made the mistake this exclusion encodes.
+# Every finding these checks could raise against it — a ref that broke when docs/ moved, a phase
+# heading — has one remedy, editing an approved specification, which /start-session's
+# authorization table gates behind the operator. Measured 2026-09-20: 21 of the 34 projects
+# reached carry one, and the widest gap between its last change and progress.json's was 254 days.
 surfaces = (list((root/"docs").rglob("*.md")) + list((root/".claude/commands").glob("*.md"))
             + list((root/"ops").rglob("*.md"))
-            + [root/n for n in ("README.md", "CLAUDE.md", "IMPLEMENTATION_PLAN.md")])
+            + [root/n for n in ("README.md", "CLAUDE.md")])
 surfaces = [p for p in surfaces if p.exists() and "_archive" not in p.parts]
+# Report the exclusion rather than hiding it — the same rule check F applies to the defaults.
+if (root/"IMPLEMENTATION_PLAN.md").exists():
+    print("   (surfaces: IMPLEMENTATION_PLAN.md excluded — the approved specification is the Phase-0 origin record, not a live surface; see Step 3)")
 seen = set()
 for f in surfaces:
     if "_archive" in f.parts: continue
@@ -118,12 +130,21 @@ if pj.exists():
 
 # (F) process metadata leaked into canonical surfaces (sizes the Step 3 de-phase slice)
 #
-# SCOPE: project-owned surfaces only. `.claude/commands/` is EXCLUDED by construction.
-# Those are centrally distributed defaults, and "Phase 1", "task 2.3" etc. inside them are the
-# ENGINE'S OWN DOMAIN LANGUAGE in worked examples — correct content, not leakage. The check used to
-# include them and fired on exactly that: 16 of 21 hits in one real pass were generic examples inside
-# defaults. Worse, it was unactionable BY CONSTRUCTION — it pointed the agent at the one set of files
-# the same skill forbids it to hand-edit (fix them centrally, or via an overlay; never in place).
+# SCOPE: exactly the surfaces Step 3 may fix in place — no wider, or the number that sizes the
+# slice counts work the step is forbidden to do. Two classes sit outside it.
+#
+# `.claude/commands/` is EXCLUDED by construction. Those are centrally distributed defaults, and
+# "Phase 1", "task 2.3" etc. inside them are the ENGINE'S OWN DOMAIN LANGUAGE in worked examples —
+# correct content, not leakage. The check used to include them and fired on exactly that: 16 of 21
+# hits in one real pass were generic examples inside defaults. Worse, it was unactionable BY
+# CONSTRUCTION — it pointed the agent at the one set of files the same skill forbids it to
+# hand-edit (fix them centrally, or via an overlay; never in place).
+#
+# IMPLEMENTATION_PLAN.md is excluded one level up, by never entering `surfaces` at all (see above).
+# It is the same shape twice: a specification's own "## Phase 1" / "## Phase 2" headings are
+# REQUIRED content — bootstrap task 0.4 drafts them — and the only remedy the gauge could offer is
+# editing an approved specification, which is operator-gated.
+#
 # A check whose only remedy is a forbidden act is noise that trains agents to ignore findings.
 meta_re = re.compile(r"\b(?:Phase|Session)\s+\d+\b|\btask\s+\d+\.\d+\b", re.I)
 mcount = mfiles = 0
@@ -289,16 +310,36 @@ After the sweep, reconcile every index surface to the post-sweep reality:
 
 ## Step 3 — Timeless-canon check (de-phased canonical surfaces)
 
-Grep the **project-owned canonical tree** — docs, project-specific skills, and any externally-served
+Grep the **project-owned canonical surfaces this step may fix in place** — `docs/`, `ops/`
+runbooks, root `README.md` and `CLAUDE.md`, project-specific skills, and any externally-served
 knowledge base — for process metadata (`Session N`, `Phase N`, dotted task IDs, dated anchors) that
-leaked in since the last pass (quick check F sizes this).
+leaked in since the last pass.
 
-> **Scope must match its own gauge.** `.claude/commands/`'s 10 distributed defaults are **excluded**
-> — check F skips them by construction, because `Phase N` / `task 2.3` in a default is the engine's
-> own vocabulary in a worked example, not leakage. Do not de-phase a default: it is read-only to you
-> (§ Step 1), the edit would be overwritten or would block distribution, and F's count — the number
-> that sizes this slice — never counted them in the first place. A step that acts on files its own
-> gauge declares out of bounds will always look like it has work to do.
+Quick check F sizes this slice, and the property that must hold is directional: **F never counts a
+file this step may not touch.** It reads the root docs, `docs/` and `ops/` part of the set above and
+not project skills or a served KB, so it under-reports — which costs a smaller slice this pass. The
+reverse would hand the step a finding whose only remedy is forbidden, and a check like that is one
+agents learn to skip.
+
+> **Scope must match its own gauge, and two classes of file sit outside both.**
+>
+> `.claude/commands/`'s 10 distributed defaults are **excluded** — check F skips them by
+> construction, because `Phase N` / `task 2.3` in a default is the engine's own vocabulary in a
+> worked example, not leakage. Do not de-phase a default: it is read-only to you (§ Step 1), the
+> edit would be overwritten or would block distribution, and F's count — the number that sizes this
+> slice — never counted them in the first place.
+>
+> `IMPLEMENTATION_PLAN.md` is **excluded for the same shape of reason**, and it never enters the
+> live-surface set the quick checks build. The approved specification is the Phase-0 origin record
+> (`PROJECT_CHARTER.md` § *The specification is an origin record*), and its `## Phase 1` /
+> `## Phase 2` headings are required content — bootstrap task 0.4 drafts them. Counting them as
+> leaked process metadata makes the gauge fire on correct content, and the only remedy it could
+> offer is editing an approved specification, which `/start-session`'s authorization table gates
+> behind the operator.
+>
+> A step that acts on files its own gauge declares out of bounds will always look like it has work
+> to do; a gauge that counts files the step may not touch will always report work that cannot be
+> done.
 
 Phase/task/session numbering is never load-bearing content
 in a canonical surface; phase-scoped working material lives clearly separated (phase dirs /

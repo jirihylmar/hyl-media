@@ -1,6 +1,6 @@
 ---
 name: generate-architecture
-description: Generate or regenerate a project's architecture diagram using the repository's established script and specification. Use when the implementation plan or architecture changes require the canonical diagram to be updated.
+description: Generate or regenerate a project's architecture diagram using the repository's established script, drawn from what the project has deployed and tracked rather than from its Phase-0 specification. Use when the deployed architecture or the tracked record has changed and the canonical diagram no longer matches it.
 ---
 
 # Generate architecture

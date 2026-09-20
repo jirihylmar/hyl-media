@@ -266,7 +266,8 @@ cite flags that don't exist.
    .claude/commands/*.md          # live skills (defaults included — ground them, report, never edit)
    docs/**/*.md                   # excluding _archive/
    ops/**/*.md                    # runbooks: read at the worst possible moment, so rot costs most
-   README.md  CLAUDE.md  IMPLEMENTATION_PLAN.md     # root canonical docs, if present
+   README.md  CLAUDE.md                             # root canonical docs, if present
+   IMPLEMENTATION_PLAN.md                           # origin record — grounded differently, item 3
    ```
 
    **Why the root docs are named explicitly.** This step's selection rule used to be
@@ -281,12 +282,13 @@ cite flags that don't exist.
    operational claims, verify each against the implementation, record claim / reality / fix in
    session_notes.
 
-   **What you do with a defect depends on who owns the file — and there are only two answers:**
+   **What you do with a defect depends on who owns the file — and there are only three answers:**
 
    | The file is… | Remedy |
    |---|---|
    | a **project-specific** skill or doc (anything you own) | **fix it in place.** Normal work. |
    | a **distributed default** (the 10 named in § 11.b) | **report it. Never fix it in place.** |
+   | the **approved specification** (`IMPLEMENTATION_PLAN.md`) | **neither — it is not that kind of file.** See below. |
 
    **Keep grounding the defaults — just never edit them.** Reading them against reality is how
    framework defects get found at all; a real pass grounded them and surfaced four genuine engine
@@ -296,6 +298,27 @@ cite flags that don't exist.
    your edit (the fix is **lost**, and the defect returns to every project), or the engine classifies
    the file as changed-since-delivery, which **blocks distribution** — potentially for every project
    on the host, not just yours. Either way you have made things worse than reporting would have.
+
+   **Grounding the specification is a different check, and the difference is the whole point.**
+   `IMPLEMENTATION_PLAN.md` is the origin record: what was intended and what was approved before
+   implementation opened (`PROJECT_CHARTER.md` § *The specification is an origin record*).
+   Grounding it means exactly two things — that it is **labelled** as the origin record rather than
+   reading as a description of the running system, and that **no live surface cites it as current**
+   (a README, a runbook, a skill, a task that says "see the implementation plan" for what exists
+   today). It never means checking its claims against today's implementation, and it never means
+   editing it to match. Content that has diverged is the history, not rot: the gap between what was
+   agreed and what was built is the only evidence that the change happened, and closing the gap
+   silently destroys it.
+
+   **What the table above would otherwise do is worth naming, because it is the collision this row
+   removes.** The specification is project-owned, so the first row routes it to *fix it in place* —
+   which executed literally rewrites an approved specification to match today's build. That is the
+   exact edit `/start-session`'s authorization table gates behind the operator (*Modifying
+   IMPLEMENTATION_PLAN.md — discuss first — user approval*). A remedy one default prescribes and
+   another forbids is not a remedy; it is a session that does the wrong thing confidently. Measured
+   across the estate, 2026-09-20: 21 of the 34 projects reached carry a specification, the widest gap
+   between its last change and progress.json's was 254 days, and of seven examined closely three
+   carried no lifecycle marker at all — so the label is the check that was missing, not the content.
 4. **Same file, naming + de-phasing**: flag synonyms against the terminology registry (registry
    name wins); strip leaked phase/session/task numbers (statement stays, process token goes).
    If NO registry exists yet, seed a minimal `terminology.md` under `docs/` from this file's

@@ -76,12 +76,24 @@ If `docs/architecture/generate.py` does NOT exist:
 
 No generate.py found at docs/architecture/generate.py
 
-Would you like me to create a template based on your IMPLEMENTATION_PLAN.md?
+Would you like me to create one from what this project has deployed?
 ```
 
-Use AskUserQuestion. If yes:
-- Read `IMPLEMENTATION_PLAN.md` for architecture context
-- Create a starter `generate.py` with relevant components
+Use AskUserQuestion. If yes, establish the architecture in this source order, stopping at the
+first that answers:
+1. `resource_inventory` in progress.json, and the completed tasks that created the resources
+2. the project's own infrastructure-as-code — CDK, CloudFormation or Terraform under its declared path
+3. a live account inventory, where the account is reachable (`/check-aws` resolves the handle)
+4. `IMPLEMENTATION_PLAN.md` last, and only for the shape that was *originally intended*
+
+The diagram describes what exists, which is why the first three outrank the fourth. The
+specification is the Phase-0 origin record, frozen at approval: a diagram drawn from it shows a
+system that was planned, not one that is running, and nothing in the picture says which of the two
+a reader is looking at. The generated `docs/architecture/README.md` names the source actually used
+(step 7).
+
+Then:
+- Create a starter `generate.py` with the components that source gave
 - Include common AWS icons and cluster patterns
 
 ### 4. Run Generator
@@ -129,7 +141,14 @@ If `docs/architecture/README.md` doesn't exist, create it with:
 
 ## Overview
 
-[Architecture overview from IMPLEMENTATION_PLAN.md or brief summary]
+[Brief summary of the architecture shown]
+
+## Source
+
+[Which source this diagram was drawn from — `resource_inventory` and the completed tasks, the
+project's IaC, a live account inventory, or `IMPLEMENTATION_PLAN.md` as the originally intended
+shape — and the date it was drawn. A diagram drawn from the specification shows what was planned,
+not what runs.]
 
 ## Components
 
@@ -146,6 +165,11 @@ Requirements:
 - `pip3 install --break-system-packages diagrams`
 - `sudo apt-get install -y graphviz`
 ```
+
+If it already exists, leave its prose alone and refresh the **Source** section to name the source
+this run actually drew from, with today's date. A diagram carries no evidence of its own
+provenance: without that line a picture drawn from the Phase-0 specification and a picture drawn
+from the live account are the same PNG to every reader who opens it.
 
 ---
 

@@ -81,7 +81,8 @@ existing item when it can represent the issue coherently.
 Terminal tasks — complete, closed, superseded, dropped or cancelled — are immutable historical
 references. Do not rewrite their scope, outcome, verification or evidence. Create or modify open
 work for later action and link back when the history matters. Git preserves prior versions; the
-live record must preserve what was declared complete.
+live record must preserve what was declared complete. The same principle governs the approved
+specification, under *The specification is an origin record* in § 11.
 
 ## 5. Make phases converge
 
@@ -217,6 +218,35 @@ does not exist. The two are different facts, and reporting them as one hides the
 Each project owns its own record, and no other repository writes it. A finding raised centrally
 arrives as an appended notice for this project to verify and act on — never as an edit made from
 outside.
+
+### The specification is an origin record
+
+The specification written and approved before implementation opens is an origin record: evidence
+of what was intended and what was agreed. It stops being a statement of what exists the moment the
+first implementation phase opens. From then on the tracked-work record, the task files and the
+project's entry document carry what is true now.
+
+Where they disagree the tracked record governs, and the specification is not edited to match. The
+divergence is the history. It is the only surviving evidence of what was agreed before the work
+changed it, and a specification quietly rewritten to today's shape reads exactly like one that was
+right all along, so the reader loses both facts at once. A session establishing current truth —
+what exists, what the architecture is, what remains — reads the tracked record and the live
+system, never the specification. Amending an approved specification is an operator decision, not
+ordinary work.
+
+Measured across the estate, 2026-09-20: 21 of the 34 projects reached carry such a specification
+(22 checkouts — one project is held on both hosts), and the widest gap between its last change and
+the tracked record's was 254 days. Of seven examined closely, three carried an explicit historical
+banner, one carried an approval line alone and three carried nothing about their own standing — so
+in four cases a reader could not tell from the file which kind of document it was holding.
+
+What the banner is worth, and what it is not, was measured in the same pass. One of the three
+labelled specifications still gives, in the present tense and deep in the document, the resizing
+and stopping of a compute instance that the same project's tracked record shows deleted a phase
+earlier — instance identifier included. Its head matter is the only thing standing between a
+reader and a command issued against a machine that no longer exists. That is the rule working, not
+an argument against it: a specification is not kept true by editing it, so what a project owes its
+readers is the label, and what an executor owes the project is to read the tracked record instead.
 
 ### Unattended operations
 
