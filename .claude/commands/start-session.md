@@ -489,7 +489,7 @@ if [ -d "$SECRETS" ]; then
   # two opposite answers. With `2>/dev/null` and no rc check, a python3 that exists but FAILS
   # (a broken install, a partial upgrade, an interpreter killed by the OOM killer) empties HOSTS
   # exactly as a machine with no host config does, and this step then prints the all-clear for a
-  # correct state while the configured hosts were never asked. lib/estate-reach.sh:211-216 makes
+  # correct state while the configured hosts were never asked. lib/estate-reach.sh (estate_read_workspaces) makes
   # this same argument for the same reason and propagates rc; the defaults did not.
   HOSTS=$(python3 - "$SECRETS" <<'PY' 2>/tmp/secrets-parse.err
 import json, os, sys
