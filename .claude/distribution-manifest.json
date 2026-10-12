@@ -1,10 +1,10 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-10-12T11:05:47Z",
-  "canonical_commit": "f69b19da32b4fcea0c8e2b3ffcc8a518fdfb92ac",
+  "written_at": "2026-10-12T17:29:38Z",
+  "canonical_commit": "d69460c7ed91f26114ccb144051a6f38a5d209cf",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
-    ".claude/commands/check-aws.md": { "sha256": "04f39d7fd371c2040b806ab397e3413718fb274f709a2a719e8fd44d0f119f98", "source": "canonical" },
+    ".claude/commands/check-aws.md": { "sha256": "fd8d56a585e46104c2f6e251fa4cc11718ae247fc2f341e518373017541c56d5", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "cf40729a0c8f9a7d321e83b8ff8d0dde63e0a4d6178a1ee2c395237d37276d55", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "9a9e75885276aa4cf0271bb60c4d3d19d49f9aba2be48327edf66ed2b7d706cf", "source": "canonical" },
     ".claude/commands/repo-hygiene.md": { "sha256": "a7b9417f698982de50a4aa10ff5440a23db973ed9d7b7cad06cfacea8c1e09e8", "source": "canonical" },

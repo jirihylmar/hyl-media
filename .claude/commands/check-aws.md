@@ -1,7 +1,7 @@
 ---
 description: Verify AWS resources for this project (project)
 allowed-tools:
-  - Read
+  - Bash(grep -aHoE:*)
   - mcp__aws-*__call_aws
 ---
 
@@ -107,45 +107,80 @@ list written down anywhere, including this file.** The set differs per machine a
 | Identity, `Account` **!=** `aws_account` | per-account, wrong one | Say which account it hit. Next candidate. |
 | Error: no credentials / no default account | **central** | Not broken — this is the central model. Find the profile that reaches your account (below). |
 | Error: unknown tool | not on this host | Next candidate. |
+| Error: `Unable to parse config file: <path>` | either | Stop probing: that file is malformed (§ the gaps after the report). |
 
 **Central server — match a profile by account number, never by name:**
 
-First, list the profiles this host actually has. **Read BOTH `$HOME/.aws/config` and
-`$HOME/.aws/credentials`** (with the Read tool — `Read` is in this command's `allowed-tools` for
-exactly this). Take the names from `config`'s `[profile <name>]` headers **and** from `credentials`'
-`[<name>]` section headers, and use the union.
+First, list the profiles this host actually has — **names only, from the section headers of both
+files**, with this one local command (run it with Bash on this host, never through the AWS
+connection):
+
+```bash
+grep -aHoE '^\[[^][:cntrl:]]*\]' ~/.aws/config ~/.aws/credentials
+```
+
+Each output line is `<file>:[<header>]` and nothing more: `-o` prints only the bracketed header,
+never the rest of its line, and the pattern matches only a header that starts its line, so an
+indented continuation value cannot match (an indented header is not listed either — if a profile
+you expect is missing, say so in the report). `-a` keeps a file with a stray binary byte from being
+skipped without a word; it widens nothing, because `-o` and the bracket class still stop at `]`.
+Take the names per file:
+
+- from `…/config`: `[default]` is the profile `default`, `[profile <name>]` is the profile `<name>`,
+  and any other section (`[sso-session …]`, `[services …]`) is not a profile;
+- from `…/credentials`: every `[<name>]` is the profile `<name>`, exactly as written.
+
+Use the union. **Decide by the error lines, not the exit code** — grep exits 2 whenever it reports
+one. `No such file` for a file means that file holds no profiles; use the other file's headers. Any
+other error for a file (`Permission denied`, `cannot read`, `Is a directory`, `binary file matches`),
+or an output path *below* `…/config/` or `…/credentials/`, means that file was **not listed** — and
+the connection, which runs as root, may still read it. Probe the names you have; if none reaches the
+account, the gap is *could not look* (below), never *no profile reaches it*. The listing reads `~/.aws`
+because that is what this estate's AWS connection reads (its container mounts the host's `~/.aws`);
+a shell variable such as `AWS_CONFIG_FILE` does not change what the connection sees, so do not
+follow one.
+
+> **This command is the only way this step touches either file.** Do not view, page, print, parse or
+> copy them any other way — not with Read, `cat`, `less`, `head`, `tail`, `sed`, `awk`, `rg`, `nl`, a
+> `grep` without `-o`, a script, or `aws configure get` / `export-credentials`. Under every header in
+> `credentials` sits an `aws_secret_access_key`, and `config` can hold keys too; anything that shows
+> the file shows those values, and a value that reaches the conversation stays in the transcript on
+> disk. **If the command is refused or cannot run, report the gap (§ below) and stop** — never fall
+> back to opening the file another way. This step used to prescribe the Read tool here while also
+> saying never to read a value, an instruction nobody could follow. Measured 2026-10-12: on one
+> workstation 12 transcripts held a current secret key, covering 18 of its 22 profiles; wherever the
+> cause was visible, an agent had printed the file — Read, `cat`, or a `grep` with context lines —
+> while looking for a profile name.
 
 > **Both files, or you will report a reachable account as unreachable.** A profile whose keys live in
 > `credentials` with no matching `config` stanza is completely valid and works — `config` carries
-> region and settings, not existence. Measured on one workstation: `config` had **5** profile headers,
-> `credentials` had **29**, so **24** profiles were invisible to a config-only listing — including the
-> organization-management credential that had demonstrably run `organizations create-account` from
-> that machine. Two profiles backing *working* MCP servers were among the 24.
+> region and settings, not existence. Measured on one workstation, 2026-08-02: `config` had **5**
+> profile headers, `credentials` had **29**, so **24** profiles were invisible to a config-only
+> listing — including the organization-management credential that had demonstrably run
+> `organizations create-account` from that machine. Two profiles backing *working* MCP servers were
+> among the 24.
 >
 > Do not "fix" this by writing the missing stanzas. Profiles arrive by many routes — the console, SSO,
 > another machine, a provisioning script, by hand — so no single writer can be corrected into
-> covering them all. **Enumerate both files here**, which is correct however the profile was born.
-> **Never read a key, a secret, or a token value out of either file** — you want section *names*.
+> covering them all. **Listing both files' headers** is correct however the profile was born.
 
-> **Read it, never write it.** You are reading a list of *names* to find which one reaches your
-> account. `/check-aws` never modifies AWS configuration, never adds a profile, and never edits
-> `~/.aws/*`. If the profile you need does not exist on this host, that is a host-configuration gap —
-> **report it** (§ below); creating it is the operator's call, not yours.
+> **List the names; never write the files.** You are matching a list of *names* to find which one
+> reaches your account. `/check-aws` never modifies AWS configuration, never adds a profile, and never
+> edits `~/.aws/*`. If the profile you need does not exist on this host, that is a host-configuration
+> gap — **report it** (§ below); creating it is the operator's call, not yours.
 >
-> **Why the file, and not a command:** profile names are per-host and unguessable — the same account
-> is `vsb-182` on one machine and `HylmarJ` on another, with no rule connecting them — so the name
-> cannot live in `progress.json` (which travels to every host). And you cannot ask AWS: the MCP
-> server validates commands against the AWS service model and rejects `aws configure` outright
-> (`ServiceNotAllowedError: The given service name is not allowed: configure`). The names live in a
-> config file, so the file is where you read them.
+> **Why the files' headers, and not the connection:** profile names are per-host and unguessable —
+> the same account is `vsb-182` on one machine and `HylmarJ` on another, with no rule connecting
+> them — so the name cannot live in `progress.json` (which travels to every host). And the AWS
+> connection cannot list them, as the next callout records.
 
 > **Do NOT ask the AWS connection to list profiles.** `aws configure list-profiles` is **rejected
 > before it runs** — the MCP server validates every command against the AWS service model and
 > `configure` is not a service: `ServiceNotAllowedError: The given service name is not allowed:
 > configure`. Verified on multiple connections. An earlier draft of this step prescribed exactly
 > that command, which dead-ended the *only* resolution path the remote box can use and would have
-> produced a false *"account not reachable"* report there. Profiles live in a **config file**, so
-> read the file.
+> produced a false *"account not reachable"* report there. Profiles live in the **config files'
+> section headers**, so list the headers locally, as above.
 
 Then, for each profile until one matches:
 
@@ -170,11 +205,41 @@ This project's AWS account {aws_account} is not reachable from this host.
   Host model:  per-account servers  (or: one central server)
   Tried:       {each candidate/profile and what it returned}
   Gap:         no server is bound to {aws_account}
-               (central model: no profile in ~/.aws/config OR ~/.aws/credentials reaches it)
+               (central model: no listed profile in ~/.aws/config OR ~/.aws/credentials reaches it)
 
 This is a host-configuration matter, not something to work around. Either the account
 belongs on another host — run /check-aws where it lives — or this host is missing the
 server/profile, which is the operator's call to add.
+```
+
+Two other outcomes are **not** "unreachable" and get their own report, because their remedy differs.
+
+*Could not look* — the listing was refused or could not run, a file was not listed (error lines
+above), or every profile listed from one file comes back *could not be found* through the connection
+(it cannot see that file — for example a symlink pointing outside `~/.aws`, which the container
+mount does not follow):
+
+```
+Could not determine whether {aws_account} is reachable from this host.
+
+  Host model:  one central server
+  Tried:       {each candidate/profile and what it returned}
+  Gap:         could not look — {the listing was refused | <file>: <error line>}
+
+Allow the listing command (or make the file readable) and re-run /check-aws.
+```
+
+*Malformed* — a probe returned `Unable to parse config file: <path>`. The path may be the
+connection's own view (such as `/aws/config`); it is this host's `~/.aws/<same file>`:
+
+```
+{file} cannot be parsed by the AWS connection, so no profile can be resolved on this host.
+
+  Host model:  {model}
+  Tried:       {the probe that returned the parse error}
+  Gap:         malformed file — {file}
+
+Repairing it is the operator's call; re-run /check-aws afterwards.
 ```
 
 Same answer the framework gives for a repo that lives on the other machine: **do the work where the
