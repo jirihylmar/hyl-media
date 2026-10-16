@@ -114,6 +114,86 @@ while IFS= read -r -d '' path; do
 done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
 
 # ---------------------------------------------------------------------------
+# Skill naming — a NEW skill or command this project creates ends in -<project code>.
+#
+# A project's .claude/skills/, .agents/skills/ and .claude/commands/ mix what arrives by
+# distribution with what the project wrote itself, and Claude Code lists both as skills beside
+# the ones its installation brings. The operator's rule (2026-10-16): a project's own skill names
+# its project code as a SUFFIX — "user starts typing and want hits not repeating prefix" — so the
+# skill's own name completes first and the ending says whose it is (corpus-doctor-mt).
+#
+# Scoped like the artifact guard: only NEWLY ADDED skills are checked. Existing skills are never
+# flagged and never renamed (operator: new skills respect the convention; no estate-wide rename).
+# The code is declared once in .claude/project-code (index copy if staged, else working tree).
+#
+# DISTRIBUTED_NAMES is the set this guard ships with. scripts/test-skill-naming.sh in
+# syndicate-playbooks-examples pins it to the _project-template directory listing and fails the
+# distribution preflight when they differ, so a new central skill can never be refused by the
+# guard it is delivered with. `syndicate-*` is the central namespace (docs/terminology.md).
+# ---------------------------------------------------------------------------
+DISTRIBUTED_NAMES=" add-work check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases open-work overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-refresh-remote unattended-check update-progress "
+
+project_code() {
+  local raw=""
+  if git diff --cached --name-only -- .claude/project-code 2>/dev/null | grep -q .; then
+    raw="$(git show ":.claude/project-code" 2>/dev/null)"
+  elif [ -f .claude/project-code ]; then
+    raw="$(cat .claude/project-code 2>/dev/null)"
+  fi
+  printf '%s' "$raw" | head -n1 | tr -d ' \t\r'
+}
+
+naming_violations=""
+naming_code="$(project_code)"
+naming_code_ok=0
+printf '%s' "$naming_code" | grep -qE '^[a-z][a-z0-9]{1,7}$' && naming_code_ok=1
+while IFS= read -r -d '' path; do
+  name=""; parent=""
+  case "$path" in
+    .claude/skills/*/SKILL.md|.agents/skills/*/SKILL.md)
+      parent="${path%/SKILL.md}"; name="${parent##*/}"
+      case "${parent%/*}" in .claude/skills|.agents/skills) ;; *) continue ;; esac ;;
+    .claude/commands/*.md)
+      name="${path#.claude/commands/}"; case "$name" in */*) continue ;; esac
+      parent="$path"; name="${name%.md}" ;;
+    *) continue ;;
+  esac
+  # It existed before this commit (a re-add, a rename inside the directory): not a new skill.
+  git cat-file -e "$BASE:$parent" 2>/dev/null && continue
+  case "$DISTRIBUTED_NAMES" in *" $name "*) continue ;; esac
+  case "$name" in syndicate-*) continue ;; esac
+  if [ "$naming_code_ok" = 1 ]; then
+    case "$name" in *-"$naming_code") continue ;; esac
+    naming_violations="${naming_violations}  ${path}  (new skill '${name}' — name it '${name}-${naming_code}')
+"
+  else
+    naming_violations="${naming_violations}  ${path}  (new skill '${name}' — this project has no valid .claude/project-code yet)
+"
+  fi
+done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
+
+if [ -n "$naming_violations" ]; then
+  {
+    echo "COMMIT BLOCKED by .claude/hooks/pre-commit — skill naming."
+    printf '%s' "$naming_violations"
+    echo ""
+    echo "A skill (or command) this project creates ends in its project code, so a reader can"
+    echo "tell it from distributed skills and from ones the Claude installation brings. The"
+    echo "code is a SUFFIX: the skill's own name stays first, so typing it still finds it."
+    if [ "$naming_code_ok" = 1 ]; then
+      echo "This project's code is '${naming_code}' (.claude/project-code)."
+    else
+      echo "Declare the code once — one line, 2-8 lowercase letters/digits, starting with a"
+      echo "letter, usually the repo name's initials (models-trainer -> mt):"
+      echo "  printf 'mt\\n' > .claude/project-code && git add .claude/project-code"
+    fi
+    echo "Existing skills are never flagged; only new ones. Rule: PROJECT_CHARTER.md § 12."
+    echo "Override (audited): git commit --no-verify"
+  } >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # progress.json integrity — runs ONLY when progress.json is staged.
 #
 # Scoped to the moment of writing, deliberately: a project whose file is ALREADY

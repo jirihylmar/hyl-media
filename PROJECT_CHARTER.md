@@ -324,7 +324,8 @@ point, enforce it mechanically, or remove the conflict.
 
 ### A skill this project creates says so in its name
 
-When the mechanism this project needs is a new skill, name it `<name>-<code>`: its own name first,
+When the mechanism this project needs is a new skill — or a new command under `.claude/commands/`,
+which Claude Code lists as a skill too — name it `<name>-<code>`: its own name first,
 so typing it finds it, then this project's code, so a reader of `.claude/skills/` can tell it from
 the skills that arrive by distribution and from the ones a Claude installation brings. The code is
 declared once in `.claude/project-code` — one line, 2-8 lowercase letters or digits, starting with
