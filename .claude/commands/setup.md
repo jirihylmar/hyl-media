@@ -156,7 +156,8 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
 
 **Update progress.json:**
 - **Substitute every `{{PLACEHOLDER}}` the copied file carries** — `{{PROJECT_NAME}}`,
-  `{{PROJECT_DESCRIPTION}}`, `{{CREATION_DATE}}` and `{{PROJECT_EXECUTOR}}`. Default the display
+  `{{PROJECT_DESCRIPTION}}`, `{{CREATION_DATE}}` and `{{PROJECT_EXECUTOR}}` (`Claude` unless the
+  operator chose Codex — Claude is the default executor, Codex an option). Default the display
   name to **the repository name**: § 2b already makes folder = repo = origin a rule, so the repo
   name is unique at the hosting provider and this inherits that uniqueness for free. The
   description is one sentence saying what the project is for — it is the only project-level prose

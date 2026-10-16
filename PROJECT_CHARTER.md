@@ -322,6 +322,15 @@ problem fix includes a way to measure whether behaviour changed.
 A repeatedly violated rule is not defended because it was documented. Move it to the failure
 point, enforce it mechanically, or remove the conflict.
 
+### A skill this project creates says so in its name
+
+When the mechanism this project needs is a new skill, name it `<name>-<code>`: its own name first,
+so typing it finds it, then this project's code, so a reader of `.claude/skills/` can tell it from
+the skills that arrive by distribution and from the ones a Claude installation brings. The code is
+declared once in `.claude/project-code` — one line, 2-8 lowercase letters or digits, starting with
+a letter — and is this project's own file. The commit guard refuses a newly added skill without
+the suffix and says how to declare the code; skills that existed before the rule are not renamed.
+
 ## 13. Definition of complete
 
 Work is complete only when the promised outcome is achieved; acceptance checks pass; affected

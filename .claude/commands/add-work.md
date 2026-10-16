@@ -123,7 +123,7 @@ from the central repo, never written from here.
 
 **For every approved phase or task, collect two identities before proposing it:**
 
-- `authored_by` — who wrote the progress entry (for example `Codex`, `Claude`, or a person's name)
+- `authored_by` — who wrote the progress entry (for example `Claude`, `Codex`, or a person's name)
 - `assigned_to` — whose job execution is; this may differ from the author
 
 Use stable executor names, not a transient model/version string. These are provenance and
@@ -231,8 +231,8 @@ Add these to progress.json?
   "size": "small",
   "verify": "verification step",
   "added_reason": "From [source] - [context]",
-  "authored_by": "Codex|Claude|person",
-  "assigned_to": "Codex|Claude|person"
+  "authored_by": "Claude|Codex|person",
+  "assigned_to": "Claude|Codex|person"
 }
 ```
 
@@ -242,8 +242,8 @@ Add these to progress.json?
 "phase_4_featurename": {
   "name": "Feature Name",
   "status": "pending",
-  "authored_by": "Codex|Claude|person",
-  "assigned_to": "Codex|Claude|person",
+  "authored_by": "Claude|Codex|person",
+  "assigned_to": "Claude|Codex|person",
   "tasks": [
     {"id": "4.1", "name": "...", "status": "pending", "authored_by": "...", "assigned_to": "...", ...},
     {"id": "4.2", "name": "...", "status": "pending", "authored_by": "...", "assigned_to": "...", ...}
