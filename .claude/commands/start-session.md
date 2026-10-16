@@ -89,8 +89,8 @@ your reasoning first. A report they have to decode is a report that has not been
 > not the operator's workstation or the box, it is **not in the distribution topology** —
 > `/distribute-defaults` never reaches it, so its defaults are current only as often as it refreshes
 > *itself* (`git pull` the examples clone, then run `scripts/distribute-defaults.sh --apply --commit`
-> locally). Stale defaults here are expected, not a fault. Full lifecycle: README § *Running on an
-> independent / third-party remote*, and the `syndicate-connect` skill. Reporting knowledge from such
+> locally). Stale defaults here are expected, not a fault. Full lifecycle: the onboarding kit,
+> `syndicate-playbooks-examples/docs/foreign-machine-onboarding.md`, and the `syndicate-connect` skill. Reporting knowledge from such
 > a host is the `ingest` route (§ that skill), never inbound SSH.
 
 **Which machine you are running on is not knowable from this file.** Every default command ships

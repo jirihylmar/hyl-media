@@ -60,8 +60,9 @@ the box. Two facts follow, and an agent here should act on them without waiting 
    bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply --commit
    ```
    This updates every project under `$HOME` (overlay-aware, scoped commits). Re-running
-   `/setup-workflow-only` does **not** refresh commands — this engine run does. Full lifecycle:
-   README § *Running on an independent / third-party remote*.
+   `/setup-workflow-only` does **not** refresh commands — this engine run does. Full lifecycle — git access,
+   this inbox route, the dashboard, staying current: the onboarding kit,
+   `syndicate-playbooks-examples/docs/foreign-machine-onboarding.md`.
 
 If this host is stuck on a stale delivery route (e.g. it still tries `scp`/`box.json` and spools),
 the fix is that refresh — it pulls in the current `/update-progress` that knows the `ingest` route —
