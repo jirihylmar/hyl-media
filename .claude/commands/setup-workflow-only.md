@@ -103,7 +103,7 @@ Commands should already be copied (per README instructions). Verify and copy if 
 > `/setup-workflow-only` on a project that already has commands leaves them as they are. To *update*
 > an existing project's defaults on a host that distribution does not reach (an independent remote),
 > run the engine locally: `bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply
-> --commit` (the onboarding kit, `syndicate-playbooks-examples/docs/foreign-machine-onboarding.md` § 5). The skills copy below is
+> --commit` (`syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*, step 5). The skills copy below is
 > unconditional precisely because a missing skill silently breaks § 4.4 and the open-work render.
 
 ```bash
