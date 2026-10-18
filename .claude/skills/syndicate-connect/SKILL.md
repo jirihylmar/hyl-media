@@ -46,27 +46,22 @@ only requirement, so it works behind any firewall.
 | `1` | usage error, or an environment that cannot work (`$HOME` on a Windows mount, sudo, no `curl`, no/`http` URL) |
 | `3` | token rejected, or endpoint unreachable — **nothing written** |
 
-## If you are an independent / third-party remote
+## If this machine is outside the syndicate
 
-You are one if this machine **cloned the examples itself** and is not the operator's workstation or
-the box. Two facts follow, and an agent here should act on them without waiting for chat:
+It is if it joined with `join-syndicate.sh` (it has `~/.local/bin/syndicate-join`) and is not the
+operator's workstation or the box. Two facts follow, and an agent here should act on them without
+waiting for chat:
 
 1. **`/distribute-defaults` never reaches you** — updates do not arrive on their own. If your command
    or skill files look older than the operator's, that is expected, not broken.
-2. **You refresh yourself** by running the engine locally from your examples clone (same engine the
-   operator uses, just run by you):
-   ```bash
-   cd ~/syndicate-playbooks-examples && git pull
-   bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply --commit
-   ```
-   This updates every project under `$HOME` (overlay-aware, scoped commits). Re-running
-   `/setup-workflow-only` does **not** refresh commands — this engine run does. Full lifecycle — git access,
-   this inbox route, the dashboard, staying current: the onboarding kit,
+2. **You refresh yourself** with one command in a WSL terminal: `syndicate-join` (and
+   `syndicate-join --check` to see whether everything is current, changing nothing). It also sets up
+   this inbox route, so on such a machine you do not run `connect.sh` by hand. Do not run
+   `distribute-defaults.sh` yourself; it is the operator's tool. Full lifecycle:
    `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*.
 
 If this host is stuck on a stale delivery route (e.g. it still tries `scp`/`box.json` and spools),
-the fix is that refresh — it pulls in the current `/update-progress` that knows the `ingest` route —
-followed by the `connect.sh` command above.
+the fix is that refresh: it brings the current `/update-progress`, which knows the `ingest` route.
 
 ## What retired with the SSH model
 

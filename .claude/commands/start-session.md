@@ -85,13 +85,11 @@ your reasoning first. A report they have to decode is a report that has not been
 
 ## Two Environments (this file ships to both — nothing in it may assume one)
 
-> **A third environment: the independent remote.** If this machine cloned the examples itself and is
-> not the operator's workstation or the box, it is **not in the distribution topology** —
-> `/distribute-defaults` never reaches it, so its defaults are current only as often as it refreshes
-> *itself* (`git pull` the examples clone, then run `scripts/distribute-defaults.sh --apply --commit`
-> locally). Stale defaults here are expected, not a fault. Full lifecycle: the onboarding kit,
-> `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*, and the `syndicate-connect` skill. Reporting knowledge from such
-> a host is the `ingest` route (§ that skill), never inbound SSH.
+> **A third environment: a machine outside the syndicate.** `/distribute-defaults` never reaches it;
+> its person runs `syndicate-join` in a WSL terminal, which updates every project there
+> (`syndicate-join --check` shows whether they are current). Defaults older than the operator's are
+> therefore expected there, not a fault. Its knowledge goes by the `ingest` route, never inbound
+> SSH. Full lifecycle: `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*.
 
 **Which machine you are running on is not knowable from this file.** Every default command ships
 unchanged to two environments — the local workstation and the remote dev box — and they differ in

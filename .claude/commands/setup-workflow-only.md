@@ -101,10 +101,10 @@ Commands should already be copied (per README instructions). Verify and copy if 
 
 > **This copies commands only when they are ABSENT — it is not a refresh.** Re-running
 > `/setup-workflow-only` on a project that already has commands leaves them as they are. To *update*
-> an existing project's defaults on a host that distribution does not reach (an independent remote),
-> run the engine locally: `bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply
-> --commit` (`syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*, step 5). The skills copy below is
-> unconditional precisely because a missing skill silently breaks § 4.4 and the open-work render.
+> an existing project's defaults on a machine outside the syndicate, run `syndicate-join` in a WSL
+> terminal (`syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*). The skills
+> copy below is unconditional precisely because a missing skill silently breaks § 4.4 and the
+> open-work render.
 
 ```bash
 if [ ! -d ".claude/commands" ] || [ -z "$(ls .claude/commands/ 2>/dev/null)" ]; then
