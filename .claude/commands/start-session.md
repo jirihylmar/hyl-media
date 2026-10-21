@@ -83,7 +83,7 @@ your reasoning first. A report they have to decode is a report that has not been
 
 ---
 
-## Two Environments (this file ships to both — nothing in it may assume one)
+## Two Environments (this file ships to every host — nothing in it may assume one)
 
 > **A third environment: a machine outside the syndicate.** `/distribute-defaults` never reaches it;
 > its person runs `syndicate-join` in a WSL terminal, which updates every project there
@@ -91,9 +91,17 @@ your reasoning first. A report they have to decode is a report that has not been
 > therefore expected there, not a fault. Its knowledge goes by the `ingest` route, never inbound
 > SSH. Full lifecycle: `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*.
 
+> **A member host: the operator's own machine, reached only from the workstation.** Some remote hosts
+> answer only while the operator has connected a VPN on the workstation; their host file there says
+> so in `requires`. Projects the operator places on one live and run there, and are developed there
+> like the box's. Three things differ from the box: its `HOME` may be the **same path** as the
+> workstation's, so `HOME` tells you nothing about where you are; it holds no host files of its own
+> and reaches no other host; and while the VPN is down Step 2.5 reports it *not checked*, never
+> *no copy there*. Which project goes on which member host is the operator's decision.
+
 **Which machine you are running on is not knowable from this file.** Every default command ships
-unchanged to two environments — the local workstation and the remote dev box — and they differ in
-ways that matter:
+unchanged to every host — the local workstation, the remote dev box and any member host (above) — and
+the first two differ in ways that matter:
 
 | | Local workstation | Remote dev box |
 |---|---|---|
@@ -474,6 +482,11 @@ REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/com
 # `box.json`, named for one machine that no longer exists; naming its successor would just move the
 # problem. Emits "user host" per line — nothing else in this block knows a filename.
 #
+# One OPTIONAL field rides along: `requires`, a plain phrase naming a link the host is reachable
+# only through (e.g. "school VPN"). It is not part of the predicate — a file without it is a host
+# exactly as before — and it changes one thing only: whether the probe below first checks, in ~1 s,
+# that the link is up. It is the LAST column so that an absent one reads as an empty field.
+#
 # CRITICAL: "I could not ask" is NOT "the host does not have it". These configs are a LOCAL
 # WORKSTATION artifact — this machine's pointer TO a host. Run this step ON that host and they are
 # correctly absent. Collapsing that into an empty list is what made a correct state report a blocker.
@@ -505,7 +518,8 @@ for n in sorted(os.listdir(d)):
         if len(got) < 4: bad += 1; continue        # host-shaped and unusable — say so, do not ignore
         if o["host"] in seen: continue             # one machine described twice is still one machine
         seen.add(o["host"])
-        print("%s\t%s\t%s" % (o["user"], o["host"], os.path.expanduser(o["ssh_key"])))
+        req = " ".join(str(o.get("requires") or "").split())   # one line, no tabs: it is a column
+        print("%s\t%s\t%s\t%s" % (o["user"], o["host"], os.path.expanduser(o["ssh_key"]), req))
 print("BAD\t%d\t-" % bad)
 PY
 )
@@ -521,12 +535,71 @@ PY
   fi
 fi
 
+# A HOST THAT DECLARES `requires` IS ONLY THERE WHILE THAT LINK IS UP — and when it is down, TCP 22
+# is FILTERED: no refusal, no reply, so the ssh below sits out its whole ConnectTimeout. Measured
+# 2026-10-21 against a black-holed address: 15.0 s for ONE host, at the start of every session in
+# every project on this machine. So such a host first gets a TCP connect to the address ssh itself
+# would dial (`ssh -G` resolves the alias to its effective HostName and Port), bounded at ~1 s.
+#
+# The check can only SKIP a probe, and only on evidence: rc 3 = the connect failed (timed out,
+# unreachable, or the name did not resolve), rc 4 = the whole check outran 1.5 s — a stalled name
+# lookup, or several addresses each timing out. Every other outcome probes
+# exactly as before: a REFUSED connect is an answer from the far side, so the link is up and ssh
+# reports the refusal itself in milliseconds; a host ssh reaches through a ProxyJump/ProxyCommand
+# has no dial target this check can judge; and a check that could not run is not evidence. python3
+# because this block already cannot run without it (the parser above) — no `timeout`, no `nc`.
+#
+# THE DEADLINE IS A THREAD JOIN, NOT A SIGNAL. The dial runs in a daemon thread and the main thread
+# leaves through os._exit at 1.5 s whatever it is doing, which bounds getaddrinfo too; a socket
+# timeout does not, and a Python SIGALRM handler cannot either (it waits for the lookup to come
+# back, and glibc's resolver retries the interrupted poll). It used to be SIGALRM's default action:
+# the bound was right, but the process died of a signal and bash reported it — a multi-line
+# "Alarm clock" job message, with the whole program below quoted under it, on every session start
+# that hit a stalled lookup. An exit code says the same thing and the shell has nothing to report.
+link_down() {  # $1 = user@host as ssh sees it
+  local G HN PT
+  G=$(ssh -G "$1" </dev/null 2>/dev/null) || return 1
+  printf '%s\n' "$G" | awk '($1=="proxyjump"||$1=="proxycommand") && $2!="none"{p=1} END{exit !p}' \
+    && return 1
+  HN=$(printf '%s\n' "$G" | awk '$1=="hostname"{print $2; exit}')
+  PT=$(printf '%s\n' "$G" | awk '$1=="port"{print $2; exit}')
+  [ -n "$HN" ] || return 1
+  python3 - "$HN" "${PT:-22}" <<'PY'
+import os, socket, sys, threading
+done, rc = threading.Event(), [1]          # 1 = the check itself failed: not evidence, probe
+def dial():
+    try:
+        socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=1).close(); rc[0] = 0
+    except ConnectionRefusedError:
+        rc[0] = 0
+    except OSError:
+        rc[0] = 3
+    finally:
+        done.set()
+threading.Thread(target=dial, daemon=True).start()
+os._exit(rc[0] if done.wait(1.5) else 4)
+PY
+  case $? in 3|4) return 0 ;; *) return 1 ;; esac
+}
+
 # Ask EVERY configured host. ASKED counts the ones that answered, TOTAL the ones we meant to ask —
-# their difference is the whole reason UNKNOWN exists below.
-REMOTELIST=""; TOTAL=0; ASKED=0
-while IFS=$'\t' read -r U H K; do
+# their difference is the whole reason UNKNOWN exists below. UNCHECKED counts the ones that declare
+# a link and could not be connected to from here, so they were never asked: they are part of that
+# difference, not a "no".
+#
+# The skip line states only what the check saw — no connection from this machine — and names the
+# link the config declares. It does NOT say the link is down: a name that resolves only over the
+# VPN, or a VM that is powered off while the VPN is up, fails the same connect, and "school VPN not
+# connected" would then send the operator to fix a link that is working.
+REMOTELIST=""; TOTAL=0; ASKED=0; UNCHECKED=0
+while IFS=$'\t' read -r U H K R; do
   [ -z "${H:-}" ] && continue
   TOTAL=$((TOTAL+1))
+  if [ -n "${R:-}" ] && link_down "$U@$H"; then
+    UNCHECKED=$((UNCHECKED+1))
+    echo "HOST $H not checked: no connection to it from here within 1.5 s (it requires: $R) — its repos are NOT in this probe."
+    continue
+  fi
   # -n is mandatory: without it the first ssh consumes the remaining host rows as its own stdin.
   #
   # THE TRAILING `; :` IS LOad-BEARING, NOT TIDINESS. A `for` loop exits with the status of its
@@ -559,14 +632,28 @@ if [ "${BAD:-0}" -gt 0 ]; then
   echo "HOST CONFIG UNUSABLE: $BAD file(s) in \$HOME/.syndicate-remote-secrets are host-shaped but empty, unparseable, or missing host|user|workspace|ssh_key. Those hosts were NOT asked; fix or remove them."
 fi
 
+# The hosts not heard from are TWO facts, and the verdict keeps them apart. SILENT were asked and
+# gave no answer; UNCHECKED were never asked, because the connect their declared link needs failed
+# from here. Both widen UNKNOWN below exactly alike, but only a SILENT host "did not answer": a
+# verdict that says "unreachable — none answered" of hosts it never tried reports a probe that did
+# not run. With no UNCHECKED host the wording is the one it always was.
+SILENT=$((TOTAL-ASKED-UNCHECKED))
+NC="$UNCHECKED not checked (never asked: no connection from here)"
 if   [ "${BAD:-0}" -gt 0 ] && [ "$TOTAL" = 0 ]; then
   PROBE="unavailable — $BAD host config(s) present but unusable (treat as no host configured; fix or remove them)"
 elif [ "$TOTAL" = 0 ]; then
   PROBE="unavailable — no host configured (this may BE the host, or a machine that syncs with none)"
 elif [ "${BAD:-0}" -gt 0 ]; then
   PROBE="partial — asked $ASKED of $TOTAL readable host(s), and $BAD further config(s) are unusable so those hosts were never asked"
+  [ "$UNCHECKED" -gt 0 ] && PROBE="$PROBE; $NC"
 elif [ "$ASKED" = "$TOTAL" ]; then
   PROBE="ok — asked $ASKED of $TOTAL configured host(s)"
+elif [ "$UNCHECKED" = "$TOTAL" ]; then
+  PROBE="not checked — none of $TOTAL configured host(s) was asked: each requires a link, and none could be connected to from here"
+elif [ "$UNCHECKED" -gt 0 ]; then
+  [ "$ASKED" = 0 ] && PROBE="unreachable" || PROBE="partial"
+  [ "$SILENT" -gt 0 ] && NC="$SILENT did not answer; $NC"
+  PROBE="$PROBE — $ASKED of $TOTAL configured host(s) answered; $NC; anything not found may live on a host this probe did not hear from"
 elif [ "$ASKED" = 0 ]; then
   PROBE="unreachable — none of $TOTAL configured host(s) answered"
 else
@@ -599,7 +686,7 @@ done
 | `local-only by policy` | It is one of the repos policy keeps off the remote host, and you are not on the machine that holds it. **Its absence is the intent.** | **Nothing.** This is a correct state, not a finding — do not surface it, do not "fix" it, and above all do not clone it here. If your task genuinely needs it, that task belongs on the workstation, and *that* is what you say. |
 | `REMOTE (host)` | It lives on a configured host and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on that host** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the remote copy is the real one. |
 | `UNRESOLVABLE` | Not local, **and every configured host answered that it does not have it either.** Genuinely nowhere. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
-| `UNKNOWN` | Not local, and **at least one host could not be asked** — none is configured, or one did not answer. | **Report it; do not conclude anything.** You have no evidence about that host, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
+| `UNKNOWN` | Not local, and **at least one host could not be asked** — none is configured, one did not answer, or one was `not checked` because its config `requires` a link (a VPN, say) and this machine could not connect to it. | **Report it; do not conclude anything.** You have no evidence about that host, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
 
 > **Why `UNKNOWN` exists at all.** This step used to treat "the probe returned nothing" and "the probe
 > could not run" as the same answer. A host config is a **local workstation artifact** — this machine's
@@ -613,6 +700,19 @@ done
 > means some hosts answered and some did not: a repo found on none of them might still live on the
 > one that stayed silent, so it is `UNKNOWN`, never `UNRESOLVABLE`. `UNRESOLVABLE` requires that
 > **every** configured host was asked and every one said no.
+>
+> **A host that is only there over a link says so, and is then skipped in a second, not waited on
+> for fifteen.** A host config may carry `"requires": "<link>"` (e.g. `"school VPN"`). When this
+> machine cannot connect to such a host, the probe prints `HOST <host> not checked: no connection
+> to it from here within 1.5 s (it requires: <link>)` and moves on; the host was not asked, so a
+> repo that might live there is `UNKNOWN`. That line is a fact about this machine's network, not
+> about the host: never report it as the host lacking a copy, and never leave it out of the handoff
+> when work needs that host — name the link it requires, and say that the link being down is the
+> likeliest cause, not the only one (a name that resolves only over that link, or the host being
+> off, fail the same way). The verdict keeps the two kinds of silence apart: an asked host that
+> stayed silent `did not answer`; a skipped host is `not checked`; and when every configured host
+> was skipped the verdict is `not checked`, never `unreachable` — nothing was asked. With the link
+> up, the host is probed exactly like any other.
 
 > **The one thing you must never do:** treat a dead absolute path as an invitation to improvise. A
 > skill that says `/home/<user>/<repo>/…` for a repo that now lives on another host is **stale

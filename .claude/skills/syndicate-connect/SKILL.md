@@ -48,9 +48,10 @@ only requirement, so it works behind any firewall.
 
 ## If this machine is outside the syndicate
 
-It is if it joined with `join-syndicate.sh` (it has `~/.local/bin/syndicate-join`) and is not the
-operator's workstation or the box. Two facts follow, and an agent here should act on them without
-waiting for chat:
+It is if it joined with `join-syndicate.sh` (it has `~/.local/bin/syndicate-join`) and is not one of
+the operator's own hosts: the workstation, the remote dev box, or a member host (a machine of the
+operator's reached only from the workstation over a VPN). Two facts follow, and an agent here should
+act on them without waiting for chat:
 
 1. **`/distribute-defaults` never reaches you** — updates do not arrive on their own. If your command
    or skill files look older than the operator's, that is expected, not broken.

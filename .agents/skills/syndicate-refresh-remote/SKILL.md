@@ -1,6 +1,6 @@
 ---
 name: syndicate-refresh-remote
-description: Synchronize a syndicate project's repositories between the local workstation and managed remote using the established fast-forward-only procedure. Use when asked to refresh or reconcile remote checkouts; do not use for independent hosts outside the estate topology.
+description: Synchronize a syndicate project's repositories between the local workstation and managed remote using the established fast-forward-only procedure. Use when asked to refresh or reconcile remote checkouts; the remote dev box only; never for a member host reached over a VPN, and not for independent hosts outside the estate topology.
 ---
 
 # Refresh managed remote repositories
