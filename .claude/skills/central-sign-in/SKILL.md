@@ -69,7 +69,9 @@ password form, no user pool of its own, no shared or basic-auth password, no all
    - Not clear: ask the operator once, and record the answer next to the rule in `CLAUDE.md`.
 2. **Put the rule in this project's `CLAUDE.md`** if it is not there: replace an older copy of
    "Sign-in Comes From Central Access", keeping its number, or add it as the next Critical Rule.
-3. **Send the onboarding request** to the operator as one line with the fields the rule lists.
+3. **Send the onboarding request** to the operator as one line: start it with
+   `Central access onboarding request`, then the fields in the order the rule lists them. The
+   same line works as a reply when the central access session has messaged this one first.
    Write "the operator decides" or "the default" where you do not know; do not ask the operator
    field by field.
 4. **Wait for the join**, without building anything in the meantime: no password form, no user
