@@ -37,9 +37,9 @@ contract is stated in the charter once, for both executors; this file only enfor
 X.Z: <plain-language outcome>.` Then invoke tools for X.Z in the same response.
 
 For `TASK_BOUNDARY`, run Steps 1, 2, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped portion
-of Step 5. Defer Step 2b, the full session handoff in Step 5, Step 11, and Step 12 until an actual
-`SESSION_CLOSE`. This keeps publication reliable without making every commit pay the cost—or adopt
-the stopping posture—of ending a session.
+of Step 5. Defer Step 2b, Step 3c, the full session handoff in Step 5, Step 11, and Step 12 until an
+actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
+cost—or adopt the stopping posture—of ending a session.
 
 ## Ultra-Conservative Update Rules (CRITICAL)
 
@@ -61,6 +61,9 @@ the stopping posture—of ending a session.
   status flipping to `complete`, and nothing was permitted to flip it. Measured on one host as an
   **83-day lie** in the single source of truth — a phase sat `in_progress` with all 17 of its
   tasks complete since 2026-05-13, and future sessions kept re-reading it as live work.
+- **Rewrite or confirm the root `description` and set `description_reviewed` — but ONLY as the
+  review in Step 3c, never as a free edit.** `PROJECT_CHARTER.md` § 11 makes the sentence the
+  project's own and its sessions the ones who keep it true; Step 3c is where they do.
 
 **That list is closed, and appending to a catch-all array has never been on it.** Everything it
 permits is scoped to a *task* — a thing with an id, an owner, a verify step and a way of ending.
@@ -502,6 +505,59 @@ Then the sweeps:
 
 This is the incremental half of repo hygiene; the periodic full pass is `/repo-hygiene`
 (triggered by the clock gate in `/start-session` Step 2.7).
+
+### 3c. Review the project's one sentence when it is due (`SESSION_CLOSE`, after 3b and 3a)
+
+`PROJECT_CHARTER.md` § 11: *"The sentence is the project's own, and its own sessions keep it true.
+It is written from the tracked record: the approved specification, the entry document's opening
+and the last phase closed. When the project is closed, archived or parked, the sentence says so.
+The operator's word overrides it."* And: *"The session that closes such work reviews the sentence,
+rewrites or confirms it, and sets the date."* This step is that session. It runs after 3b and 3a,
+so a phase this close completed already counts. Whether a review is due is read from this
+project's own checker, never judged here:
+
+```bash
+python3 - <<'PY'
+# DESCRIPTION_REVIEW_BEGIN
+import importlib.util, json, sys
+sys.dont_write_bytecode = True   # an import must not leave a __pycache__ in the project
+spec = importlib.util.spec_from_file_location(
+    "progress_check", ".claude/skills/progress-check/progress_check.py")
+pc = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(pc)
+state, reason = pc.description_review_state(json.load(open("progress.json", encoding="utf-8")))
+reason = " ".join(str(reason).split())   # one line: a malformed date is quoted as written
+if state == "reviewed":
+    print("DESCRIPTION: reviewed (%s) — nothing to do; skip the rest of Step 3c" % reason)
+else:
+    print("DESCRIPTION: %s (%s) — review the sentence now, before Step 10's commit" % (state, reason))
+# DESCRIPTION_REVIEW_END
+PY
+[ $? -eq 0 ] || echo "DESCRIPTION: DID-NOT-RUN — the review rule could not be read from .claude/skills/progress-check/progress_check.py; report it in Step 12 and do not judge the sentence by eye"
+```
+
+When it says `due`, `unfilled` or `absent`, the coordinating executor (never a lane) reviews:
+
+1. **Read the record.** The approved specification if there is one (`IMPLEMENTATION_PLAN.md`, an
+   origin record of what was agreed), the README's opening, and the last closed phase and what it
+   delivered. `/start-session` § 3.5 printed the last two beside its `REVIEW` line.
+2. **Confirm or rewrite** the sentence: one sentence saying what the project is for, and that it
+   is closed, archived or parked when that is true. A sentence the operator supplied or ruled on
+   stands: confirm it, never rewrite it.
+3. **Set `description_reviewed`** to today's UTC date (`date -u +%Y-%m-%d`), beside `description`
+   (a surgical edit), in the same Step 10 commit as the sentence.
+4. **Point, do not copy.** If line 3 of the project's `CLAUDE.md` or `AGENTS.md` repeats the
+   sentence (the old one or the new one) or is still `{{PROJECT_DESCRIPTION}}`, replace that line
+   with the line below and add the file to Step 10's pathspec:
+
+   ```
+   What this project is for: `description` in `progress.json` (kept true by its own sessions — PROJECT_CHARTER.md § 11).
+   ```
+5. **Never invent a purpose the record does not support.** If it cannot support a sentence, leave
+   both fields as they are and say so in the Step 12 report, for the operator.
+
+Name the outcome in the Step 12 report: confirmed, rewritten (old and new), or left for the
+operator and why.
 
 ### 4. Update git_repos Status
 For each repo in `git_repos`:

@@ -185,6 +185,9 @@ Ask user for:
 - MCP tool name (if applicable)
 - Any project-specific rules
 
+Leave line 3 as the template ships it, a pointer at `progress.json`'s `description`. The sentence
+is asked for in Step 5.1 and lives in `progress.json` alone, so it has one place to be corrected.
+
 ### 4.3b AGENTS.md (merge or create)
 
 Do not duplicate the project-owned prose from `CLAUDE.md`. If `AGENTS.md` is absent, copy the thin
@@ -245,13 +248,22 @@ This is the key file for workflow tracking.
 ## Project Information
 
 1. **Project name**:
-2. **Brief description**:
+2. **Description**: one sentence, in your words, saying what this project is for
 3. **Uses AWS?**: Yes/No
    - If yes: Account ID, Region, MCP tool
 4. **Git remotes**: (I'll detect these)
+5. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
+   directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
 
 Use AskUserQuestion.
+
+Items 2 and 5 are the operator's to give, and nothing else may stand in for either. The description
+(`PROJECT_CHARTER.md` § 11) is never composed from the README, the folder name or a template's
+instruction text; an existing project's README opening may be offered as a starting point, but
+what is written is the sentence the operator gives or confirms. The sub-repositories Step 5.2
+detects may be offered as candidates for item 5, but a nested checkout is evidence, not a
+declaration (§ 14): only the members the operator confirms are written.
 
 ### 5.2 Detect Git Repos
 
@@ -292,7 +304,8 @@ Create based on gathered info:
 {
   "version": "2.0",
   "project": "{project_name}",
-  "description": "{description}",
+  "description": "{the operator's sentence}",
+  "description_reviewed": "{now_utc}",
   "created_at": "{today}",
   "last_updated": "{now_utc}",
   "last_session_summary": "Workflow injected into existing project",
@@ -334,9 +347,19 @@ Create based on gathered info:
 the estate dashboard's rule is to render `last_updated` at the precision recorded, so a date
 without a time is shown as that date only and never as minutes or hours ago (`/update-progress`
 Step 3 states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at commit time).
-`{today}` in `created_at` and `started_at` may stay a calendar date.
+`{today}` in `created_at` and `started_at` may stay a calendar date. `description_reviewed` is
+the same instant as `last_updated`: the sentence is reviewed at the moment it is written.
 
-Write to `progress.json`.
+**`relations` is not in the template above, on purpose.** Add it at the root, beside `git_repos`,
+only as the operator answered item 5: `{"version": 1, "members": [...]}`, each member with its
+`origin` (and its `path` too when it is nested here) and the operator's own `relation` word
+(`PROJECT_CHARTER.md` § 14). **Never seed `"members": []`.** An empty array is a positive claim that
+this repository manages nothing, so it is written only when the operator says "nothing". "Not
+decided yet", or no answer, leaves the block out: the question stays open, and `/start-session`
+§ 3.5 reports it every session until it is answered.
+
+Write to `progress.json`, the description as JSON rather than through `sed`: it is free text, and a
+quote, `&` or `|` in it would otherwise break the file or the sentence.
 
 ---
 

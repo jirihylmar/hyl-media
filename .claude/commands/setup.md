@@ -78,9 +78,14 @@ Use AskUserQuestion to select.
 4. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
    Repos, local folders, and AWS resources all derive from it — see Naming Convention below.
 5. **GitHub Org**: (optional)
+6. **Description**: one sentence, in your words, saying what this project is for.
+7. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
+   directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
 
-Write to `input/environment.md`.
+Write items 1-5 to `input/environment.md`. Items 6 and 7 go into `progress.json` in § 4, and only
+there: the sentence is the operator's (charter § 11) and the relations are theirs to declare
+(charter § 14), so neither is guessed when the operator leaves it unanswered.
 
 ### 2b. Naming Convention (binding from birth — collect the prefix once, derive everything)
 
@@ -159,18 +164,34 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
   `{{PROJECT_DESCRIPTION}}`, `{{CREATION_DATE}}` and `{{PROJECT_EXECUTOR}}` (`Claude` unless the
   operator chose Codex — Claude is the default executor, Codex an option). Default the display
   name to **the repository name**: § 2b already makes folder = repo = origin a rule, so the repo
-  name is unique at the hosting provider and this inherits that uniqueness for free. The
-  description is one sentence saying what the project is for — it is the only project-level prose
-  any estate-wide reader ever sees. **This file is the project's own.** The central repository
-  delivers commands and skills and never writes `progress.json`, so a placeholder left here is
-  never repaired from outside; `/start-session` § 3.5 can transcribe the name from origin if it is
-  still a token, but nothing anywhere can invent the description.
+  name is unique at the hosting provider and this inherits that uniqueness for free. **This file
+  is the project's own.** The central repository delivers commands and skills and never writes
+  `progress.json`, so a placeholder left here is never repaired from outside; `/start-session`
+  § 3.5 can transcribe the name from origin if it is still a token.
+- **`description` is the operator's sentence from § 2 item 6** — the only project-level prose any
+  estate-wide reader ever sees (`PROJECT_CHARTER.md` § 11). Where this project already has an
+  approved specification, check the sentence against its overview and say so if they disagree. It
+  is never composed from the playbook's own text, the folder name or a template's instruction text:
+  with no answer, ask again rather than write one. Write it as JSON (a free-text sentence through
+  `sed` breaks on a quote, `&` or `|`), and set **`description_reviewed`** beside it to the same
+  moment, `date -u +%Y-%m-%dT%H:%M:%SZ`. The playbook files carry it as `{{CREATION_DATE}}`; add the
+  field beside `description` if the copied file has none.
+- **`relations` is the operator's answer to § 2 item 7, written as they gave it** (`PROJECT_CHARTER.md`
+  § 14): a root block beside `git_repos`, `{"version": 1, "members": [...]}`, each member with its
+  `origin` (and its `path` too when it is nested here) and the operator's own `relation` word. The
+  repositories § 7 creates may be shown to the operator as candidates, but only what they confirm is
+  written. **Never seed `"members": []`.** An empty array is a positive claim that this repository
+  manages nothing, so it is written only when the operator says "nothing". "Not decided yet", or no
+  answer, leaves the block out: the question then stays open, and `/start-session` § 3.5 reports it
+  every session until it is answered.
 - Update `context_hints` with environment values
 - Update resource names in verify steps
 - Reset task statuses if needed
 
 **Update executor instructions:**
 - Fill in all `{{PLACEHOLDER}}` values in `CLAUDE.md` and `AGENTS.md` from environment
+- Leave line 3 of both as the template ships it, a pointer at `progress.json`'s `description`. Do
+  not paste the sentence there: a copy is a second place that goes stale unseen.
 - Keep detailed project rules in `CLAUDE.md`; `AGENTS.md` is the thin Codex entry
 
 ### 5. Verify Prerequisites
@@ -342,6 +363,8 @@ If no `progress.json`, create from existing spec:
 ```json
 {
   "project": "{project_name}",
+  "description": "{the operator's sentence}",
+  "description_reviewed": "{now}",
   "last_updated": "{now}",
   "current_task": "1.1",
   "context_hints": {
@@ -363,6 +386,16 @@ If no `progress.json`, create from existing spec:
 estate dashboard's rule is to render `last_updated` at the precision recorded, so a date without a
 time is shown as that date only and never as minutes or hours ago (`/update-progress` Step 3
 states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at commit time).
+
+Ask the operator for the two things only they can give, exactly as Scenario A § 2 items 6-7 do,
+and write them as Scenario A § 4 says:
+- **`description`**: their one sentence saying what this project is for, checked against the
+  existing spec's overview, with `description_reviewed` set to the moment it is written. Never
+  composed from the README, the folder name or a template's instruction text.
+- **What does this repository manage (`PROJECT_CHARTER.md` § 14)?** Write the `relations` block
+  they answer, beside `git_repos`. **Never seed `"members": []`**: that is a positive claim, written
+  only when the operator says "nothing". With no answer the block is left out and the question stays
+  open, which `/start-session` § 3.5 reports.
 
 Ask user to define tasks or read from existing task documentation.
 

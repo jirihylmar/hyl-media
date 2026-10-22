@@ -834,6 +834,17 @@ so the project appears on the board under a per-machine nickname with an error a
 2026-09-02 across 15 local projects: **2 carry `{{PROJECT_NAME}}`, 6 carry `current_task: null`, 1
 carries `current_task` as an object.** Only the first of those three is something a session may fix.
 
+**Two report-only lines joined it on 2026-10-22.** `REVIEW description` says the sentence is due
+for the review `PROJECT_CHARTER.md` § 11 asks of the project's own sessions: never reviewed, or a
+phase closed since. Beside it are the README's opening and the last closed phase, because those are
+what the review reads. The state comes from this project's own `progress_check.py`
+(`description_review_state`), imported and never restated, so this report, the commit guard and the
+estate survey give one answer. `OPEN relations — not declared (§ 14)` says the record does not yet
+state what this repository manages. Neither line writes anything or stops the session: the review
+is `/update-progress` Step 3c's, at close, and the relations block is the operator's answer.
+Measured the same day: of the 37 projects the survey could examine, none read as reviewed — 33 had
+never been reviewed and 4 had no usable sentence.
+
 **THE GOVERNING RULE, and it is a rule: this step transcribes; it never composes.** The only name
 it may write is the one `git remote get-url origin` returns with any path or host prefix and a
 trailing `.git` stripped — the derivation Step 8's `check_name()` already uses, plus the scp-style
@@ -850,7 +861,7 @@ file would freeze one machine's answer as the estate's.
 ```bash
 python3 - <<'PY'
 # METADATA_CLASSIFIER_BEGIN
-import json, re, subprocess
+import importlib.util, json, re, subprocess, sys
 from pathlib import Path
 
 PLACEHOLDER = re.compile(r"^\{\{[A-Z0-9_]+\}\}$")
@@ -920,6 +931,92 @@ def objects(v):
         return [x for x in v.values() if isinstance(x, dict)]
     return []
 
+CHECKER = ".claude/skills/progress-check/progress_check.py"
+
+def one_line(v):
+    """A value as one line. Every verdict is one line, and a value quoted inside one (a malformed
+    date, a phase name, an exception's message) may carry a newline that would start a line of its
+    own, splitting the verdict or adding a METADATA: line to the cardinality count."""
+    return " ".join(str(v).split())
+
+def project_checker():
+    """This project's own progress-check module, or (None, why it cannot be used).
+
+    PROJECT_CHARTER.md § 11's review rule has ONE definition, description_review_state() in that
+    module, and this step imports it rather than restating it: this report, the commit guard and
+    the estate survey then cannot disagree about whether a sentence is due. A checker that is
+    missing, broken or older than the rule is reported as such, never stood in for."""
+    sys.dont_write_bytecode = True   # an import must not leave a __pycache__ in the project
+    if not Path(CHECKER).is_file():
+        return None, "is not installed"
+    try:
+        spec = importlib.util.spec_from_file_location("progress_check", CHECKER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception as e:
+        return None, "did not load (%s: %s)" % (type(e).__name__, e)
+    if not callable(getattr(mod, "description_review_state", None)):
+        return None, "predates the review rule (no description_review_state)"
+    return mod, None
+
+def readme_opening():
+    """README.md's first line of prose, with the rest of its paragraph: a README wraps its prose,
+    and a first physical line alone stops mid-sentence. Not prose: a heading, HTML, a badge, a
+    break, YAML front matter or a fenced code block, any of which once stood in for the opening.
+    Shown beside a REVIEW line because it is one of the three things the review reads; shown, never
+    written anywhere."""
+    try:
+        lines = Path("README.md").read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return "(no readable README.md)"
+    rule = re.compile(r"^[=\-]{3,}$")
+    brk = re.compile(r"^([-*_])(?:\s*\1){2,}$")   # a thematic break: --- *** ___
+    fences = ("`" * 3, "~~~")   # spelled out, a literal one would close this very block
+    first = 0
+    if lines and lines[0].strip() == "---":   # front matter runs to its own closing line
+        first = next((j + 1 for j in range(1, len(lines)) if lines[j].strip() in ("---", "...")), 0)
+    in_comment = in_code = False
+    for i in range(first, len(lines)):
+        s = lines[i].strip()
+        if in_comment or s.startswith("<!--"):
+            in_comment = "-->" not in s
+            continue
+        if s.startswith(fences):
+            in_code = not in_code
+            continue
+        nxt = lines[i + 1].strip() if i + 1 < len(lines) else ""
+        # code, blank, an ATX heading, a setext heading or its underline, HTML, a badge, a break
+        if in_code or not s or s.startswith(("#", "<", "![", "[![")) or rule.match(s) \
+                or rule.match(nxt) or brk.match(s):
+            continue
+        para = [s]
+        for more in lines[i + 1:]:
+            m = more.strip().lstrip("> ").strip()
+            if not m or m.startswith(("#", "<!--") + fences) or rule.match(m) or brk.match(m):
+                break
+            para.append(m)
+        s = " ".join(para)
+        return s if len(s) <= 200 else s[:197] + "..."
+    return "(README.md has no line of prose)"
+
+def closed_phase_line(pc, doc):
+    """The last closed phase, by the checker's own definition of closed and of when."""
+    pick = getattr(pc, "last_closed_phase", None)
+    if not callable(pick):
+        return "(not shown: this project's progress-check has no last_closed_phase)"
+    try:   # guarded as the description_review_state call is: a raise here drops every later field
+        hit = pick(doc)
+    except Exception as e:
+        return one_line("(not shown: this project's progress-check raised %s: %s)"
+                        % (type(e).__name__, e))
+    if hit is None:
+        return "(no phase has closed)"
+    key, phase, status, raw = hit
+    key, full = one_line(key), one_line(phase.get("name") or "(no name)")
+    name = full if len(full) <= 160 else full[:157] + "..."
+    label = name if key == full else "%s — %s" % (key, name)   # a list-shaped phase keyed by name
+    return one_line("%s (%s %s)" % (label, status, raw or "with no date"))
+
 p = Path("progress.json")
 if not p.exists():
     print("METADATA: UNKNOWN — no progress.json at the orchestration repo root; Step 3 owns that "
@@ -957,12 +1054,33 @@ else:
                   "the operator can choose a name (this step will not invent one)"
                   % why(doc, "project"))
 
-# 2. description — reported, never written. Nothing on disk proves a purpose.
-if usable(doc.get("description")):
+# 2. description — reported, never written here. The project's own sessions keep it true (charter
+#    § 11), but the review that does so is /update-progress's, at close, after the work it has to
+#    describe. Whether a review is due is the checker's to say, never this block's.
+pc, unusable = project_checker()
+state = reason = None
+if pc is not None:
+    try:
+        state, reason = pc.description_review_state(doc)
+    except Exception as e:
+        unusable = "raised %s: %s" % (type(e).__name__, e)
+if state == "reviewed":
     print("METADATA: ok description")
+elif state == "due":
+    print("METADATA: REVIEW description (%s)" % one_line(reason))
+    print("  README: %s" % readme_opening())
+    print("  last closed phase: %s" % closed_phase_line(pc, doc))
+elif state in ("absent", "unfilled"):
+    # The collector's wording where the value is nothing to it; the checker's reason where it is a
+    # value the collector would show (the bootstrap's instruction text, a token inside a sentence).
+    detail = one_line(reason) if usable(doc.get("description")) else why(doc, "description")
+    print("METADATA: OPERATOR description — %s; /update-progress writes it at session close from "
+          "the tracked record (charter § 11), and this step never writes it" % detail)
 else:
-    print("METADATA: OPERATOR description — %s; nothing on disk proves a one-line purpose, so this "
-          "step never writes one" % why(doc, "description"))
+    if state is not None:
+        unusable = "returned an unknown state %r" % (state,)
+    print("METADATA: UNKNOWN description — this project's progress-check (%s) %s; the review rule "
+          "is read from it and never restated here" % (CHECKER, one_line(unusable)))
 
 # 3. current_task — reported in three DIFFERENT words, because absence, wrong-shape and
 #    unresolved are three different facts and collapsing them hides two of them.
@@ -982,6 +1100,12 @@ else:
         print("METADATA: ok current_task=%s" % ct)
     else:
         print("METADATA: UNRESOLVED current_task=%s — no task in any phase carries that id" % ct)
+
+# 4. relations — reported, never written. No block (or null, which the collector reads as none)
+#    claims nothing about what this repository manages. `"members": []` is a claim, the operator's
+#    to make (charter § 14), so a declared block, empty or not, prints nothing here.
+if doc.get("relations") is None:
+    print("METADATA: OPEN relations — not declared (§ 14)")
 # METADATA_CLASSIFIER_END
 PY
 MD_RC=$?
@@ -992,20 +1116,25 @@ MD_RC=$?
 > interpreter*, so an interpreter that dies prints nothing — and nothing is exactly what a healthy
 > project prints. Same shape as Steps 0.7 and 2.7, and the same reason.
 
-**Cardinality rule: exactly three `METADATA:` lines, or exactly one `UNKNOWN` / `DID-NOT-RUN` line
-saying why there are none.** A field with no line is a dropped field, and a dropped field is how
-metadata stays broken while the session reports clean. Count them before you write the handoff.
+**Cardinality rule: exactly three field lines (`project`, `description`, `current_task`) plus one
+`OPEN relations` line exactly when the root declares no `relations` block — or exactly one
+`UNKNOWN` / `DID-NOT-RUN` line saying why there are none.** A field with no line is a dropped field,
+and a dropped field is how metadata stays broken while the session reports clean. Count them before
+you write the handoff. The two indented lines under a `REVIEW` line are its context, not fields.
 
 The verdicts, and what each one means:
 
 | Verdict | Meaning | Next move |
 |---|---|---|
-| `ok project=… / ok description / ok current_task=…` | The dashboard will read a real value. | Nothing. Omit from the handoff. |
+| `ok project=… / ok description / ok current_task=…` | The dashboard will read a real value — for `description`, a sentence reviewed since the last phase closed. | Nothing. Omit from the handoff. |
 | `FILLABLE project=…` | The value is absent, empty or the placeholder, and origin proves the repository's name. | Run Block B. |
 | `UNPROVABLE project` | Same, but this repository has no origin. | Report it. Only the operator can supply a name; **do not propose one**. |
 | `AMBIGUOUS project` | The key is not assigned on exactly one writable line — usually a duplicate key, which is itself corruption `progress-check` reports. | Report it; fix the file by hand, then re-run. |
 | `MISSING-KEY project` | No top-level `project` key at all. | Report it. Inserting a key chooses a position in a file this repository does not own. |
-| `OPERATOR description` | Absent or the placeholder. | Report it. A README's first line is composing, not transcribing. |
+| `OPERATOR description` | Absent, a `{{TOKEN}}`, or the bootstrap's own instruction text. | Report it. This step never writes it: `/update-progress` Step 3c writes it at close from the tracked record, or leaves it for the operator when the record cannot support a sentence. |
+| `REVIEW description (…)` | A sentence nobody has confirmed since the work changed: never reviewed, a malformed `description_reviewed`, or a phase closed after it. The two indented lines are the README's opening and the last closed phase. | Report it with both context lines. No stop, and no rewrite here: `/update-progress` Step 3c reviews it at close. |
+| `UNKNOWN description` | This project's `progress_check.py` is missing, broken or older than the review rule, so the state could not be read. | Report it. Do not judge the sentence by eye — a second copy of the rule is how two readers disagree. |
+| `OPEN relations — not declared (§ 14)` | The root has no `relations` block, so the record does not say what this repository manages. `"members": []` is an answer and prints nothing. | Report it once. No stop. Only the operator's answer fills it; never seed `[]`. |
 | `ABSENT current_task` | No task is claimed — **a legitimate state at a clean close**, and § Multi-Agent Discipline forbids this step from changing it. | Report it once, without alarm. Never fix it here. |
 | `NOT-AN-ID current_task` | The value is an object or a list; nothing can point at it and the dashboard shows it as unresolvable. | Report it. The task's own record is where that detail belongs; only the orchestrator moves the pointer. |
 | `UNRESOLVED current_task=…` | A string that matches no task id. | Report it; § 4.0's pointer check reports it in full. |
@@ -1121,8 +1250,12 @@ every time**, in the § 4.1 handoff.
 
 **What this step NEVER does:**
 
-- It never writes `description`. Nothing on disk proves a one-sentence purpose, and repurposing a
-  README's first line is composing, not transcribing.
+- It never writes `description` or `description_reviewed`. The project's own sessions keep the
+  sentence true (charter § 11), but that review is `/update-progress` Step 3c's: it runs at close,
+  after the work the sentence may now have to describe, and it is the one place that sets the
+  date. This step only says that a review is due, and shows what the review will read.
+- It never writes `relations`, and never seeds `"members": []`. An empty array is a positive claim
+  that this repository manages nothing, and only the operator makes it (charter § 14).
 - It never writes `current_task` or `current_phase`. § Multi-Agent Discipline reserves both for the
   orchestrator, and a parked pointer is a legitimate state, not a defect.
 - It never re-fills a name that is already a substantive string. The predicate is *absent, empty or
@@ -1265,11 +1398,20 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  session with no decision is itself a finding — say so.]
 
 ### ⚠ Project metadata  (omit ONLY if § 3.5 reported ok for all three fields)
-[One line per field that is not ok, verbatim from § 3.5 — never summarised into prose.
+[One line per field that is not ok, verbatim from § 3.5 — never summarised into prose. This
+ section also carries the OPEN relations line, and is not omitted while § 3.5 prints one.
  FILLED: say what was set and from what proof, and that the operator can override it in one
- word. UNPROVABLE / MISSING-KEY / AMBIGUOUS / OPERATOR: say that this is a name or a sentence
- only the operator can supply, and DO NOT PROPOSE ONE — a name this session invents is a name
- nothing on disk proves, and it is the label the whole estate will then read this project by.
+ word. UNPROVABLE / MISSING-KEY / AMBIGUOUS: say that this is a name only the operator can
+ supply, and DO NOT PROPOSE ONE — a name this session invents is a name nothing on disk proves,
+ and it is the label the whole estate will then read this project by.
+ OPERATOR description: say that there is no sentence yet, and that /update-progress Step 3c
+ writes one at close from the tracked record, or asks the operator when the record cannot support
+ one. Do not propose one here, at session start.
+ REVIEW description: the line and its two context lines (README opening, last closed phase),
+ verbatim. Say that the sentence is due for review and that /update-progress Step 3c reviews it
+ at close. It is report only: it adds no question and no stop.
+ OPEN relations: say that the record does not yet say what this repository manages (charter
+ § 14), and that the operator's answer is what fills it. Report only, no stop, never seed [].
  ABSENT / NOT-AN-ID / UNRESOLVED current_task: say that the dashboard cannot report what this
  project is doing; the pointer itself is reported in full by the § 4.0 pointer check and is not
  fixed here (§ Multi-Agent Discipline reserves current_task for the orchestrator, and a parked
@@ -1305,8 +1447,10 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 - If the operator supplies the project's display name or its one-line description in the
   discussion, write it with § 3.5's Block B — the same anchor predicate, the same guards, the same
   one-line diff assertion, the same pathspec commit. That is the operator supplying a value, not
-  this step inventing one, so it is the only route by which `description` is ever written, and the
-  only route by which a substantive `project` value is ever replaced.
+  this step inventing one, so it is the only route by which this command writes `description`, and
+  the only route by which a substantive `project` value is ever replaced. The operator's sentence
+  overrides the record (charter § 11): `/update-progress` Step 3c confirms it at close and sets
+  `description_reviewed`, and never rewrites it.
 
 ### 5. Verify AWS Account (CRITICAL)
 

@@ -130,6 +130,39 @@ discoverable prerequisite and connection checks.
 The project remains operable from every declared execution environment. Resolve host-specific
 locations at runtime; never treat them as portable identities.
 
+### One working checkout
+
+A repository with a record is worked on in exactly one place in the estate: the one checkout where
+its sessions run, its record advances and its commits are made. That is its working checkout, and
+the estate's tools deliver there and nowhere else. Every other copy of a repository's files on a
+host is one of four things, and which one is visible from where it sits:
+
+1. **A member checkout**: a repository with no record of its own, declared by its manager under
+   § 14 and held where that manager runs. If it is written from more than one place, every writer
+   pulls fast-forward before it writes.
+2. **An input**: content of another repository that a project reads. It sits in the consumer's own
+   space, gitignored inside the consumer or under `~/.local/share/<consumer>/`, at a revision the
+   consumer records, and a command the consumer carries recreates it. Its location is resolved at
+   runtime, and its absence fails the check that needs it instead of skipping it. It is never kept
+   in a folder named after another repository, because a folder named like a project reads as that
+   project to every person and every tool. An input is not a § 14 relation.
+3. **A tool clone**: made, refreshed and removed by the tool that names it, and committed to only
+   through that tool. Examples are the examples clone a new project holds until Phase 0 removes it,
+   the transient clones of a consult cycle or a distribution, and the clones `syndicate-join` keeps
+   on an outside machine.
+4. **A transfer window**: the source and the destination of a move, both working checkouts for as
+   long as the move lasts. It ends at the transfer checklist's retire step.
+
+Anything else held twice is a duplicate. It is reported, no tool writes to it, and it is retired on
+the operator's word, and only after checking that nothing on its host reads it. A copy's own git
+state says nothing about who reads it, so a copy is never retired because it looks like a leftover.
+
+Measured 2026-10-22. A copy was retired as an identical duplicate while another project on the
+same host read its seeds and a ledger from it. Nothing recorded that dependency, so the move that
+followed had to rebuild both from another machine. The repair then left a one-file folder under the
+repository's name that no estate tool could see, and its absence made the dependent test skip
+instead of fail.
+
 ## 9. Infrastructure has one authoritative path
 
 Managed infrastructure changes through the declared infrastructure-as-code or versioned
@@ -205,6 +238,22 @@ told apart by that origin and is unique by construction; the name only decides h
 appears to a reader. Where there is no origin, the display name is the only thing distinguishing
 the project from another checkout, and the record states that condition deliberately rather than
 leaving it to be inferred.
+
+The sentence is the project's own, and its own sessions keep it true. It is written from the
+tracked record: the approved specification, the entry document's opening and the last phase
+closed. When the project is closed, archived or parked, the sentence says so. The operator's word
+overrides it. Beside it, the record carries the date the sentence was last reviewed,
+`description_reviewed`. A review is due when that date is absent, or when a phase reached a
+terminal or deferred status after it. The session that closes such work reviews the sentence,
+rewrites or confirms it, and sets the date. Entry documents point at the sentence instead of
+copying it, so it has one place to be corrected.
+
+Measured 2026-10-22, by reading every reachable record: of 40 sentences, 27 were good, 7 stale, 2
+thin, 3 still the placeholder and 1 missing, while the presence check passed most of them. Four of
+the stale ones called active a project that its own entry document called closed or archived. The
+rule until then was that nothing could compose the sentence, so no session was allowed to correct
+one. A sentence nobody reviews cannot be told apart from one that is still true, and that is the
+only reason the date exists.
 
 A project cannot see the estate, so it cannot prove its own name unique. Its obligation is the
 locally decidable half: the name is present, substituted rather than left as the template's

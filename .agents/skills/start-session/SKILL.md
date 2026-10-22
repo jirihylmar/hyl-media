@@ -38,6 +38,11 @@ Preserve these boundaries:
 - The session-start status is a checkpoint. Continue immediately only when the user's current
   request already authorized that work.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
+- § 3.5's metadata report never writes `description`, `description_reviewed` or `relations`, and
+  adds no stop. Its `REVIEW description (…)` line comes from the project's own
+  `.claude/skills/progress-check/progress_check.py` (`description_review_state`), imported and never
+  restated; the review itself is `$update-progress` Step 3c's, at close. `OPEN relations — not
+  declared (§ 14)` is reported once and filled only by the operator's answer.
 - An operation that outlives this turn is governed by `PROJECT_CHARTER.md` section 11,
   *Unattended operations*: every such operation is session-watched, durably-supervised or
   unmonitored; a final response requires the supervisor proof recorded there; process exit status

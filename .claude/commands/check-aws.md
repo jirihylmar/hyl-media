@@ -52,7 +52,7 @@ Also read mcp_tool if present — as a hint for Step 2, not as an instruction.
 ```
 
 **Check that `aws_account` is actually an account number — twelve digits, nothing else.** A nickname
-has been found sitting in this field (e.g. `d4m-975` instead of `975050190402`), and it fails in the
+has been found sitting in this field (e.g. `acme-prod` instead of `123456789012`), and it fails in the
 worst way: no candidate in Step 2 can ever match it, so the honest-looking report becomes *"account
 unreachable from this machine"* when the truth is *"this project's account number is not an account
 number."* If it is not twelve digits, STOP and say exactly that:

@@ -41,6 +41,11 @@ Preserve these boundaries:
 - Stage and commit only work in scope; the shipped Git hook is the mechanical integrity backstop.
 - Push only at the project's defined boundary and never force a remote branch.
 - Task 0.5 cannot complete without explicit operator approval of the implementation specification.
+- At `SESSION_CLOSE`, Step 3c reviews the project's `description` when
+  `description_review_state` in `.claude/skills/progress-check/progress_check.py` says it is due,
+  unfilled or absent (`PROJECT_CHARTER.md` § 11): confirm or rewrite it from the tracked record,
+  set `description_reviewed` in the same commit, and never invent a purpose the record does not
+  support. It does nothing when the state is `reviewed`.
 - An operation that outlives this turn is governed by `PROJECT_CHARTER.md` section 11,
   *Unattended operations*: every such operation is session-watched, durably-supervised or
   unmonitored; a final response requires the supervisor proof recorded there; process exit status

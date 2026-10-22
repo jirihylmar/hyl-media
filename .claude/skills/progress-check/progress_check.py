@@ -192,6 +192,187 @@ def unresolved_template(v):
     return isinstance(v, str) and bool(re.fullmatch(r"\{\{[A-Z0-9_]+\}\}", v.strip()))
 
 
+# --- the description review rule (phase 87, 2026-10-22) ----------------------------------------
+#: The bootstrap's own instruction text. README.md's bootstrap step set PROJECT_DESCRIPTION to this
+#: sentence, it was substituted verbatim, and every check accepted it, because it is neither empty
+#: nor a {{TOKEN}}: on 2026-10-22 a live project carried it as its description. It is the template
+#: asking for a sentence, not a sentence, so it is UNFILLED. Compared after stripping whitespace
+#: and one trailing period, case-sensitively: a project that rewrote it in its own words wrote
+#: something.
+BOOTSTRAP_DESCRIPTION_LITERAL = "One sentence saying what this project is for"
+
+#: Where a phase records when it closed, read in this order, first parseable wins. Both completion
+#: spellings (see COMPLETION_KEYS), then the two lifecycle stamps a phase that did not complete
+#: carries. A phase with none of them falls back to its tasks' completion dates.
+PHASE_CLOSE_KEYS = ("completed_at", "completed", "superseded_at", "deferred_at")
+
+_TOKEN_IN = re.compile(r"\{\{[A-Z0-9_]+\}\}")   # unresolved_template()'s token, unanchored
+_INSTANT = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})"
+    r"(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$"
+)
+
+
+def is_bootstrap_description(v):
+    """True when v is the bootstrap's instruction text rather than a description.
+
+    Its own function so that every reader asking "is this the literal?" asks this one: the
+    project-metadata-declared probe imports it, and description_review_state() calls it.
+    """
+    if not isinstance(v, str):
+        return False
+    text = v.strip()
+    return (text[:-1] if text.endswith(".") else text) == BOOTSTRAP_DESCRIPTION_LITERAL
+
+
+def parse_instant(v, end_of_day=False):
+    """An aware UTC datetime for an ISO-8601 date or timestamp, else None.
+
+    A bare date is a DAY, not an instant, so the caller says which end of it it means: the review
+    date is the end of its day (a review written on the day a phase closed covers that phase), a
+    closing date is the start of its day. A timestamp without an offset is read as UTC, which is
+    what every writer in the estate means by it (`date -u`). Parsed by hand rather than with
+    datetime.fromisoformat, whose accepted forms change between Python versions — this file runs
+    on every host in the estate, and two hosts must never disagree about whether a review is due.
+    The calendar still decides: '2026-99-99' and '25:00' are not instants. Nor is a value that is
+    one only outside UTC's range ('9999-12-31T23:59:59-23:59' lands in the year 10000): converting
+    it raises OverflowError, and that once killed the commit guard over a value it cannot place.
+    """
+    if not isinstance(v, str):
+        return None
+    m = _INSTANT.match(v.strip())
+    if not m:
+        return None
+    y, mo, d, hh, mm, ss, tz = m.groups()
+    try:
+        if hh is None:
+            t = (23, 59, 59) if end_of_day else (0, 0, 0)
+            return datetime.datetime(int(y), int(mo), int(d), *t, tzinfo=datetime.timezone.utc)
+        when = datetime.datetime(int(y), int(mo), int(d), int(hh), int(mm), int(ss or 0))
+        offset = datetime.timedelta(0)
+        if tz and tz != "Z":
+            sign = -1 if tz[0] == "-" else 1
+            digits = tz[1:].replace(":", "")
+            offset = sign * datetime.timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+        return when.replace(tzinfo=datetime.timezone(offset)).astimezone(datetime.timezone.utc)
+    except (ValueError, OverflowError):
+        return None
+
+
+def phase_closed_at(phase_obj):
+    """(instant, raw value) for when a phase closed, or (None, None) when nothing says.
+
+    The phase's own stamp first (PHASE_CLOSE_KEYS, first parseable wins); else the latest task
+    completion inside it. Measured 2026-10-22 in this repository's own file: of 86 phases closed or
+    deferred, 75 carry a date of their own, 9 only through their tasks, and 2 nowhere. Reading the
+    phase alone would have left those 9 unable to make a review due. A phase with no date anywhere
+    cannot make one due either: inventing a date would turn ignorance into a finding.
+    """
+    if not isinstance(phase_obj, dict):
+        return None, None
+    for k in PHASE_CLOSE_KEYS:
+        when = parse_instant(phase_obj.get(k))
+        if when is not None:
+            return when, phase_obj[k].strip()
+    best, best_raw = None, None
+    for t in iter_tasks(phase_obj):
+        for k in COMPLETION_KEYS:
+            when = parse_instant(t.get(k))
+            if when is not None and (best is None or when > best):
+                best, best_raw = when, t[k].strip()
+    return best, best_raw
+
+
+def is_closed_phase(phase_obj):
+    """True for a phase that reached a terminal or deferred status: the phases the review rule
+    counts, and the ones a review reads. One predicate, so the rule and the context /start-session
+    prints beside it cannot pick different phases."""
+    if not isinstance(phase_obj, dict):
+        return False
+    st = norm_status(phase_obj.get("status") or "")
+    return st in TERMINAL_STATUSES or st == "deferred"
+
+
+def last_closed_phase(doc):
+    """(key, phase, status, raw closing date or None) for the phase a review reads, else None.
+
+    The latest closing instant wins (phase_closed_at, so a phase dated only through its tasks
+    counts), and of two equal instants the later in the file. A phase closed with no date anywhere
+    is chosen only when no closed phase carries one, and then the last in file order: it is still
+    the last thing the record says closed. /start-session § 3.5 prints it beside a REVIEW line.
+    """
+    dated, undated = None, None
+    for pk, po in iter_phases(doc):
+        if not is_closed_phase(po):
+            continue
+        st = norm_status(po.get("status") or "")
+        when, raw = phase_closed_at(po)
+        if when is None:
+            undated = (pk, po, st, None)
+        elif dated is None or when >= dated[0]:
+            dated = (when, (pk, po, st, raw))
+    return dated[1] if dated is not None else undated
+
+
+def description_review_state(doc) -> "tuple[str, str]":
+    """(state, reason). state is one of: 'absent', 'unfilled', 'due', 'reviewed'.
+
+    THE ONE DEFINITION of PROJECT_CHARTER.md § 11's review rule. /start-session, /update-progress
+    and the estate's description-reviewed probe import this function rather than restate it, so a
+    project, its sessions and the survey of every project can never disagree about whether a
+    sentence is due. It is pure: it reads the document and nothing else, and it never writes.
+
+      absent    no usable sentence: not an object, or `description` missing, not a string, blank
+      unfilled  a {{TOKEN}} anywhere in it, or the bootstrap's own instruction text
+      due       a sentence nobody has confirmed since the work changed: `description_reviewed` is
+                absent (an unsubstituted {{TOKEN}} counts as absent, as it does for every date
+                here) or malformed, or a phase reached a terminal or deferred status after it
+      reviewed  otherwise
+
+    The reason names what decided it; for a due review that is the LATEST phase closed after the
+    review, because that is the one a session has to read before it rewrites the sentence. Whether
+    the sentence is still TRUE is never decided here — only the project's own session can judge
+    that. This says when somebody has to look.
+    """
+    if not isinstance(doc, dict):
+        return "absent", "progress.json root is not an object"
+    desc = doc.get("description")
+    if desc is None:
+        return "absent", "no description"
+    if not isinstance(desc, str):
+        return "absent", f"description is {_typename(desc)}, not a string"
+    if not desc.strip():
+        return "absent", "description is blank"
+    text = desc.strip()
+    tok = _TOKEN_IN.search(text)
+    if tok:
+        return "unfilled", f"description still contains the template token {tok.group(0)}"
+    if is_bootstrap_description(text):
+        return "unfilled", "description is still the bootstrap's instruction text"
+
+    raw = doc.get("description_reviewed")
+    unset = isinstance(raw, str) and (not raw.strip() or _TOKEN_IN.fullmatch(raw.strip()))
+    if raw is None or unset:
+        return "due", "never reviewed"
+    reviewed = parse_instant(raw, end_of_day=True)
+    if reviewed is None:
+        shown = raw if isinstance(raw, str) else json.dumps(raw)
+        return "due", f"malformed description_reviewed: {shown}"
+
+    latest = None
+    for pk, po in iter_phases(doc):
+        if not is_closed_phase(po):
+            continue
+        st = norm_status(po.get("status") or "")
+        when, when_raw = phase_closed_at(po)
+        if when is not None and when > reviewed and (latest is None or when > latest[0]):
+            latest = (when, pk, st, when_raw)
+    if latest is not None:
+        _, pk, st, when_raw = latest
+        return "due", f"phase {pk} {st} {when_raw} after review {raw.strip()}"
+    return "reviewed", f"reviewed {raw.strip()}, no phase closed since"
+
+
 def completion_fields(doc):
     """Yield (label, key, raw_value) for every completion field on every phase and every task.
 
@@ -613,6 +794,37 @@ def check(text, base_text=None):
             # Base-less checks are also used directly against the intentionally unsubstituted
             # bootstrap/example files. Once a project has a committed base, the same token blocks.
             (fail if base_text is not None else warn).append(message)
+
+    # 2a. The description is kept true by the project's own sessions (PROJECT_CHARTER.md § 11), and
+    #     this says when one of them has to look. WARNINGS ONLY, every one of them, and by the
+    #     charter's severity rule rather than by taste: whether a sentence is still true is the
+    #     project's own judgement, which nothing here can make, so no review state may cost a
+    #     commit. The {{TOKEN}} case keeps the failure above and gets no second sentence here; an
+    #     absent description is the survey's to count, not a complaint on every commit.
+    review_state, review_reason = description_review_state(doc)
+    if review_state == "unfilled" and is_bootstrap_description(doc["description"]):
+        warn.append(
+            f"description is still the bootstrap's instruction text "
+            f"{BOOTSTRAP_DESCRIPTION_LITERAL!r}. That is the template asking for a sentence, not "
+            f"a description, so the record does not say what this project is for. Not blocking — "
+            f"write one sentence from the project's own record (its approved specification, its "
+            f"entry document's opening, the last phase it closed) and set description_reviewed."
+        )
+    elif review_state == "due":
+        warn.append(
+            f"description review due: {review_reason}. Not blocking — the session that closes "
+            f"work re-reads the sentence against the approved specification, the entry "
+            f"document's opening and the last phase closed, rewrites or confirms it, and sets "
+            f"description_reviewed to today's date (PROJECT_CHARTER.md § 11)."
+        )
+    raw_review = doc.get("description_reviewed")
+    if review_state in ("absent", "unfilled") and not is_absent(raw_review) \
+            and parse_instant(raw_review) is None \
+            and not (isinstance(raw_review, str) and not raw_review.strip()):
+        # Named even when no review is due, because the date is wrong whatever the sentence says:
+        # the next review would otherwise be judged against a value nothing can read.
+        shown = raw_review if isinstance(raw_review, str) else json.dumps(raw_review)
+        warn.append(f"malformed description_reviewed: {shown} is not an ISO-8601 date or timestamp")
 
     # 3. Duplicate task ids inside one phase — two records claiming to be the same task.
     for pk, ids in task_ids(doc).items():

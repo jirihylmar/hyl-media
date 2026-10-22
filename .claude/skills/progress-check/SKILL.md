@@ -67,11 +67,22 @@ off.
 | Root key | What a good value is | Who fills it | If it is wrong |
 |---|---|---|---|
 | `project` | Non-empty single-line string naming this project. Default it to the **repository name** — `/setup` § Naming Convention already makes folder = repo = origin a rule, so the repo name is unique at the hosting provider and inherits that uniqueness for free. | The project itself, once, at setup; afterwards only the operator. No other repository ever writes it. | **FAIL** on an unresolved `{{TOKEN}}` once a committed base exists. Nothing else about the name is enforced — see *What is deliberately not enforced about the name*. |
-| `description` | One sentence saying what the project is for. It is the dashboard's only project-level prose. | The operator, at setup, refreshed when the specification is approved. | **FAIL** on an unresolved `{{TOKEN}}` (same rule as `project`). Nothing may compose one: no file on disk proves a project's purpose. |
+| `description` | One sentence saying what the project is for, and saying closed, archived or parked when that is true. It is the dashboard's only project-level prose. | The project's own session, from its tracked record: the approved specification, the entry document's opening, the last phase closed. The operator's word overrides it. Reviewed whenever a review is due (charter § 11). | **FAIL** on an unresolved `{{TOKEN}}` (same rule as `project`). **Warning** when it is still the bootstrap's own instruction text, `One sentence saying what this project is for`: that is unfilled, not a description. |
+| `description_reviewed` | ISO-8601 date or timestamp at which the sentence was last written or confirmed. | Whichever session reviews the sentence: `/update-progress` when a review is due; setup and Phase-0 task 0.6 when the sentence is first written. | **Warning** when it is absent or malformed, or when a review is due because a phase reached a terminal or deferred status after this date. That is the phase's own completion date, else the latest task `completed_at` in it. It is never a failure: whether the sentence is still true is the project's own judgement, and nothing here can make it. |
 | `created_at` | ISO-8601 date or timestamp, set once. | Setup. | **FAIL** on an unresolved `{{TOKEN}}` (same rule). |
 | `last_updated` | ISO-8601 date or timestamp; the input to the staleness comparison below. | `/update-progress` when it closes a task. | Warning only — see the next section. |
 | `current_task` | **`string \| null`.** When a string: the `id` of exactly one task under `phases`. `/open-work` treats anything longer than 40 characters as prose rather than a pointer and says so. | The executor at session start and `/update-progress`; in multi-agent setups, the orchestrator alone. | An object or list **FAILS prospectively** (table above). A string matching no task id is a **warning**, and is suppressed entirely when no task in the file is identifiable — with no ids to compare against, the comparison has nothing to say. `null` or absent is **SILENT**. |
 | `current_phase` | `string \| null`; when a string, a key of `phases`. | As `current_task`. | Not checked here at all. `/open-work` reports a stale, absent or non-existent pointer when it renders. |
+
+**The review rule is one function.** `description_review_state(doc)` in `progress_check.py`
+returns `absent`, `unfilled`, `due` or `reviewed` together with the reason. `/start-session`,
+`/update-progress` and the estate's `description-reviewed` probe import it and do not restate it, so
+a project, its sessions and the survey cannot disagree about whether a sentence is due. A date-only
+`description_reviewed` covers its whole day, so a review written on the day a phase closed covers
+that phase; a timestamp is exactly that instant. A phase closed or deferred with no date anywhere,
+on itself or on any of its tasks, cannot make a review due. `last_closed_phase(doc)` names the
+phase a review reads, by the same notion of closed (`is_closed_phase`); `/start-session` § 3.5
+prints it beside its `REVIEW` line.
 
 Per task, the record says: `id` (non-empty, unique within its phase, never changed — enforced
 above), `name` (a one-line statement of what it delivers; this is the string the dashboard shows as
