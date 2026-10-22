@@ -94,10 +94,13 @@ PY
 say "config written: $CFG (mode 600)"
 
 # --- the route, resolved exactly as /update-progress § 11.0 does ------------------------------
-if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then ROUTE=direct
-elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ];   then ROUTE=ingest
+# A valid ingest.json, or spool — on every host. A checkout of the inbox in $HOME is not a route:
+# until 2026-10-22 it made this print `direct` (task 93.1 saw it on the box, right after proving the
+# token), and § 11.0 then wrote extractions into that working tree, where nothing committed them.
+if [ -s "$CFG" ] && python3 -c "import json,sys;d=json.load(open('$CFG'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null
+then ROUTE=ingest
 else ROUTE=spool; fi
 say ""
 say "ROUTE = $ROUTE"
-[ "$ROUTE" = "spool" ] && fail "resolver still says spool — ingest.json is not where \$HOME points" 1
+[ "$ROUTE" = "spool" ] && fail "resolver still says spool — ingest.json is not where \$HOME points, or lacks url|token" 1
 say "Done. Every project on this machine can now report by HTTPS, wherever it lives on disk."

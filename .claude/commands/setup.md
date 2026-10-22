@@ -207,18 +207,20 @@ gh --version
 ### 5b. Verify This Host Can Report Knowledge (the syndicate inbox)
 
 `/update-progress` § 11 delivers every session's knowledge extraction to the **one** inbox by HTTPS
-POST to the ingest endpoint, resolving the route by **presence**:
+POST to the ingest endpoint, on every host (the box included), resolving the route as § 11.0 does:
 
 ```bash
-if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox (the box)"
-elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ];   then echo "ingest — POSTs to the endpoint over HTTPS"
+INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
+if [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null
+then echo "ingest — POSTs to the endpoint over HTTPS"
+elif [ -f "$INGEST" ]; then echo "NO ROUTE — $INGEST is empty or lacks url|token; extractions would spool"
 else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
 ```
 
 **`NO ROUTE` is a setup gap, not a runtime condition — resolve it here, before any work starts.**
-A host that resolves neither will never gain a route on its own: each extraction it writes lands in
-`~/.syndicate-knowledge-spool/` and stays there, because the spool is drained only by a run that
-*does* resolve a route. That failure is invisible until the knowledge already exists — too late.
+A host without a valid `ingest.json` will never gain a route on its own: each extraction it writes
+lands in `~/.syndicate-knowledge-spool/` and stays there, because the spool is drained only by a run
+that *does* resolve a route. That failure is invisible until the knowledge already exists — too late.
 
 **The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
 for both, then:
@@ -245,8 +247,10 @@ never commit it.
 > **On WSL, keep `$HOME` off `/mnt/c`.** A Windows mount reports `0777` and `chmod` there is a no-op,
 > so `ingest.json` (which holds a token) would be world-readable. Use a real `/home/<user>` home.
 >
-> **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly ONE
-> place; a second live copy accumulates untracked files git never reconciles. The token is the answer.
+> **A checkout of the inbox is not a route — on the box either.** The retired `direct` route wrote
+> extractions into the box's `syndicate-playbook` working tree, where nothing committed them and
+> curation never saw them (83, measured 2026-10-22). Never clone the inbox or write into one; the
+> token is the answer.
 
 ### 6. Verify AWS Access
 

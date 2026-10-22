@@ -905,8 +905,9 @@ reach the skill file it was about. Right road, wrong vehicle: **say it to the op
 > appear on a box — their absence there is the intent, not a fault; and any `/home/<user>/<repo>/…`
 > path written into a skill is a **claim that may already be false**. Resolve it before acting on it,
 > and if the repo turns out to live elsewhere, do the work there and say so. Never let a dead path
-> become an excuse to improvise locally. That is exactly why 11.0 below resolves the inbox by probing
-> for it rather than by naming a machine.
+> become an excuse to improvise locally. That is exactly why 11.0 below names no machine: it resolves
+> the route from what this host holds (a valid `ingest.json`), and a checkout of the inbox found on
+> disk is not a route.
 
 #### 11.0 — ALWAYS FIRST: resolve the inbox, then flush the spool
 
@@ -932,9 +933,7 @@ INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
 # route, then failed every delivery while reporting health. An empty/corrupt ingest.json must
 # resolve spool with a DISTINCT warning, not a route.
 ingest_ok() { [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null; }
-if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then
-  ROUTE=direct         # this host literally holds the inbox (the box) — write straight to it
-elif ingest_ok; then
+if ingest_ok; then
   ROUTE=ingest         # POST the extraction to the ingest endpoint over HTTPS (below)
 elif [ -f "$INGEST" ]; then
   ROUTE=spool          # present but EMPTY/INVALID — do NOT trust it into a route
@@ -942,15 +941,22 @@ elif [ -f "$INGEST" ]; then
 else
   ROUTE=spool          # no ingest config on this host yet — spool it, loudly
 fi
+# A checkout of the inbox is NOT a route, on the box or anywhere (the retired `direct` route, below).
+[ "$ROUTE" = spool ] && [ -d "$HOME/syndicate-playbook/knowledge_extraction" ] && \
+  echo "WARNING: $HOME/syndicate-playbook is a checkout of the inbox, not a route — never write the extraction into it. Spooling; run syndicate-connect."
 echo "$ROUTE"
 ```
 
-`direct` is not a second *method* — it is the same file landing in the same place without a network
-hop, on the one host that is already sitting on the inbox. Every other host uses `ingest`.
+**There is no `direct` route, and the box is no exception.** Until 2026-10-22 a host holding
+`$HOME/syndicate-playbook/knowledge_extraction` (the box) wrote each extraction straight into that
+checkout, the route this step then called `direct`, retired since. Nothing ever committed those
+files, and curation reads only its own clone of origin, so 83 box extractions from 9 projects
+(2026-08-17 to 2026-10-21) never reached it. An extraction is delivered when the endpoint commits it
+to origin, and only then. Every host — the box included — resolves `ingest` or `spool`.
 
 **If this host resolves `spool`, say the remedy — do not just report the backlog.** An outage clears
-on its own; a host that has never been given an ingest config does not. On such a machine both
-conditions above stay false forever, every extraction accumulates undelivered, and the flush block
+on its own; a host that has never been given an ingest config does not. On such a machine the
+condition above stays false forever, every extraction accumulates undelivered, and the flush block
 below prints `SPOOL: empty` — which reads as health. Name it as a **setup gap** and give the one
 command that closes it (the operator supplies the URL + a per-host token, out of band):
 
@@ -964,13 +970,12 @@ The command only writes `ingest.json` (mode 600) after a probe POST returns a no
 trades `spool` (loud) for `ingest` (confident, and wrong). Whatever is already spooled flushes on the
 next run of this step.
 
-Do **not** clone the inbox to make `direct` true instead — it lives in exactly ONE place, and a
-second live copy accumulates untracked extraction files that git never reconciles.
+Never write an extraction into a checkout of the inbox instead — not the box's, not a clone made for
+the purpose: a file in its working tree is untracked, nothing commits it, and curation never sees it.
 
-**Then flush the spool.** If `ROUTE` is `direct` or `ingest` and `$SPOOL` is non-empty, deliver the
-backlog by that route now, and **remove only the files that confirmably arrive** (a `200` from the
-endpoint, or a completed `direct` write). A file that fails to deliver stays spooled — never deleted,
-never assumed delivered:
+**Then flush the spool.** If `ROUTE` is `ingest` and `$SPOOL` is non-empty, POST the backlog now, and
+**remove only the files that confirmably arrive** (a `200` from the endpoint). A file that fails to
+deliver stays spooled — never deleted, never assumed delivered:
 
 ```bash
 # SELF-CONTAINED ON PURPOSE — re-derives SPOOL and ROUTE instead of inheriting them.
@@ -982,14 +987,12 @@ never assumed delivered:
 SPOOL="$HOME/.syndicate-knowledge-spool"
 INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
 ingest_ok() { [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null; }
-if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then ROUTE=direct
-elif ingest_ok; then ROUTE=ingest
-else ROUTE=spool; fi
+if ingest_ok; then ROUTE=ingest; else ROUTE=spool; fi
 
 if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then
   echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — route=$ROUTE"
-  # deliver each via $ROUTE (direct: mv into the inbox; ingest: POST — see step 3),
-  # and rm ONLY on confirmed success. If ROUTE=spool, deliver nothing and report the backlog.
+  # ROUTE=ingest: POST each (see step 3) and rm ONLY on a 200.
+  # ROUTE=spool: deliver nothing and report the backlog.
 else
   echo "SPOOL: empty (route=$ROUTE) — nothing awaiting delivery"
 fi
@@ -1026,10 +1029,7 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
    **Naming convention**: `{project}-{YYYY-MM-DD}-{topic}-recommended.md`
 
    Write it via the `$ROUTE` already resolved in **11.0** — do not re-resolve, and never invent a
-   third destination:
-
-   - **direct** — write `$HOME/syndicate-playbook/knowledge_extraction/{project}-{YYYY-MM-DD}-{topic}-recommended.md`
-     with the Write tool (the box, sitting on the inbox).
+   third destination (a checkout of the inbox is not one, on the box either):
 
    - **ingest** — write the file to a temp path (`TMPFILE=$(mktemp)`, then Write into it), and POST it
      to the endpoint. The endpoint authenticates the token, derives the filename server-side, and
@@ -1048,7 +1048,7 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
      [ "$code" = 200 ] || echo "ingest returned $code: $(cat /tmp/ingest.out)"
      ```
 
-   - **spool** — **also the fallback whenever `direct` fails or the `ingest` POST returns non-200**
+   - **spool** — **also the fallback whenever the `ingest` POST returns non-200**
      (endpoint down, token rejected, offline). Never drop the extraction, and never substitute a local
      repo path:
 
@@ -1059,7 +1059,7 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 
      Then **report it loudly** in the Step 12 summary — spooled, not delivered, with the reason verbatim.
      The spool is a **waiting room, not a destination**: it is drained by **11.0** on the next run that
-     resolves an inbox, and by `/syndicate-refresh-remote` Step 6a.
+     resolves `ingest`, and by nothing else.
 
    > **Never write the extraction into the current repo as a substitute.** A local write looks like
    > success and silently removes the knowledge from the curation path — that is worse than an outage,
@@ -1202,11 +1202,11 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 - File: {project}-2025-12-22-api-error-handling-recommended.md
 - Items: 2 patterns, 1 anti-pattern
 - Delivered: ingest → HTTPS POST, committed to the inbox repo (path from the 200 response)
-  (or "direct → $HOME/syndicate-playbook/knowledge_extraction/" on the box; or "SPOOLED → ~/.syndicate-knowledge-spool/ — NOT delivered: <reason verbatim>")
+  (or "SPOOLED → ~/.syndicate-knowledge-spool/ — NOT delivered: <reason verbatim>")
 (or "None - no generalizable learnings this session")
 
 ### Knowledge Spool (ALWAYS report — never omit, even when nothing was extracted)
-- Route resolved: ingest (or direct on the box / spool — no ingest config on this host)
+- Route resolved: ingest (or spool — no valid ingest config on this host, the box included)
 - Flushed this run: 0
 - Still spooled: 0
 (A backlog is independent of whether this session learned anything. "Nothing extracted" must never
@@ -1295,8 +1295,8 @@ Total: 8/20 tasks complete (40%)
 - Diverged repos: resolve per /start-session § 0a (runs on ANY host), then re-push. (Your commit is safe locally.)
 - Offline / local-only repos: re-push when origin is reachable / after adding an origin.
 - Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
-- Spooled extractions: the inbox was unreachable; files are safe in `~/.syndicate-knowledge-spool/` and will flush on the next session that reaches it, or run `/syndicate-refresh-remote`. Nothing is lost — but nothing is curated either until they land.
-- Spooled **because this host has no route at all** (`route=spool`, no `ingest.json`, no local inbox): that is a **setup gap, not an outage** — it will not clear by waiting, and every future session adds to the pile. Say so, and give the fix: `bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>` (per machine, once; the operator supplies the URL + a per-host token).
+- Spooled extractions: the ingest POST failed (endpoint down, token rejected, offline); files are safe in `~/.syndicate-knowledge-spool/` and go out on the next run of § 11.0 that resolves `ingest`, which is the only thing that drains them. Nothing is lost — but nothing is curated either until they land.
+- Spooled **because this host has no route at all** (`route=spool`, no valid `ingest.json`; a checkout of the inbox is not a route): that is a **setup gap, not an outage** — it will not clear by waiting, and every future session adds to the pile. Say so, and give the fix: `bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>` (per machine, once; the operator supplies the URL + a per-host token).
 - (If every repo shows pushed / nothing-to-push, the spool is empty, and no deploy is pending: no action required.)
 ```
 

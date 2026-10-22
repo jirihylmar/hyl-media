@@ -36,7 +36,9 @@ only requirement, so it works behind any firewall.
    unreachable. On any failure it writes nothing and the host stays on `spool` (loud), never `ingest`
    (confident, and wrong).
 4. **Writes** `~/.syndicate-remote-secrets/ingest.json` = `{url, token}`, mode 600.
-5. **Resolves the route** as § 11.0 does and prints it. Must be `ingest`.
+5. **Resolves the route** as § 11.0 does and prints it. Must be `ingest`, on the box too: a checkout
+   of the inbox in `$HOME` is not a route. The retired `direct` route wrote into the box's, and the
+   extractions there were never committed (83 never reached curation).
 
 ## Exit codes
 
@@ -72,5 +74,5 @@ key-permission trap are all gone — there is no key to place. The token is a *d
 
 ## Related
 
-- `/update-progress` § 11.0 — the resolver this satisfies (`direct` / `ingest` / `spool`).
+- `/update-progress` § 11.0 — the resolver this satisfies (`ingest` / `spool`, on every host).
 - `docs/knowledge-ingest-lambda-instruction.md` — the endpoint's architecture and security posture.

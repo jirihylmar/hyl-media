@@ -204,18 +204,20 @@ If `AGENTS.md` already exists, it is project-owned: preserve it and add only a s
 
 An existing project being put on the workflow is usually on a host that has never run one — so
 check the knowledge path here, at injection, not months later. `/update-progress` § 11 delivers every
-extraction to the **one** inbox by HTTPS POST to the ingest endpoint, resolving the route by
-**presence**:
+extraction to the **one** inbox by HTTPS POST to the ingest endpoint, on every host (the box
+included), resolving the route as § 11.0 does:
 
 ```bash
-if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox (the box)"
-elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ];   then echo "ingest — POSTs to the endpoint over HTTPS"
+INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
+if [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null
+then echo "ingest — POSTs to the endpoint over HTTPS"
+elif [ -f "$INGEST" ]; then echo "NO ROUTE — $INGEST is empty or lacks url|token; extractions would spool"
 else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
 ```
 
-**`NO ROUTE` is a setup gap, not a runtime condition.** Neither becomes true on its own: extractions
-land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained only by a run
-that *does* resolve a route.
+**`NO ROUTE` is a setup gap, not a runtime condition.** A valid `ingest.json` never appears on its
+own: extractions land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained
+only by a run that *does* resolve a route.
 
 **The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
 for both, then:
@@ -233,8 +235,9 @@ delivered) and writes `ingest.json` only after the proof. Re-run the resolver; i
 setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`. Delivery
 is outbound HTTPS — no ssh key, no `box.json`, no firewall entry. `ingest.json` is per-machine, mode
 600, outside every git repo — never commit it. Keep `$HOME` off `/mnt/c` (a Windows mount can't hold
-0600, so the token would be world-readable). Do **not** clone the inbox to make `direct` true — it
-lives in exactly ONE place.
+0600, so the token would be world-readable). A checkout of the inbox is not a route, on the box
+either: the retired `direct` route wrote extractions into one, where nothing committed them (83,
+measured 2026-10-22). Never clone the inbox or write into one.
 
 ---
 

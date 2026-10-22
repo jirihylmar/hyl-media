@@ -208,24 +208,23 @@ box host used: <ip>
 box info cached at: /home/<user>/.syndicate-remote-secrets/box.json
 ```
 
-### Step 6a — Flush the knowledge spool (only after the box is confirmed reachable)
+### Step 6a — Report the knowledge spool (never copy it to the box)
 
-`/update-progress` writes session knowledge to the **one** inbox at
-`<workspace>/syndicate-playbook/knowledge_extraction/` on the box. When the box is unreachable it
-spools to `~/.syndicate-knowledge-spool/` rather than losing the extraction or scattering it into the
-current repo. This run has just proven the box reachable, so it is the natural flush point.
+`/update-progress` § 11.0 delivers session knowledge by HTTPS POST to the ingest endpoint, which
+commits it to the inbox repo on origin. When that fails it spools to `~/.syndicate-knowledge-spool/`,
+and its next run that resolves `ingest` flushes the spool by the same POST. This step only reports
+the backlog:
 
 ```bash
 SPOOL="$HOME/.syndicate-knowledge-spool"
 [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ] \
-  && echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery"
+  && echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — /update-progress § 11.0 flushes them by ingest"
 ```
 
-If non-empty, `scp` each file to the box inbox using the same host-config values the binary just used,
-and **remove only the files that arrive**. A file that fails to copy **stays spooled** — never deleted,
-never assumed delivered. Report the result: `N flushed, M still spooled`.
-
-Skip this step entirely on a dry-run, and on any run where the box was not reached.
+**Never `scp` them into the box's checkout of the inbox.** Until 2026-10-22 this step did, and
+`/update-progress` on the box wrote there too: a file in that working tree is untracked, nothing
+commits it, and curation reads only its own clone of origin (83 box extractions never reached it).
+A backlog that does not drain means this host has no valid `ingest.json`: run `/syndicate-connect`.
 
 Then ask: "Anything else to sync?" (no / yes — back to step 2).
 
