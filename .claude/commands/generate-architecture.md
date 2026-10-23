@@ -23,7 +23,20 @@ Generate a visual architecture diagram using Python diagrams library and update 
 
 ## Prerequisites
 
-Ensure dependencies are installed:
+The generator needs the Python package `diagrams` and Graphviz (`dot`). Work through these in
+order:
+
+1. **Use what the project provides.** If the project has its own way to render the diagram, such
+   as a `make architecture` target, a container or a script named in its `CLAUDE.md`, use it, and
+   use it again in step 4 instead of running `generate.py` directly.
+2. **Check what is already there:** `python3 -c 'import diagrams'` and `command -v dot`. If both
+   succeed, install nothing.
+3. **Install only where the host's rules allow it.** On a shared or administered host, never
+   install packages. That means a member host, a machine whose administrator is someone else, or
+   any project whose `CLAUDE.md` forbids host changes. Report the missing dependency instead, so
+   the project or the operator can provide it. Installing is fine on a host you administer alone,
+   such as your own workstation, and there these two commands do it:
+
 ```bash
 pip3 install --break-system-packages diagrams
 sudo apt-get install -y graphviz
@@ -161,9 +174,8 @@ To regenerate the diagram:
 python3 docs/architecture/generate.py
 ```
 
-Requirements:
-- `pip3 install --break-system-packages diagrams`
-- `sudo apt-get install -y graphviz`
+Requirements: the Python package `diagrams` and Graphviz (`dot`). Install them only where the
+host's rules allow it (`/generate-architecture` § Prerequisites).
 ```
 
 If it already exists, leave its prose alone and refresh the **Source** section to name the source
@@ -209,8 +221,8 @@ Usage:
     python3 docs/architecture/generate.py
 
 Requirements:
-    pip3 install --break-system-packages diagrams
-    sudo apt-get install -y graphviz
+    the Python package `diagrams` and Graphviz (`dot`). Install them only where the host's rules
+    allow it (/generate-architecture § Prerequisites).
 
 Output:
     docs/architecture/{{name}}_architecture.png
