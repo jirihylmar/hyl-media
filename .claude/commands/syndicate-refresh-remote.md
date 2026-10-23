@@ -252,6 +252,19 @@ Always confirm before executing if interpretation is non-obvious.
 - **`git clean`.** The binary never runs it, anywhere. This matters concretely: nested clones are typically **gitignored**, so a `git clean -xdf` would destroy them. It is not in the tool.
 - **Touch AWS** beyond a single read-only call to find the box IP when prompted. No mutations.
 - **Transfer secrets through git.** Only `.env*` files via scp (mode 600 on receiver).
+  - A `.env*` file holds the project's own settings, and copying it is allowed: a project placed
+    on another machine brings its own `.env`. An SSH or VPN key must never be in one; it stays in
+    each machine's own configuration, by the operator's VPN and SSH rule of 2026-10-12. Find one
+    without opening a file: this prints only the names of the files the binary would copy that
+    look like they hold a key, never their contents.
+    ```bash
+    find ~/<repo> -type f \( -name '.env' -o -name '.env.*' -o -name '*.env' \) \
+      ! -path '*/.git/*' -exec grep -liE 'private.?key' {} +
+    ```
+    For a repo that prints a name, sync it in a run of its own with `--skip-env` (the flag covers
+    the whole run, so the other repos keep theirs) and report the name. Whether the connection that
+    copies them checks host keys is a separate matter, stated under *Scope* at the top; the binary
+    is syndicate-remote's to change.
 - **Cross branches.** Only syncs the currently-checked-out branch on each side. If branches differ, it surfaces and asks.
 
 ### The exceptions — read this before trusting the list above

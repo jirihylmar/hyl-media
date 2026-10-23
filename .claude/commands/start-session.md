@@ -53,6 +53,60 @@ When multiple agents work in the same repo simultaneously, each agent is assigne
 - **Include your task ID in all commit messages** — e.g., `progress: complete task 2.3 - [description]`
 - **Commit only files related to your task** — don't stage changes from another agent's work
 
+### A red check on a shared checkout
+
+On a tree other agents share, a check that turns red is not yet evidence about your work, and not
+yet pre-existing either. Attribute it before you call it either:
+
+```bash
+T=$(mktemp -d) && git worktree add --detach "$T" HEAD && echo "$T"  # HEAD: no uncommitted change
+git log --format='%h %ad %s' -- <the failing input>    # who changed it; git status names nobody
+```
+
+A variable does not survive into your next command, because each one runs in a fresh shell. Write
+the path the first command prints last (`<tmp>` below) into every later command, the cleanup
+included.
+Run the same check in `<tmp>`, then read the result:
+
+- **Red there:** your uncommitted change is not the cause. If the commit `git log` names carries
+  your task ID, it is still yours to fix. Otherwise it is pre-existing: report it with that commit,
+  or say that no commit changed its input. While that commit's task is open under another agent, do
+  not patch it; once that work is finished, the defect is open work for this project: add a task
+  for it (`/update-progress` § *When New Task Discovered Mid-Work*).
+- **Green there:** apply only your change (`git diff HEAD -- <your files> | git -C <tmp> apply`, and
+  copy any untracked file of yours) and run it again. Red means it is yours to fix. Green means
+  another agent's uncommitted work broke it: report that, and do not patch it. If another agent
+  also has uncommitted edits in one of your files, that diff carries theirs too and cannot separate
+  them: say the cause is unknown.
+- **It cannot run there** (it needs ignored files such as dependencies or `.env`): say the cause is
+  unknown. Never call it pre-existing.
+
+Then remove it: `git worktree remove --force <tmp>`.
+
+---
+
+## Blocked on another owner's change
+
+When your task needs a change another project owns (its files, its record, its service) or a
+host-wide change (§ Two Environments), do not make it yourself, even to unblock this task. The one
+sanctioned way to change another project's files is the central repository's reviewed estate
+operations, and they reach its record only as an appended estate notice (`/add-work` § *The Four
+Destinations*). A defect in a distributed default goes to the operator (`/update-progress`
+§ *A framework defect is reported, never implemented*). Ask the owner instead:
+
+1. **If its session is live, message it in the same turn.** In Claude Code, `ListAgents` shows the
+   sessions you can reach and `SendMessage` sends to one. Say what is needed, why, and where any
+   file or notice about it is, so the message stands on its own. It is a request, and that session
+   decides.
+2. **Otherwise name it in your report:** what is blocked, which project or host must change, and
+   what the change is. Put the same in your task's `notes`.
+3. **Then continue with other work.** Waiting on another owner is not a checkpoint.
+
+A repository this one declares as a member in its `relations` block (`PROJECT_CHARTER.md` § 14) is
+not another owner: it is directed from here, so change its files as this project's procedures say.
+Its `progress.json` is still its own, and no other repository writes it (`PROJECT_CHARTER.md`
+§ 11, *The record of identity and current work*).
+
 ---
 
 ## Writing for the Operator (binds this whole session, not just the report)
@@ -62,7 +116,7 @@ working memory.** Not the task numbers, not the plan you made twenty minutes ago
 invented while making it. Assume that every session, from scratch. It is not a failure of theirs to
 be fixed by explaining more later — it is the normal condition, and it is what you write for.
 
-**The three rules:**
+**The rules:**
 
 1. **Never present a task by its ID alone.** `999.c.i` is not a description of anything. An ID is an
    index into a document the reader does not have open. Always: the ID **and** what it means in plain
@@ -72,6 +126,14 @@ be fixed by explaining more later — it is the normal condition, and it is what
    more than spelling it out would have cost you.
 3. **Never use a label you invented.** *"I'm working on a and g"* means nothing to someone who did
    not watch you write the list `a`…`g`. Your plan's internal names are yours alone. Say the thing.
+4. **A number names what it counts.** Write *"57 mentions of 3 speakers"*, never
+   *"57 attributions"*: a number beside a domain noun is read as a count of the things that noun is
+   about, and the operator acts on that reading. Say what was counted and how many distinct things
+   it covers, and when the number is part of a whole, give the whole: *"0 of 66 visible"*.
+5. **Never word a gated action as begun.** When an action waits on the operator's go-ahead, meeting
+   its last precondition does not authorise it. Name what was built, never the gated verb
+   (*the training pipeline is built*, not *training started*), in commit subjects and task notes as
+   well as here; where its status is shown, it reads *ready, not authorised*.
 
 **This binds mid-session, not only at the handoff.** Every progress line, every question you ask,
 every proposal — the operator has to be able to follow it *as it happens*, without reconstructing
@@ -80,6 +142,12 @@ your reasoning first. A report they have to decode is a report that has not been
 > **The test, before you send anything:** could someone who has not read this project's
 > `progress.json` today act on this sentence? If not, rewrite it. Information the reader cannot use
 > is, as the operator put it, *"good for nothing"*.
+
+**Say so before a long, silent wait.** Before a command that will hold the turn for minutes with no
+output, tell the operator roughly how long it will take, what it is waiting on, and what stopping it
+midway would leave behind, if anything. Better, run it in the background and keep reporting while
+you watch it, so the turn is never silent (session-watched, `PROJECT_CHARTER.md` § 11,
+*Unattended operations*).
 
 ---
 
@@ -99,6 +167,24 @@ your reasoning first. A report they have to decode is a report that has not been
 > and reaches no other host; and while the VPN is down Step 2.5 reports it *not checked*, never
 > *no copy there*. Which project goes on which member host is the operator's decision.
 
+> **Every host carries other projects, so what they share is never one project's to change.** The
+> projects on a host share its packages, Docker daemon and images, user systemd manager and timers,
+> firewall and network. Do not upgrade or remove a package, change the timezone, edit or restart the
+> Docker daemon, restart the user's systemd manager, edit the firewall, or prune Docker
+> (`docker image prune -a` deletes the pinned MCP images sessions start from, and
+> `docker system prune` other projects' stopped containers). Installing what a check reports missing
+> is ordinary work, as are the host setup your `CLAUDE.md` authorises and the per-machine steps a
+> distributed default names (`prepare-host.sh`, and `connect.sh`, which the operator runs outside
+> the session, `PROJECT_CHARTER.md` § 8); none of them covers changing what other projects already
+> use. Ask for anything else host-wide as
+> § *Blocked on another owner's change* says. A project's own setup script keeps the same boundary:
+> it prints a host-wide step as a note and does not let it hold back ready when the project can run
+> without it; otherwise it reports the step as waiting on the host's owner. Publish a database or
+> admin port on `127.0.0.1` and reach it by ssh tunnel, because Docker's published ports bypass the
+> host firewall; a container allow-list admits only its network's gateway (`/32`, the
+> published-port proxy's source), not the bridge range other projects' containers share. None of
+> this binds the repository whose work is running the host; its `CLAUDE.md` says so.
+
 **Which machine you are running on is not knowable from this file.** Every default command ships
 unchanged to every host — the local workstation, the remote dev box and any member host (above) — and
 the first two differ in ways that matter:
@@ -106,8 +192,8 @@ the first two differ in ways that matter:
 | | Local workstation | Remote dev box |
 |---|---|---|
 | `HOME` | `/home/<user>` | `/home/ubuntu` |
-| AWS **service model** | one server **per account**, each carrying its own profile | **one central** server, bound to no account |
-| A bare call (no `--profile`) | returns that server's bound account | returns nothing — name the account per call |
+| AWS **service model** | one server **per account**, each carrying its own profile | **one central** server for several accounts: Claude's chooses the account per call by its `aws_profile` argument, Codex's `aws_api` by `--profile` in the command |
+| A bare call (no profile named) | returns that server's bound account | returns a default account, with success (Claude's: its **first** profile's; Codex's: its own default profile's) — name the account on every call |
 | A host config in `~/.syndicate-remote-secrets/` | present (it is the local pointer *to* the box) | absent, and that is correct |
 | Which repos exist | some live only here, by policy | some live only there, and are developed there |
 
@@ -124,6 +210,8 @@ the first two differ in ways that matter:
 > connection bound to a different account. Measured: the connection bound to account `030…`, given a
 > profile belonging to account `299…`, returned **`299…`** and success. Passing a profile that does
 > *not* exist on this machine is the only case that errors (`The config profile could not be found`).
+> This holds for every server that takes a CLI command. Claude's server on the box takes none (it
+> publishes `aws___run_script`); its `aws_profile` argument overrides its default the same way.
 >
 > So the failure mode is not "the call breaks" — it is **"the call succeeds against the wrong
 > account and nothing tells you."** This is exactly why the rule below says *verify identity*: the
@@ -142,6 +230,20 @@ the first two differ in ways that matter:
 > it. A default profile does not remove the wrong-account hazard; it makes the hazard quiet. Naming
 > the account per call is the cost of having the mistake be loud. Revisit only with a measured case
 > where naming it cost more than a silent wrong-account write would.
+
+> **The box's central servers cannot honour that decision.** Claude's, `mcp-proxy-for-aws`, makes
+> the first profile it was launched with its default, and Codex's `aws_api` falls back to its own
+> default profile, so a call that names no account succeeds against that account and nothing says
+> so. The loud failure can come back only through host configuration; until then, naming the
+> account on every call is the only guard (`/check-aws` Step 2 finds the value that reaches it).
+
+> **The AWS connection usually cannot read this checkout's files.** A server in a container that
+> mounts only `~/.aws`, or one that runs your code in AWS's own sandbox, sees no local path, so a
+> `file://` or `fileb://` argument, a pipe, a redirect or a `$VARIABLE` fails when the call runs.
+> Pass the content inline (a JSON argument, or `params` through `call_boto3`), or an `s3://` URI
+> where the operation takes one. Otherwise use the local `aws` CLI with `--region` and a profile
+> that `aws sts get-caller-identity --profile <p>` proves is this project's account (names from
+> the `/check-aws` Step 2 listing command).
 
 > **A session should cost memory only for the AWS access it actually needs.** Servers belong in the
 > projects that use them, not in a global block every project inherits. Measured on the workstation
@@ -422,7 +524,9 @@ This answers **"does a command for this already exist / am I aware of it?"** —
 
 - **Prefer-existing rule.** Before building, scripting, or hand-rolling ANY capability, scan the inventory for a command whose name/description covers the need. If one matches, invoke it instead of doing the work ad-hoc — reinventing an existing command is a defect, not initiative.
 - **Open before you reject.** If a command's name plausibly fits but its one-line description is terse, READ that command file before concluding "mine is different." This closes the most common reinvention loophole.
+- **Search past this project, too.** The inventory lists this project's commands only, and the mechanism you are about to design may already exist in another repository. Before designing one (a switch, a sync, a guard, a login, a report), search the other checkouts on this host for the job's verb and noun: `for g in "$HOME"/*/.git "$HOME"/*/*/.git; do [ -e "$g" ] || continue; r=${g%/.git}; git -C "$r" grep -il --all-match -e '<verb>' -e '<noun>' 2>/dev/null | sed "s|^|$r/|"; done`. A repository that lives on another host is searched there, over ssh with a timeout inside the remote command; if this host cannot reach it, say the search did not cover it. A local copy of a repository that lives elsewhere is stale (Step 2.5), not the one to port from. When the operator says "like X" or "as in <repo>", read X before designing anything. If the mechanism exists, port it and change only what the new context forces.
 - **Re-derive, don't recall.** Consult the live directory each session; never act on a remembered list or `CLAUDE.md` prose.
+- **Read the skill that owns what you change.** Before changing a file or a surface (a page, a table, an endpoint), check whether a project skill names it, and read that skill first: `grep -l -F -- '<path or name>' .claude/skills/*/SKILL.md .agents/skills/*/SKILL.md .claude/commands/*.md 2>/dev/null | grep -vxF -f <(grep -oE '"\.(claude|agents)/[^"]+"' .claude/distribution-manifest.json | tr -d '"')`, which leaves out the distributed defaults the manifest lists, as `/update-progress` Step 7's sweep does. Whether the change then needs the skill updated is `/update-progress` Step 7's question.
 
 **Reconcile `CLAUDE.md` only if it has DRIFTED to a hardcoded list (authorized, scoped, idempotent):**
 
@@ -1456,13 +1560,18 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 **Only if user chose Continue**
 
+Resolve the handle as `/check-aws` Step 2 does: `{mcp_tool}` is only the first candidate, and a
+tool with an `aws_profile` argument is never probed bare, because it answers for its default.
+
 ```
 {mcp_tool} aws sts get-caller-identity
 ```
 
 - If `context_hints` has no `aws_account` (a Phase 0 project, or one without AWS), skip this step and record "AWS verify: n/a (no aws_account in context_hints)" in the Step 9 report.
 - **STOP if account ID does not match** `context_hints.aws_account`
-- Confirm region matches `context_hints.aws_region`
+- Name the region on every regional call, never relying on the connection's default:
+  `context_hints.aws_region`, or the resource's own region where it lives elsewhere (a CloudFront
+  certificate is in us-east-1). If `aws_region` is not declared, find it as `/check-aws` Step 2 says
 
 ### 6. Pre-Work Verification (MANDATORY)
 
@@ -1481,10 +1590,21 @@ Run its verification step:
 **If verification FAILS:**
 - Do NOT proceed to new task
 - Fix the regression first
+- On a checkout other agents share, attribute it before fixing (§ Multi-Agent Discipline →
+  *A red check on a shared checkout*): another agent's work in progress is reported, not patched.
+  If the check is green at HEAD with your change, record the report (the task's `notes`,
+  session_notes.md) and proceed. Report another agent's pre-existing defect the same way, message
+  that agent if its session is live (§ *Blocked on another owner's change*, step 1), and continue
+  with other work: waiting on it is not a checkpoint
 - Document in session_notes.md
 
 **If verification PASSES:**
 - Proceed to current task
+
+**If the current task acts on a premise its record states** (its `added_reason`, a pattern from an
+earlier task, a peer's finding), re-run the check behind that premise where you are about to act,
+above all before a deletion or other irreversible step, and record the result in the task's
+`notes` (`PROJECT_CHARTER.md` § 10, *Verify reality*).
 
 ### 7. Check Context Budget
 
@@ -1551,8 +1671,8 @@ Update `git_repos` status in progress.json:
 
 ### AWS Account Verified
 - Account: {AWS_ACCOUNT_ID} ✓
-- Region: {AWS_REGION} ✓
-- MCP Tool: {mcp_tool}
+- Region: {AWS_REGION}, named on every regional call (or: not declared — taken from {source})
+- MCP Tool: {mcp_tool} (resolved handle: {handle})
 
 ### Pre-Work Verification
 - Last completed: Task X.Y - [name]
@@ -1634,7 +1754,8 @@ If you (Claude) used `EnterPlanMode` during a session:
 ## Critical Reminders
 
 - **NEVER** export AWS profiles to environment
-- **ALWAYS** use MCP tools for AWS operations
+- **ALWAYS** use the MCP connection for AWS operations, except where § Two Environments or
+  `/check-aws` Step 10 sanctions the local `aws` CLI (with `--region`, and a profile `aws sts get-caller-identity` proves)
 - **ALWAYS** verify account before any AWS operation
 - **ALWAYS** verify last task before starting new work
 - **NEVER** assume discussion equals authorization

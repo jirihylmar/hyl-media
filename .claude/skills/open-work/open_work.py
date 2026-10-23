@@ -219,6 +219,30 @@ def state_of(task, current_task):
     return "not started"
 
 
+def waits_on(task, open_ids):
+    """-> [str]: the ids in task['depends_on'] that name a task still open anywhere.
+
+    A declared dependency had no reader: a task waiting on an unfinished one rendered as plain
+    "not started", in the very table the next task is picked from. depends_on is a list, or a
+    single str/int/float treated as a one-item list; anything else is empty. Measured 2026-10-22
+    on the operator's workstation, in the 13 of its 18 top-level project checkouts that use it:
+    1,091 tasks carry it, 1,029 as lists and 62 as strings, and 30 items are prose or ids that
+    match no task in their file. So an item counts ONLY when str(item) is exactly the str() of an
+    open task's id. Prose, comma-joined strings and unknown ids are left alone, never guessed at:
+    a guessed dependency is a wrong one stated with the renderer's authority."""
+    raw = task.get("depends_on")
+    if isinstance(raw, (str, int, float)):
+        raw = [raw]
+    elif not isinstance(raw, list):
+        return []
+    found = []
+    for item in raw:
+        key = str(item)
+        if key in open_ids and key not in found:
+            found.append(key)
+    return found
+
+
 def stuck_since(task, phase):
     for key in ("started_at", "added_at", "added_on"):
         if task.get(key):
@@ -311,6 +335,11 @@ def main():
     if not current_phase:
         current_phase = resolved
 
+    # Every task still open, in any phase, by the same DONE vocabulary the buckets use — so a
+    # dependency spelt 'completed' or 'superseded' is finished, and nothing waits on it.
+    open_ids = {str(t["id"]) for p in phases.values() for t in tasks_of(p)[0]
+                if t.get("id") not in (None, "") and not is_terminal(t)}
+
     out = []
     if notes:
         out.append("> **progress.json pointer check — report these, do not silently fix them:**")
@@ -332,12 +361,20 @@ def main():
             out.append("| Task | In plain words | State |")
             out.append("|------|----------------|-------|")
             for task in rows:
+                # This is the table the next task is picked from, so a declared dependency on
+                # unfinished work is shown HERE and nowhere else: 'not started — waits on 2.1'.
+                state = state_of(task, current_task)
+                waits = waits_on(task, open_ids)
+                if waits:
+                    state += " — waits on %s" % ", ".join(cell(w, 40) for w in waits[:3])
+                    if len(waits) > 3:
+                        state += " (+%d more)" % (len(waits) - 3)
                 out.append("| %s | %s | %s |"
                            % (cell(task.get("id", "?"), 40),
                               fill("what %s actually is, needing no other document open — "
                                    "NOT its name repeated: %s"
                                    % (cell(task.get("id", "?"), 40), cell(task.get("name", "")))),
-                              state_of(task, current_task)))
+                              state))
                 rendered_rows += 1
         else:
             out.append("_No open tasks in the current phase — it is ready to close "

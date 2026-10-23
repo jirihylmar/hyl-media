@@ -41,6 +41,9 @@ of Step 5. Defer Step 2b, Step 3c, the full session handoff in Step 5, Step 11, 
 actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
 cost—or adopt the stopping posture—of ending a session.
 
+The next ready task is an open task whose `depends_on` names no task that is still open;
+`/open-work` marks the others in the current phase's table as `waits on <id>`.
+
 ## Ultra-Conservative Update Rules (CRITICAL)
 
 ### ALLOWED Modifications to progress.json:
@@ -136,6 +139,21 @@ terminal, leave it as history and represent later action in a new or existing op
 {"id": "2.1a", "name": "Later work discovered after 2.1 closed", "status": "pending", "references": ["2.1"]}
 ```
 
+**Work moves into another open task only by amending that task.** When remaining work goes into
+an existing open task instead of a new one, rewrite that task's deliverable and `verify` to carry
+it before the original closes, and link the two: the receiver's `references` names the original,
+and the original, as it closes, names the receiver (`superseded_by` if it closes superseded,
+otherwise in its `notes`). If the original is already terminal, leave it as it is; the receiver's
+`references` is the only link. A "folded into X" note that leaves X's wording unchanged is not a
+disposition: X then closes on its old wording, and the work belongs to nobody. If the receiving
+task is in progress under another agent, put the work in a new task that references both instead.
+
+**A decision task closes on the decision.** A task phrased as a decision, such as *decide whether
+to X*, is complete when the decision is made. Its `verify_result` is the decision and its
+reasoning, and says that system behaviour has not changed. If the decision is to act, the
+implementation is a separate open task that references the decision task. One task never stays
+open to cover both: it would be neither honestly open nor honestly closed.
+
 ### When New Task Discovered Mid-Work:
 
 **First ask one question: does this serve the goal of the phase I am in?** The answer decides the
@@ -214,11 +232,58 @@ For each task being marked complete:
 - Run its `verify` step if defined
 - Confirm deliverables exist
 - Check AWS resources if applicable
+- **Ask what would make the verify fail.** If the honest answer is "nothing that exists yet", it
+  passes by absence: replace it with a check that fails when its premise changes.
+- **A task that adds, fixes or restates a check shows it failing first** (`PROJECT_CHARTER.md`
+  § 10, *Verify reality*). A check here is a test, gate, guard, lint, limit, threshold or negative
+  control. Run it twice and record both runs in `verify_result` as
+  `seen failing: <run 1>; passes: <run 2>`:
+  1. Against the defect: the file as it stood before the fix
+     (`git show <commit before the fix>:<path>`), the defect put back, or an injected violation;
+     for a limit, the case one step past it, on the real system (a write there follows the order in
+     the live-write bullet). It must fail, and a test or gate
+     must name that defect. A collection or import error is not that failure.
+  2. Against the fix: it passes; for a limit, the newly allowed case succeeds.
+
+  Confirm the broken input really changed what the check reads, and that the failing assertion
+  turns on something only correct behaviour produces, not a word or count the broken code also
+  emits. When a real record exposed the defect, build the bad input from it, not from a fixture.
+  If a deliberate change made you relax a check instead, record `lost verification: <what>`.
+- **Read what was skipped.** `PASSED` means the checks covering this task ran: read a suite's skip
+  count and reasons, and a CI job's or scheduled check's run history, where `completed / skipped`
+  is not a run. If any were skipped, record `PASSED with N skipped: <reason>` or fix the skip. A
+  skip that turns on live state or on generated wording is bound to a committed input instead. A
+  CI job or scheduled check that has never run is made to fail loudly on its missing
+  configuration, or deleted; before reviving one, confirm it has work to do.
+- **Render and read a surface a person uses.** For a served page, dashboard, report or rendered
+  document, fetch or screenshot the result and read the changed part as its reader would: labels,
+  tables, formatting, and whether the expected entries are there. Say so in `verify_result`; a
+  green test suite is not this check. If you cannot reach it, record that it was not reached; that
+  is no reason to stop and ask.
+- If the verify must write to a live system, run it first with an identifier that cannot exist (it
+  must fail at the lookup, not at argument parsing, and leave no record behind), then on a record
+  made for the purpose there, and on a real record only when neither will do: the lowest-stakes one
+  (machine-made over human-approved, old over current), its prior values captured first.
+  `verify_result` names the record, the writes and how to restore it, and confirms that what a human
+  approved is still the current version (`PROJECT_CHARTER.md` § 10, *Verify reality*). A write a
+  third party outside the operator's estate would see is not a verification step: it is the
+  *Irreversible or outward-facing* checkpoint (`PROJECT_CHARTER.md` § 3, *Protect operator
+  attention*).
+- If the task fixes a reported defect, `verify_result` says how many instances of its class were
+  listed and measured, and where that list is kept (`PROJECT_CHARTER.md` § 5, *Make phases
+  converge*).
 
 Record verification:
 ```json
+{"id": "2.2", "status": "complete", "verify_result": "PASSED - seen failing: pre-fix file, fails naming the unescaped quote; passes: on the fix, 0 skipped"}
 {"id": "2.3", "status": "complete", "verify_result": "PASSED - API returns 200"}
 ```
+
+Cite a document section **by its title** in anything that outlives the session: a task's
+`verify_result` or `notes`, the reason a task was superseded, and the Step 5 session entry.
+Write `PROJECT_CHARTER.md` § *Verify reality*, not § 10 alone. A number may stand beside the
+title, never in its place: a renumbering silently points a terminal task's `verify_result` at the
+wrong section, and that field cannot be rewritten afterwards, only corrected by a later note.
 
 ### 2a. Grounding-at-Touch (sessions that edited skills or canonical docs)
 
@@ -226,22 +291,30 @@ Index-level hygiene cannot see content rot — a repo passes every clock/ref/ind
 skills cite CLI flags that don't exist and its docs describe retired resources. The fix is standing
 and incremental: **the session that touches a claim verifies that claim.**
 
-If this session edited any skill (`.claude/commands/*.md`) or canonical doc (`docs/` outside
-`_archive/`), verify the operational claims **in the sections you touched** against the actual
-implementation before marking the task complete:
+If this session edited any skill (`.claude/commands/*.md`, `.claude/skills/*/SKILL.md`,
+`.agents/skills/*/SKILL.md`), canonical doc (`docs/` outside `_archive/`), or a product page,
+template or UI string that prints a command for its reader to run, verify the operational claims
+**in the sections you touched** against the actual implementation before marking the task complete:
 
 | Claim type | Verification |
 |---|---|
 | Cited file path | Path resolves in the live tree |
-| Cited CLI flag / subcommand | Exists in the tool's argument parser (`--help`, source) |
+| Cited CLI flag / subcommand | Exists in the argument parser (`--help`, source) of the tool its block or table cell names — not necessarily the tool mentioned nearest to it |
 | Deployed-resource name | Appears in a **fresh** inventory, not a remembered one |
 | Payload / query shape | Matches the deployed definition (schema, table model, API) |
-| Command presented as runnable | Actually shell-runnable as written (multi-line included) |
+| Skill or command frontmatter (`name:`, `description:`) | Still in the executor's live skill listing with its description; `description:` on one line (the commit guard warns otherwise) |
+| Command presented as runnable | Run it as written (multi-line included): it must parse **and** answer. Check the result's shape (a count, a field, a total) against the text around it and wherever else the repo states that figure. An empty result proves nothing: widen the window or filter until something returns. A command that writes is grounded by `--help` or a dry run, never run against a live system. |
+| Architecture or universal claim ("X reads Y and nothing else", "put it in Z", "every X goes through Y") | List the members, then check each one's callers, imports, triggers and subscriptions. That Y exists for every member does not show that traffic goes through it. |
 | Tool handle / resource name inside a fenced EXAMPLE | Same verification as if it were prose — or visibly neutral (a `<placeholder>`, `{braces}`, or the reserved fictional `myproject-` prefix). Agents copy examples as the pattern, and nobody "touches" an illustration, so a retired handle or another project's real resource name survives every gate while teaching every reader the wrong thing. An example is an operational claim, not decoration. |
 
 Also at touch: new/edited content uses the project's terminology-registry names if a registry
 exists (no new synonyms, no banned bare words), and adds no phase/task/session numbers as
 load-bearing content to canonical surfaces.
+It states no current count of something that grows either (files carrying a defect, projects
+affected, items matching a condition): that count is wrong as soon as one more appears. Write the
+per-item fact, or a rate that does not move with the population (*one file in three*); a count,
+*N of M* included, carries the date it was taken. Where two records disagree on a count, recount
+from the source rather than quoting either.
 
 **An edit that leaves a touched claim unverified is incomplete work** — verify it, fix it, or
 record it as an explicit deferral with a named reason. Scope is the sections you touched, not the
@@ -262,11 +335,19 @@ cite flags that don't exist.
    Files Step 2a fully verified this session count as grounded — stamp them in the map rather than
    re-picking them.
 
+   **An open `partial` comes first.** If `hygiene-state.json` holds any `partial` entry, the pick
+   is the first one listed, resumed where it stopped, and no file outside `partial` is started
+   while one is open: a second bookmark leaves both unclosed. When it is finished, stamp it and
+   delete its entry. An entry for `IMPLEMENTATION_PLAN.md` is closed by item 3's two checks for
+   the specification, never resumed claim by claim.
+
    **The rotation set is every file a reader would take as current** — not just the ones under
    `docs/`:
 
    ```
    .claude/commands/*.md          # live skills (defaults included — ground them, report, never edit)
+   .claude/skills/*/SKILL.md      # skills (distributed ones too — ground them, report, never edit)
+   .agents/skills/*/SKILL.md      # Codex skills, the same way
    docs/**/*.md                   # excluding _archive/
    ops/**/*.md                    # runbooks: read at the worst possible moment, so rot costs most
    README.md  CLAUDE.md                             # root canonical docs, if present
@@ -285,6 +366,10 @@ cite flags that don't exist.
    operational claims, verify each against the implementation, record claim / reality / fix in
    session_notes.
 
+   Order the work by what a wrong claim costs. Recovery and *if it stops* text comes first, because
+   it is followed literally while something is already failing. In a skill, correct a wrong rule
+   before adding a missing one: a wrong rule is followed, a missing one costs a rediscovery.
+
    **What you do with a defect depends on who owns the file — and there are only three answers:**
 
    | The file is… | Remedy |
@@ -292,6 +377,8 @@ cite flags that don't exist.
    | a **project-specific** skill or doc (anything you own) | **fix it in place.** Normal work. |
    | a **distributed default** (the 10 named in § 11.b) | **report it. Never fix it in place.** |
    | the **approved specification** (`IMPLEMENTATION_PLAN.md`) | **neither — it is not that kind of file.** See below. |
+
+   A distributed **skill** (§ 11.b) takes the second row: report it, never fix it in place.
 
    **Keep grounding the defaults — just never edit them.** Reading them against reality is how
    framework defects get found at all; a real pass grounded them and surfaced four genuine engine
@@ -326,6 +413,7 @@ cite flags that don't exist.
    name wins); strip leaked phase/session/task numbers (statement stays, process token goes).
    If NO registry exists yet, seed a minimal `terminology.md` under `docs/` from this file's
    concepts, marked DRAFT, and surface it for ratification in the Step 12 report.
+   Date or rewrite any undated count of something that grows (Step 2a).
 5. **Stamp the map**: `"<file>": "<today>"` for the sliced file and any 2a-verified files. If the
    file was too large to finish, record `"partial": {"<file>": "<where you stopped>"}` in
    `hygiene-state.json` and stamp the map only when the file completes.
@@ -363,7 +451,7 @@ session_notes. Two consecutive skips make the slice MANDATORY at the next sessio
 
 ```json
 {
-  "last_updated": "2025-12-20T10:00:00Z",
+  "last_updated": "<date -u +%Y-%m-%dT%H:%M:%SZ>",
   "last_session_summary": "Completed 2.3, API endpoint working",
 
   "current_task": "2.4",
@@ -374,7 +462,7 @@ session_notes. Two consecutive skips make the slice MANDATORY at the next sessio
         {
           "id": "2.3",
           "status": "complete",           // ✓ Changed
-          "completed_at": "2025-12-20...", // ✓ Added
+          "completed_at": "<date -u +%Y-%m-%dT%H:%M:%SZ>", // ✓ Added
           "verify_result": "PASSED",       // ✓ Added
           "artifacts": ["arn:aws:..."]     // ✓ Added to array
         }
@@ -393,6 +481,12 @@ minutes or hours ago — the project looks untouched all day, whatever it did. M
 collector had expanded to a midnight the source never stated, and this engine repo's own row read
 *"16 hours ago"* twenty minutes after a push. `/progress-check` warns `DATE-ONLY last_updated` on
 a bare date at commit time; the remedy is that one command, not a hand-typed time.
+
+**A task's `started_at` and `completed_at` are taken the same way, at the moment.** Run that
+command when the task starts and again when it closes. Never estimate either one or reconstruct
+it later, and never write one later than the commit that records it: an estimated instant drifts
+past its commit, and the record then contradicts git. `/progress-check` warns `FUTURE` when any of
+the three is ahead of the clock.
 
 ### 3b. Reconcile every phase's status against its own tasks (before 3a, every session)
 
@@ -455,7 +549,13 @@ explicit disposition. None may be left `pending` in a closed phase.**
 |---|---|---|
 | **Finished** | It's done | Normal completion + `verify_result`. |
 | **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
+| **Re-homed** into an existing open task | The same, and an open task in another phase already serves that work's goal | Amend that task first, as § When Task Scope Changes During Work says, then mark the original `superseded` with `superseded_by` naming it. |
 | **Dropped** | Speculative, overtaken, or no longer justified | `superseded` with a **reason someone can disagree with**. "Not needed" is not a reason. "No measured problem; re-raise with a benchmark" is. |
+
+**A guess that a task is stale is a claim to measure** (`PROJECT_CHARTER.md` § 10, *Verify
+reality*), also when the operator leaves the call to you. If the task names a measurable condition,
+measure it now and write today's figure beside the original in the reason. If it has not improved,
+the task is not stale: re-scope it to today's figure, then finish it or re-home it.
 
 The executor owns routine dispositions. Consult the operator only when dropping, deferring or
 re-scoping work would change the agreed product outcome, architecture or risk. Otherwise reconcile
@@ -595,9 +695,13 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 ### Key Decisions Made
 - [Any architectural or design decisions]
+- [Who made each one: `operator, YYYY-MM-DD: "<their words>"`, or `executor`]
 
 ### Issues Encountered
 - [Any problems and how they were resolved]
+- [A defect this work introduced: what failed, how it was found, the commit that fixed it. Call it
+  a defect here, in that commit's message and in the task's `verify_result` (its `notes` if the task
+  closed earlier), never a refinement (`PROJECT_CHARTER.md` § 5, *Make phases converge*)]
 
 ### Context for Next Session
 - Task 2.4 is next: [description]
@@ -675,12 +779,56 @@ project-owned mechanism (6 projects already use it for other steps), as a splice
 A project that registered nothing still has documentation that this session may have falsified:
 
 ```bash
-# Only what THIS session actually changed, so the sweep is bounded by the work, not by the tree.
-git diff --name-only HEAD~1 2>/dev/null | head -50
+# The last commit plus uncommitted work, so the sweep is bounded by the work, not by the tree.
+# Files only in earlier commits are not listed: add them from `git log --stat` when they count.
+# Past 50 files the rest is counted, not listed: "(+N more)" says the list was cut.
+git diff --name-only HEAD~1 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
 ```
 Then: for each **canonical surface** (`README.md`, `CLAUDE.md`, `docs/**` outside `_archive/`)
 that describes something in that diff, bring it into line — the same *found it, then fix it*
 rule as Step 2b. Do not open documents the session did not touch the subject of.
+
+**Project skills are swept too, registry or not.** A project's own skill
+(`.claude/skills/*/SKILL.md`, `.agents/skills/*/SKILL.md`, or a command in `.claude/commands/`
+that did not arrive by distribution) goes stale within a phase when no task asks whether the
+work changed what it describes. List those that name a file changed since the branch last matched
+its upstream (since the last commit, when nothing is unpushed), uncommitted and untracked files
+included. A task already pushed in several commits shows only its last one here:
+
+```bash
+python3 - <<'PY'
+import glob, json, os, subprocess
+def git(repo, *args):
+    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True).stdout
+def changed(repo):  # since the branch last matched its upstream, plus untracked files
+    base = git(repo, "merge-base", "@{u}", "HEAD").strip()
+    if base in ("", git(repo, "rev-parse", "HEAD").strip()):
+        base = "HEAD~1"          # no upstream, or all pushed: an empty diff would read as clean
+    return (git(repo, "diff", "--name-only", base) +
+            git(repo, "ls-files", "--others", "--exclude-standard")).splitlines()
+try: dist = set(json.load(open(".claude/distribution-manifest.json")).get("files") or {})
+except (OSError, ValueError, AttributeError): dist = set()
+skip = dist | {"progress.json", "session_notes.md", "CLAUDE.md", "AGENTS.md", "README.md"}
+files = [f for f in changed(".") if f not in skip and not os.path.isdir(f)]
+for sub in sorted(glob.glob("*/.git")):          # each sub-repo, found as Step 9 finds it
+    files += [sub[:-4] + f for f in changed(sub[:-5])]
+skills = {*glob.glob(".claude/skills/*/SKILL.md"), *glob.glob(".agents/skills/*/SKILL.md"),
+          *glob.glob(".claude/commands/*.md")} - dist
+for skill in sorted(skills):
+    text = open(skill, errors="replace").read()
+    hits = [f for f in files if f != skill and f in text]
+    if hits:
+        print(f"{skill}: {', '.join(hits[:5])}" + (f" (+{len(hits) - 5})" if hits[5:] else ""))
+PY
+```
+
+Add any skill that names a surface this task changed (a page, a table, an endpoint). For each,
+ask two questions. Did this task change the method the skill documents, or only apply it? Did
+the skill already know what this task found? If either answer shows a gap, update the skill now
+and commit it with this task's work in Step 10, or in the next commit if that work is already
+committed. Do not leave it to a follow-up task: the knowledge the fix needs is in this session,
+and until the fix lands the skill teaches the old method. Name each skill checked under
+*Canonical surfaces checked* in the Step 12 *Documentation swept* table.
 
 **When adding a new document to the project:**
 1. Create the document
@@ -697,7 +845,12 @@ defaults, which are named once in § 11.b below. (This list used to be spelled o
 stale: it said "9 defaults" and named a `refresh-remote.md` that no longer existed while missing
 `repo-hygiene.md`. One statement, one place.)
 
+Project skills under `.claude/skills/` and `.agents/skills/` are in scope too: every skill
+directory except the distributed ones § 11.b identifies.
+
 If there are no project-specific skills, skip this step.
+
+8d below applies even then: it is how a project's first skill is made.
 
 **8a. Fix mistakes in skills**
 
@@ -733,7 +886,22 @@ Example:
 
 If skills were added, removed, or renamed this session, update this table.
 
+**8d. Turn a hand-run audit into a project skill**
+
+If this session ran a check or an audit by hand that will be needed again, make it a project
+skill, so the next session does not start from nothing. Name it as `PROJECT_CHARTER.md` § 12
+*A skill this project creates says so in its name* requires. It holds one command that finds its
+own inputs rather than this session's paths; the failure classes found, each with how it showed
+and how to check for it; the read-only scripts and the decision each one informs; and the shape
+of its report. Run every command in it as written before the commit, then list it per 8c.
+
 ### 9. Check All Git Repos
+
+**First, re-run any verify that a later step overtook.** If a step after Step 2 changed a file that
+the verify of a task completed in this run covers, run that verify again now and record the new
+result as its `verify_result`; if it fails, the task is not complete. A pass recorded before the
+last write is not evidence (`PROJECT_CHARTER.md` § 10, *Verify reality*).
+
 ```bash
 # Orchestration
 git status
@@ -875,6 +1043,9 @@ If you find a defect in a **distributed default** (`add-work.md`, `check-aws.md`
 `setup-workflow-only.md`, `setup.md`, `start-session.md`, `update-progress.md`) — a wrong claim, a
 dead path, a rule that misfires — **you report it. You do not fix it.**
 
+The same holds for a distributed **skill**: every directory under `.claude/skills/` or
+`.agents/skills/` with a file listed in `.claude/distribution-manifest.json`. The next distribution overwrites it.
+
 **You may not:** edit the engine repo (`syndicate-playbooks-examples`); edit the default in place
 here (the next distribution overwrites it, and the edit is *lost*); run `/distribute-defaults`; or
 decide that the framework should change. **Every one of those is the operator's call, not yours.**
@@ -958,10 +1129,12 @@ to origin, and only then. Every host — the box included — resolves `ingest` 
 on its own; a host that has never been given an ingest config does not. On such a machine the
 condition above stays false forever, every extraction accumulates undelivered, and the flush block
 below prints `SPOOL: empty` — which reads as health. Name it as a **setup gap** and give the one
-command that closes it (the operator supplies the URL + a per-host token, out of band):
+command that closes it. The operator runs it with their URL, in their own terminal, from this
+project's root and outside this session, where it prompts for the per-host token without echo
+(PROJECT_CHARTER.md § 8, *Git contains the recoverable system*):
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>
 ```
 
 Per **machine**, once — never per project: the resolver reads `$HOME` and nothing else, so afterwards
@@ -1040,9 +1213,13 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
      CFG=~/.syndicate-remote-secrets/ingest.json
      URL=$(python3 -c "import json;print(json.load(open('$CFG'))['url'])")
      TOK=$(python3 -c "import json;print(json.load(open('$CFG'))['token'])")
-     code=$(curl -sS -X POST -H "Authorization: Bearer $TOK" --data-binary @"$TMPFILE" \
-       -o /tmp/ingest.out -w '%{http_code}' \
-       "$URL?project={project}&topic={topic}&date={YYYY-MM-DD}")
+     # The token reaches no command line (PROJECT_CHARTER.md § 8, Git contains the recoverable
+     # system): curl reads the header as a config on stdin (-K -). The body comes from the file,
+     # so stdin is free for the config.
+     code=$(printf 'header = "Authorization: Bearer %s"\n' "$TOK" \
+       | curl -sS -K - -X POST --data-binary @"$TMPFILE" \
+           -o /tmp/ingest.out -w '%{http_code}' \
+           "$URL?project={project}&topic={topic}&date={YYYY-MM-DD}")
      # 200 = committed to the inbox repo (see /tmp/ingest.out for the path). Any other code:
      # DO NOT drop it — fall through to spool with the code + body as the reason.
      [ "$code" = 200 ] || echo "ingest returned $code: $(cat /tmp/ingest.out)"
@@ -1198,6 +1375,14 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 ### Tasks Added This Session
 - Task 2.3a: Handle edge case (pending)
 
+### Corrected This Session (ALWAYS report — never omit, even when nothing proved wrong)
+- Said earlier: <the claim, and where> → actually: <what is true, and how it was found>
+  Corrected in: <each channel that carried it, by a new entry: a later commit, the task's `notes`
+  (terminal tasks too), this report, a report to the project whose record holds it>
+- Introduced by this work: <the defect> → fixed in <commit>, recorded as a defect (Step 5)
+(or "None — nothing reported earlier proved wrong, and this work introduced no defect".
+ The rule: `PROJECT_CHARTER.md` § 10, *Verify reality*, and § 5, *Make phases converge*.)
+
 ### Knowledge Extracted (delivery state — say which route, never just "written")
 - File: {project}-2025-12-22-api-error-handling-recommended.md
 - Items: 2 patterns, 1 anti-pattern
@@ -1223,7 +1408,9 @@ Steps whose omission is visible — the commit, the push, this report — are no
 an artifact.
 
 ```bash
-git diff --name-only HEAD~1 2>/dev/null | head -50     # what this session actually changed
+# The last commit plus uncommitted work; past 50 files the rest is counted as "(+N more)".
+# A session that made several commits changed more: add the earlier ones from `git log --stat`.
+git diff --name-only HEAD~1 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
 ```
 
 | Files this session changed | Canonical surfaces checked | Brought into line |
@@ -1237,8 +1424,11 @@ session created a doc, the row must show where it is now referenced from.
 
 ```bash
 python3 - <<'PY'
-import json
+import datetime, json, os
 d = json.load(open("progress.json"))
+now = datetime.datetime.now(datetime.timezone.utc)
+days = [s.strip() for s in os.environ.get("SESSION_DATE", "").split(",") if s.strip()] \
+    or [(now - datetime.timedelta(days=n)).strftime("%Y-%m-%d") for n in (0, 1)]
 ph = d.get("phases") or {}
 for key, p in (ph.items() if isinstance(ph, dict) else enumerate(ph)):
     if not isinstance(p, dict): continue
@@ -1246,7 +1436,7 @@ for key, p in (ph.items() if isinstance(ph, dict) else enumerate(ph)):
     for t in (ts.values() if isinstance(ts, dict) else ts):
         if not isinstance(t, dict): continue
         if str(t.get("status") or "").lower() not in ("complete", "completed"): continue
-        if t.get("completed_at") != "TODAY": continue          # <- this session's date
+        if str(t.get("completed_at") or "")[:10] not in days: continue   # a date or a UTC instant
         if not str(t.get("verify_result") or "").strip():
             print(f"NO EVIDENCE  {t.get('id')}  {str(t.get('name'))[:60]}")
 PY
@@ -1255,8 +1445,13 @@ PY
 Rule 6 (*"Verify Against Real Data Before Completion"*) has existed in prose for months and is
 violated at a flat rate; **53.3% of terminal tasks estate-wide (1,538 of 2,884) carry no
 `verify_result` at all**, five projects at 100%. Prose did not move that number because nothing
-ever printed it. This section prints it, for **this session's** completions only — the ones you
-can still fix.
+ever printed it. This section prints it for recent completions: those whose `completed_at` falls
+on today's or yesterday's UTC date, or on the dates listed in `SESSION_DATE` (comma-separated
+`YYYY-MM-DD`) when it is set. A listed task not yet committed as complete takes its evidence in
+`verify_result`. One already committed as complete, by an earlier session or by this session's own
+task-boundary commit, takes it in `notes` instead: its verification is history
+(`PROJECT_CHARTER.md` § 4, *Work from outcomes and keep open work coherent*), and
+`progress-check` warns when it changes.
 
 ### Open Work (rendered mechanically — run it, do not compose it)
 
@@ -1296,7 +1491,7 @@ Total: 8/20 tasks complete (40%)
 - Offline / local-only repos: re-push when origin is reachable / after adding an origin.
 - Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
 - Spooled extractions: the ingest POST failed (endpoint down, token rejected, offline); files are safe in `~/.syndicate-knowledge-spool/` and go out on the next run of § 11.0 that resolves `ingest`, which is the only thing that drains them. Nothing is lost — but nothing is curated either until they land.
-- Spooled **because this host has no route at all** (`route=spool`, no valid `ingest.json`; a checkout of the inbox is not a route): that is a **setup gap, not an outage** — it will not clear by waiting, and every future session adds to the pile. Say so, and give the fix: `bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>` (per machine, once; the operator supplies the URL + a per-host token).
+- Spooled **because this host has no route at all** (`route=spool`, no valid `ingest.json`; a checkout of the inbox is not a route): that is a **setup gap, not an outage** — it will not clear by waiting, and every future session adds to the pile. Say so, and give the fix: `bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>` (per machine, once; the operator runs it with their URL, in their own terminal, from the project's root and outside the session, where it prompts for the per-host token without echo — PROJECT_CHARTER.md § 8, *Git contains the recoverable system*).
 - (If every repo shows pushed / nothing-to-push, the spool is empty, and no deploy is pending: no action required.)
 ```
 

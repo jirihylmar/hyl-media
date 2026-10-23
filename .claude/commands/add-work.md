@@ -92,8 +92,18 @@ Render and inspect every planned, ongoing and deferred task and phase. If a non-
 coherently represent the requested outcome, refine, combine, divide, reassign, re-scope or relocate
 it instead of creating a duplicate. Related work that serves the same outcome and is closable
 belongs in the same phase. Terminal tasks are references only and are never rewritten.
+Before planning work that extends an existing design, read what the operator has ruled about it:
+building more inside one they ruled wrong does not answer that ruling.
 
 ### 1. Determine Work Type
+
+**Before choosing, settle whether the deliverable belongs to the product or is a one-off hand-off**
+(who it is for, and whether anything must keep producing it). A report, export or document made
+once for another team or project is a hand-off. It is written as files in a folder under `docs/`
+in this repository, never as a served page or a pipeline output. Finished in the session that
+asked for it, it is that request and needs no task; the session report says where the files are.
+Only a hand-off that outlives that session is tracked, as A or B, and its deliverable is still
+that folder.
 
 Use AskUserQuestion:
 
@@ -154,7 +164,12 @@ Every task MUST be:
 - **Single deliverable** - one file, one endpoint, one component
 - **Session-sized** - completable in <30 min
 - **Verifiable** - has concrete verification
+  that comes out false on the defect it guards, measured where the user meets it
+  (`PROJECT_CHARTER.md` § 10, *Verify reality*). A page-wide `scrollWidth` check passes while a
+  table scrolls inside its own box; rewrite a verify like that before proposing the task.
 - **Deployable state** - code works after task
+- **Dependencies declared** - a verify or deliverable that names another task's deliverable puts
+  that task in `depends_on` (`/generate-phases` § 5 *Add Required Fields to Each Task*)
 
 **If too big → break down further**
 

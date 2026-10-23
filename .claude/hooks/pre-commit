@@ -3,10 +3,14 @@
 #
 # Git runs this on EVERY `git commit`, regardless of how files were staged, so it
 # catches the outcome of `git add -A` no matter what the agent remembered. It
-# REJECTS a commit whose staged set NEWLY ADDS a build artifact or an oversize
-# blob. It NEVER inspects modifications/deletions of already-tracked files — that
+# REJECTS a commit whose staged set NEWLY ADDS a build artifact, an oversize
+# blob, or a file that looks like it holds a secret (named .env or .env.<x>, or
+# carrying a private key or an AWS secret access key — PROJECT_CHARTER.md § 8).
+# Those checks NEVER inspect modifications/deletions of already-tracked files — that
 # is what lets a legitimately-tracked large data file (e.g. a 34MB curator .tsv)
 # keep committing while a brand-new 36MB lambda-deployment.zip is blocked.
+# It also NOTES, never refuses, a staged skill or command whose frontmatter an
+# executor may not read (description: not on one line, or a fence never closed).
 #
 # CANONICAL: edit ONLY at _project-template/.claude/hooks/pre-commit in
 # syndicate-playbooks-examples, then run /distribute-defaults. Do NOT hand-edit
@@ -71,7 +75,52 @@ ARTIFACT_EGG='(^|/)[^/]*\.egg-info(/|$)'
 # vendored lib or binary test fixture is not blocked.
 ARTIFACT_BIN='\.(so|o|dylib|dll|exe|bin)$'
 
+# Secrets in NEWLY-ADDED files (PROJECT_CHARTER.md § 8). A gitignored secret is one forced add away
+# from history: `git add -f .env` used to commit cleanly, because this guard asked new paths only
+# about artifacts, size and .codex/. History keeps a secret after the file is deleted, so the only
+# cheap moment to stop one is this commit. A path is flagged when
+#   (a) its basename is .env or .env.<x>, unless it ends in .example/.sample/.template/.dist; or
+#   (b) its staged blob is at most 1 MiB and has a line carrying a PEM private-key header, or an
+#       aws_secret_access_key assigned a 40-character value on a line without EXAMPLE.
+# The 40 characters are what make (b) safe: a bare `= …` form matched boto3 keyword arguments
+# (aws_secret_access_key=creds["SecretAccessKey"],) and placeholder docs across the estate. Run
+# over every local project, the tightened pattern hit exactly one tracked file. Evaluated AFTER
+# is_allowed, so a fake fixture listed in artifact-guard.allow passes. The message names the path
+# and the cause, never the matching line. If git cannot read the blob, the check fails open.
+# A blob that names neither marker (any case) is read once and passes; only one that does is read
+# again for the exact patterns.
+# Known limits, measured 2026-10-22. The PEM header matches anywhere on a line, so source code that
+# holds it as a string constant is refused too: the cryptography library's ssh.py does, so a newly
+# vendored crypto library or Python Lambda layer needs an artifact-guard.allow line. The pattern
+# ends at "PRIVATE KEY-----", so a PGP key block (BEGIN PGP PRIVATE KEY BLOCK) and a PuTTY .ppk
+# key are not caught.
+SECRET_SCAN_MAX=1048576   # 1 MiB; larger blobs are not read
+SECRET_PEM='-----BEGIN ([A-Z]+ )*PRIVATE KEY-----'
+SECRET_AWS="aws_secret_access_key[\"']?[[:space:]]*[=:][[:space:]]*[\"']?[A-Za-z0-9/+]{40}[\"']?,?[[:space:]]*\$"
+secret_cause() {
+  local path="$1" base="${1##*/}" sz
+  case "$base" in
+    .env|.env.?*)
+      case "$base" in
+        *.example|*.sample|*.template|*.dist) ;;
+        *) echo "named like a secret file"; return 0 ;;
+      esac ;;
+  esac
+  sz="$(git cat-file -s ":$path" 2>/dev/null)" || return 0
+  case "$sz" in ''|*[!0-9]*) return 0 ;; esac
+  [ "$sz" -le "$SECRET_SCAN_MAX" ] || return 0
+  git cat-file -p ":$path" 2>/dev/null \
+    | grep -qaiE -e 'PRIVATE KEY-----' -e 'aws_secret_access_key' || return 0
+  if git cat-file -p ":$path" 2>/dev/null | grep -qaE -e "$SECRET_PEM"; then
+    echo "contains a private key"
+  elif git cat-file -p ":$path" 2>/dev/null | grep -aiE -e "$SECRET_AWS" | grep -qav 'EXAMPLE'; then
+    echo "contains an AWS secret access key"
+  fi
+  return 0
+}
+
 violations=""
+secret_violations=""
 
 # Enumerate ONLY newly-ADDED staged paths. --name-only -z --diff-filter=A emits
 # plain NUL-separated paths (no status field, no rename pairs) → unambiguous parse.
@@ -92,6 +141,10 @@ while IFS= read -r -d '' path; do
   fi
 
   is_allowed "$path" && continue
+
+  cause="$(secret_cause "$path")"
+  [ -n "$cause" ] && secret_violations="${secret_violations}  ${path}  (${cause})
+"
 
   reason=""
   if printf '%s' "$path" | grep -qiE "$ARTIFACT_EXT" \
@@ -194,6 +247,80 @@ if [ -n "$naming_violations" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Skill frontmatter — a NOTE, never a refusal. Runs on every staged (added, copied, modified or
+# renamed) skill or command file, scoped exactly as the naming check above.
+#
+# Why: hyl-media, 2026-08-23. A description split into adjacent quoted strings across lines
+# unregistered a skill: it vanished from the executor's skill listing with no error anywhere, and
+# nothing at commit time could have said so.
+#
+# Why not a YAML loader: PyYAML is not standard library on every host. And measured 2026-10-22, it
+# rejects 5 frontmatters that Claude Code 2.1.308 lists: syndicate-playbooks-examples'
+# .claude/skills syndicate-member-hosts, syndicate-estate-operations and
+# syndicate-claude-account-switch, and two app-brm-manufacturing-products commands. Claude Code
+# quotes such values before parsing, so a loader check would cry wolf. The awk below reads only
+# the shape: description on one line, the line after it a key, the fence closed. It is POSIX awk,
+# verified identical under mawk and gawk.
+#
+# Why a warning: a folded description (description: >) is valid YAML, and refusing a commit the
+# executor accepts is the one mistake a guard may not make. Claude Code lists block scalars: on
+# 2026-10-22 it listed, description in full, two synced skills whose description is one (| and >).
+# So a note for that shape says Claude Code lists it and another executor may not. This block
+# never changes the exit status, needs no python3, and says nothing about a file with no
+# frontmatter or no description.
+#
+# Measured silent on all 764 SKILL.md and command files on this workstation, _project-template
+# included. Re-measured 2026-10-22 when it landed, over a wider set (~/.claude, plugin caches and
+# worktrees too): silent on all 1,194, under both mawk and gawk, at the paths this hook reads
+# (direct children of skills/ and commands/). Deeper in ~/.claude, out of that scope, it notes 7,
+# all valid YAML: six block scalars, the two synced skills above among them, and one plugin whose
+# description starts on the next line.
+# ---------------------------------------------------------------------------
+FRONTMATTER_AWK='
+{ sub(/\r$/, "") }
+NR == 1 { if ($0 !~ /^---[ \t]*$/) exit; infm = 1; next }
+/^---[ \t]*$/ { closed = 1; exit }
+pending && /^[ \t]*$/ { next }
+pending {
+  if ($0 ~ /^[ \t]/) { print "description continues on the next line"; said = 1; exit }
+  if ($0 !~ /^[A-Za-z0-9_-]+:/ && $0 !~ /^- / && $0 !~ /^#/) { print "description is followed by a line that is not a key"; said = 1; exit }
+  pending = 0
+}
+/^description:/ {
+  v = $0; sub(/^description:[ \t]*/, "", v)
+  if (v == "" || v ~ /^[|>][-+0-9]*[ \t]*(#.*)?$/) { print "description is not on its own line"; said = 1; exit }
+  pending = 1
+}
+END { if (infm && !closed && !said) print "frontmatter opens with --- and never closes" }
+'
+frontmatter_notes=""
+while IFS= read -r -d '' path; do
+  case "$path" in
+    .claude/skills/*/SKILL.md|.agents/skills/*/SKILL.md)
+      parent="${path%/SKILL.md}"
+      case "${parent%/*}" in .claude/skills|.agents/skills) ;; *) continue ;; esac ;;
+    .claude/commands/*.md)
+      case "${path#.claude/commands/}" in */*) continue ;; esac ;;
+    *) continue ;;
+  esac
+  fm_reason="$(git show ":$path" 2>/dev/null | awk "$FRONTMATTER_AWK" 2>/dev/null)"
+  [ -n "$fm_reason" ] && frontmatter_notes="${frontmatter_notes}  ${path}: ${fm_reason}
+"
+done < <(git diff --cached --name-only -z --diff-filter=ACMR "$BASE" 2>/dev/null)
+
+if [ -n "$frontmatter_notes" ]; then
+  { echo "Skill frontmatter (staged) - notes; NOT blocking this commit:"
+    printf '%s' "$frontmatter_notes"
+    echo "An executor drops a skill whose frontmatter it cannot read from its skill listing, with"
+    echo "no error anywhere. Keep description: on one line, as every distributed skill does, then"
+    echo "confirm the skill is still listed (/update-progress Step 2a)."
+    case "$frontmatter_notes" in *"description is not on its own line"*)
+      echo "A block scalar (description: | or >) is valid YAML and Claude Code lists such a skill;"
+      echo "another executor may not, which is why the one-line form is the one that travels." ;;
+    esac; } >&2
+fi
+
+# ---------------------------------------------------------------------------
 # progress.json integrity — runs ONLY when progress.json is staged.
 #
 # Scoped to the moment of writing, deliberately: a project whose file is ALREADY
@@ -250,6 +377,21 @@ if git diff --cached --name-only 2>/dev/null | grep -qx 'progress.json'; then
         printf '%s\n' "$pg_out"; } >&2
     fi
   fi
+fi
+
+# A newly-added file that looks like it holds a secret (the scan is in the loop above).
+if [ -n "$secret_violations" ]; then
+  {
+    echo "COMMIT BLOCKED by .claude/hooks/pre-commit — a NEWLY-ADDED file looks like it holds a secret:"
+    printf '%s' "$secret_violations"
+    echo ""
+    echo "A secret file stays out of git: history keeps it after the file is gone, and if it was"
+    echo "ever pushed, rotation comes first. Rule: PROJECT_CHARTER.md § 8."
+    echo "Unstage it (git restore --staged <path>) and gitignore it. A fake fixture or a file of"
+    echo "public values goes in .claude/hooks/artifact-guard.allow, in this commit."
+    echo "Override (audited): git commit --no-verify"
+  } >&2
+  exit 1
 fi
 
 if [ -n "$violations" ]; then

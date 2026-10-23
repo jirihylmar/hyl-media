@@ -20,8 +20,8 @@ drifts far enough to need a crusade.
 **The standard this pass enforces:**
 - `docs/` contains **only canonical, current methods** (plus clearly-separated trail:
   `_archive/`, incidents, audit records). A doc that describes yesterday's system is corrected or archived.
-- **Skills** (`.claude/commands/`) are current: every referenced tool/path/procedure exists and
-  matches reality; no two skills duplicate one capability.
+- **Skills** (`.claude/commands/`, `.claude/skills/`) are current: every referenced
+  tool/path/procedure exists and matches reality; no two skills duplicate one capability.
 - **Indexes are true**: whatever index surfaces exist (CLAUDE.md pointers, a skill picker, an
   MCP/advisor knowledge base) reflect the real file set and route correctly.
 - **progress.json stays lean**: append-only is sacred, but verbose bodies of long-completed work
@@ -86,7 +86,7 @@ for d in sorted((root/"docs").glob("*")) if (root/"docs").exists() else []:
     if d.is_dir() and re.match(r"^(phase-|wip-|tmp-|scratch)", d.name):
         findings.append(f"B: working dir docs/{d.name}/ — extract-then-archive when its work closes")
 
-# (C) broken repo-relative doc refs from live surfaces (docs + commands)
+# (C) broken repo-relative doc refs from live surfaces (docs, ops, commands, root, project skills)
 ref_re = re.compile(r"(?<![\w/])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|html))")
 # The live-surface set must be every file a reader takes as CURRENT — see
 # /update-progress Step 2b. Restricting it to docs/ + .claude/commands/ silently
@@ -105,6 +105,22 @@ surfaces = (list((root/"docs").rglob("*.md")) + list((root/".claude/commands").g
             + list((root/"ops").rglob("*.md"))
             + [root/n for n in ("README.md", "CLAUDE.md")])
 surfaces = [p for p in surfaces if p.exists() and "_archive" not in p.parts]
+# Project skills (.claude/skills/*/SKILL.md) are live surfaces too: /update-progress Step 2b
+# rotates them. A distributed skill is left out, because it cites the engine's own docs, which no
+# project carries, and its remedy is a report (/update-progress § 11.b). The manifest says which
+# skills are distributed; without a readable one no skill is checked and the exclusion is printed.
+# A manifest with no `files` map (absent, null, not a map) is unreadable too. It must not crash
+# this one script, which would silence every check (see A), nor count a distributed skill as the
+# project's own.
+_skills = sorted((root/".claude/skills").glob("*/SKILL.md"))
+if _skills:
+    try:
+        _files = json.loads((root/".claude/distribution-manifest.json").read_text()).get("files")
+        if not isinstance(_files, dict): raise ValueError("manifest has no files map")
+        _dist = {k.split("/")[2] for k in _files if k.startswith(".claude/skills/")}
+        surfaces += [s for s in _skills if s.parent.name not in _dist]
+    except (OSError, ValueError, TypeError, AttributeError, IndexError):
+        print("   (surfaces: .claude/skills/ excluded — no readable distribution manifest to tell project skills from distributed ones)")
 # Report the exclusion rather than hiding it — the same rule check F applies to the defaults.
 if (root/"IMPLEMENTATION_PLAN.md").exists():
     print("   (surfaces: IMPLEMENTATION_PLAN.md excluded — the approved specification is the Phase-0 origin record, not a live surface; see Step 3)")
@@ -131,7 +147,8 @@ if pj.exists():
 # (F) process metadata leaked into canonical surfaces (sizes the Step 3 de-phase slice)
 #
 # SCOPE: exactly the surfaces Step 3 may fix in place — no wider, or the number that sizes the
-# slice counts work the step is forbidden to do. Two classes sit outside it.
+# slice counts work the step is forbidden to do. Project skills are in: check C admits a skill to
+# `surfaces` only when the manifest shows it is not distributed. Two classes sit outside it.
 #
 # `.claude/commands/` is EXCLUDED by construction. Those are centrally distributed defaults, and
 # "Phase 1", "task 2.3" etc. inside them are the ENGINE'S OWN DOMAIN LANGUAGE in worked examples —
@@ -241,7 +258,7 @@ uncommitted case above; the manifest is what closes that gap.)
 ## Step 1 — Per-file sweep (the judgment work)
 
 Go through **every file** in `docs/` (excluding `_archive/`) and **every skill** in
-`.claude/commands/`. For each, assign one disposition:
+`.claude/commands/` and `.claude/skills/`. For each, assign one disposition:
 
 > **Before you act on ANY disposition, ask who owns the file.** The distributed defaults — the list
 > is named once, in `/update-progress` § 11.b; do not copy it here, this exact list has gone stale
@@ -282,18 +299,32 @@ nothing is double-verified.
 1. **Pick the slice.** From the live skills + canonical docs, take the least-recently-grounded
    files per the `grounded` map in `.claude/hygiene-state.json` (never-grounded first). Bound the
    slice — 3–5 files, or roughly what one pass can verify properly. The bound is the point.
+
+   Open `partial` entries come first, as `/update-progress` Step 2b item 2 says. An entry for
+   `IMPLEMENTATION_PLAN.md` is closed only by that step's two checks for the specification,
+   never against the implementation and never by editing it.
 2. **Extract the claims.** For each file in the slice, list every operational claim: cited file
    paths, CLI flags, deployed-resource names, payload/query shapes, commands presented as runnable.
 3. **Verify each claim against the implementation**, not against other docs: the path resolves;
    the flag exists in the tool's argument parser; the resource name appears in a **fresh** inventory
    (not a remembered one); the payload/query shape matches the deployed definition; the command is
    shell-runnable as written (multi-line commands actually paste-and-run).
+
+   Items 2 and 3 abbreviate the `/update-progress` Step 2a claim table. Extract and verify every
+   claim type it lists, in the order that command's Step 2b item 3 sets; where they differ, the
+   table governs.
 4. **Record per finding**: claim / reality / fix — then act by **ownership**: fix a project-owned
    file in place; for one of the 10 distributed defaults, **report it and never edit it**
    (`/update-progress` § 11.b — grounding them is exactly how engine defects get found, but the
    remedy is a report). At scale (many findings, or subagent fan-out), add an independent refutation
    step before reporting so the worklist stays confirmed-only: a finding that survives an adversarial
    attempt to refute it is a fact, not a maybe.
+
+   A distributed skill (`/update-progress` § 11.b) is reported like a default, never edited.
+   Hand the refuter the proposed fix as well as the finding, and score per `PROJECT_CHARTER.md`
+   § *Verify reality*. A diagnosis that holds while its fix is refuted goes back to whoever
+   proposed the fix, marked *diagnosis confirmed, fix rejected*, for a new fix. It never goes
+   on the confirmed worklist.
 5. **Advance the cursor.** Update the `grounded` map in Step 5 so the next pass picks the next slice.
 
 Claims that cannot be verified this pass (resource offline, tool unavailable) are deferred with a
@@ -316,8 +347,10 @@ knowledge base — for process metadata (`Session N`, `Phase N`, dotted task IDs
 leaked in since the last pass.
 
 Quick check F sizes this slice, and the property that must hold is directional: **F never counts a
-file this step may not touch.** It reads the root docs, `docs/` and `ops/` part of the set above and
-not project skills or a served KB, so it under-reports — which costs a smaller slice this pass. The
+file this step may not touch.** It reads the root docs, `docs/`, `ops/` and the project's own skills
+under `.claude/skills/` (a skill counts only when the distribution manifest shows it is not
+distributed, and with no readable manifest none does). It does not read a served KB or a project
+command under `.claude/commands/`, so it under-reports — which costs a smaller slice this pass. The
 reverse would hand the step a finding whose only remedy is forbidden, and a check like that is one
 agents learn to skip.
 
@@ -858,9 +891,15 @@ extracted from this file, against fixtures.
 
 1. Write `.claude/hygiene-state.json`:
    `{"last_pass": "<today YYYY-MM-DD>", "findings_fixed": N, "deferred": ["<item — named reason>"],
-   "grounded": {"<file>": "<YYYY-MM-DD grounded>", ...}}`
+   "grounded": {"<file>": "<YYYY-MM-DD grounded>", ...},
+   "partial": {"<file>": "<where you stopped>"}}`
    — merge this pass's Step 1a slice into the existing `grounded` map (never drop prior entries);
    the map is what makes the rotation converge to full coverage.
+
+   Keep every open `partial` entry; delete one only when its file is finished and stamped.
+   Stamp only the slice files this pass finished. A file it could not finish keeps (or gains) its
+   `partial` entry and gets no stamp: `/update-progress` Step 2b item 5 voids a stamp that sits
+   beside a `partial`.
 2. session_notes entry: dispositions summary, grounding-slice findings (claim/reality/fix),
    what was archived/updated, deferred items with reasons.
 3. Commit (scoped to what this pass touched). A pass with unexecuted actionable dispositions is

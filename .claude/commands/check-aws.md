@@ -68,12 +68,14 @@ the account number is visible in the Arn of any successful `aws sts get-caller-i
 > **This step is one instance of the rule in `/start-session` § Two Environments — *verify identity,
 > resolve location, never declare a nickname*. The rule is stated there and not restated here.**
 
-**There are two AWS service models. Both are correct. Detect which one this host runs — never assume.**
+**There are two AWS service models, and the central one comes in more than one form. All are
+correct. Detect which one this host runs — never assume.**
 
 | Model | How it is set up | How you call it |
 |---|---|---|
 | **Per-account servers** | one MCP server per account, each carrying its own `AWS_PROFILE` | pick the right server, pass **nothing** |
-| **One central server** | a single MCP server bound to **no** account | name the account with `--profile` on every call |
+| **One central server** | a single MCP server bound to **no** account, or to a default one (the box's Codex `aws_api`) | name the account with `--profile` on every call |
+| **One central server**, account chosen by argument | one MCP server launched with several profiles, the first its default | set its `aws_profile` argument on every call |
 
 > **Why two models exist — memory, and this is not negotiable.** Every configured AWS MCP server
 > spawns **its own process per session** (~120 MB each). A host with 12 per-account servers and 6
@@ -95,6 +97,14 @@ the account number is visible in the Arn of any successful `aws sts get-caller-i
 `mcp__aws-*__call_aws` tool available in THIS session. Read your own live tool inventory — **never a
 list written down anywhere, including this file.** The set differs per machine and grows over time.
 
+**An AWS tool whose schema has an `aws_profile` argument is a candidate too, whatever its name, and
+is never probed bare:** it answers for its default, so a bare success proves nothing. Probe each
+value the argument's schema allows (its `enum` is that server's profile list) with the identity
+call in that tool's own form (on `run_script`: `await call_boto3(service_name="sts",
+operation_name="GetCallerIdentity")`), and accept only the profile whose `Account` equals
+`aws_account`. For such a tool this replaces the bare probe below: even when its default answers
+with `aws_account`, set `aws_profile` on every call.
+
 **Probe each candidate bare:**
 
 ```
@@ -104,7 +114,7 @@ list written down anywhere, including this file.** The set differs per machine a
 | What comes back | Which model | What you do |
 |---|---|---|
 | Identity, `Account` **==** `aws_account` | per-account | **Resolved.** Use this candidate **bare** everywhere below. Adding `--profile` here can only move you off a correct binding. |
-| Identity, `Account` **!=** `aws_account` | per-account, wrong one | Say which account it hit. Next candidate. |
+| Identity, `Account` **!=** `aws_account` | per-account, wrong one — or a central server answering for its default | Say which account it hit. If `/start-session` § Two Environments names this host's server as central with a default (the box's Codex `aws_api`), find the profile that reaches your account (below) and pass it with `--profile` on every call. Otherwise, next candidate. |
 | Error: no credentials / no default account | **central** | Not broken — this is the central model. Find the profile that reaches your account (below). |
 | Error: unknown tool | not on this host | Next candidate. |
 | Error: `Unable to parse config file: <path>` | either | Stop probing: that file is malformed (§ the gaps after the report). |
@@ -196,16 +206,23 @@ one from the other*. There is no convention to infer. Match by account number an
 **Below, `{handle}` means:** the resolved candidate, plus `--profile {profile}` appended to the `aws`
 command if and only if Step 2 resolved through a profile.
 
+On a tool that takes `aws_profile`, `{handle}` is that tool with `aws_profile` set to the matched
+profile on every call, and each command below is the same operation in that tool's own form (on
+`run_script`, through `call_boto3`, with `region_name` for `--region`).
+
 **If no candidate reaches `aws_account`, report and stop. Say which model this host runs — that is
 what makes the report actionable:**
 
 ```
 This project's AWS account {aws_account} is not reachable from this host.
 
-  Host model:  per-account servers  (or: one central server)
+  Host model:  per-account servers  (or: one central server;
+               or: one central server, account chosen by argument)
   Tried:       {each candidate/profile and what it returned}
   Gap:         no server is bound to {aws_account}
                (central model: no listed profile in ~/.aws/config OR ~/.aws/credentials reaches it)
+               (argument-selected server: no value its `aws_profile` argument allows reaches it —
+               the profile may exist on this host and be missing from the server's launch list)
 
 This is a host-configuration matter, not something to work around. Either the account
 belongs on another host — run /check-aws where it lives — or this host is missing the
@@ -260,6 +277,13 @@ a specification frozen at Phase 0, so a spec-derived expectation reports a live 
 unexpected and a Phase-0 resource that was cancelled during implementation as missing — both false
 findings.
 
+**Every regional call names the region.** Steps 4–8 pass `--region {aws_region}`, or the region a
+resource's inventory entry names (a CloudFront certificate is in us-east-1); S3 listing and IAM are
+global. Without it the call asks the connection's own region, a setting of the host, so an empty
+list or *not found* there is a region miss, not a missing resource. If `aws_region` is not
+declared, take it from the project's infrastructure code or `resource_inventory` and say which; if
+neither names one, report Steps 4–8 as *not checked*, never as missing.
+
 ### 3. Check S3 Buckets
 ```
 {handle} aws s3 ls
@@ -268,31 +292,31 @@ Filter for project buckets (matching project_prefix), e.g. `{project}-artifacts-
 
 ### 4. Check DynamoDB Tables
 ```
-{handle} aws dynamodb list-tables
+{handle} aws dynamodb list-tables --region {aws_region}
 ```
 Filter for project tables (matching project_prefix).
 
 ### 5. Check SQS Queues
 ```
-{handle} aws sqs list-queues
+{handle} aws sqs list-queues --region {aws_region}
 ```
 Filter for project queues (matching project_prefix), including any `*-dlq` dead-letter pairs.
 
 ### 6. Check SNS Topics
 ```
-{handle} aws sns list-topics
+{handle} aws sns list-topics --region {aws_region}
 ```
 Filter for project topics (matching project_prefix).
 
 ### 7. Check Lambda Functions
 ```
-{handle} aws lambda list-functions
+{handle} aws lambda list-functions --region {aws_region}
 ```
 Filter for project functions (matching project_prefix).
 
 ### 8. Check CloudFormation Stacks
 ```
-{handle} aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE
+{handle} aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE --region {aws_region}
 ```
 Filter for project stacks.
 
@@ -301,6 +325,23 @@ Filter for project stacks.
 {handle} aws iam list-roles
 ```
 Filter for project roles (matching project_prefix).
+
+### 10. A resource the project uses but did not find here
+
+When a resource is not in this account and is about to be reported as someone else's, or as a
+blocker on another party, look for it first, read-only, in every account this host reaches and the
+project's own rules let it read: each value a session AWS tool's `aws_profile` argument allows, and
+each other profile the Step 2 listing command names, through the local `aws` CLI with `--profile`.
+An account the rules exclude is reported *not searched (excluded)*. Name the owner by the account
+number the probe returns; these probes find an owner and never become this project's handle.
+
+A DNS zone is live where its parent delegates. Several accounts can hold a hosted zone of the same
+name, so compare each one's delegation set with the NS answer from public DNS (`dig +trace NS
+<zone>` where `dig` is installed), not with the NS records inside a zone.
+
+Where the local `aws` CLI is missing, report each profile only it could reach as *not searched*;
+where `dig` is missing, report the delegation as *not checked*. A gap is never reported as a match,
+and never as someone else's resource.
 
 ---
 
@@ -312,12 +353,15 @@ Filter for project roles (matching project_prefix).
 ### Environment
 - Account: {aws_account} ✓
 - Region: {aws_region} ✓
+  (or: not declared — taken from {infrastructure code | resource_inventory}; or: not declared and
+  not found, so Steps 4–8 were not checked, never reported as missing)
 - Project: {project_prefix}
 
 ### Handle Resolved (this machine only — recorded nowhere)
 - Connection: {the candidate that worked}
 - How it was called: no profile needed — this connection is tied to one account
   (or: named the account explicitly with `--profile {profile}`, because this connection serves many)
+  (or: `aws_profile` set to {profile} on every call — this server picks the account by argument)
 - Identity verified: {actual_account} — matches {aws_account} {✓ or ✗ STOP}
 - (If context_hints.mcp_tool was present and did not resolve, say so plainly AND say it is
   harmless: it is a nickname from the other machine, not a defect to fix.)
@@ -353,7 +397,12 @@ and printing the first when the second is true is a false report.
 - Always read environment config first
 - **Verify the account number before reading any resource** — reaching *an* account is not reaching
   the *right* one
-- Use MCP tools, never raw aws CLI
+- Use the MCP connection for every AWS call in Steps 2–9; the local `aws` CLI only where Step 10 or
+  `/start-session` § Two Environments says so
+- `allowed-tools` pre-approves only the profile listing and `call_aws`, on purpose. An `aws_profile`
+  tool, the local `aws` CLI and `dig` each prompt: on the box that tool is `run_script`, which runs
+  any boto3 code, writes included, and a pattern wide enough for Step 10's CLI calls would approve
+  writes too. Every call this command makes is a read.
 - Compare against expected resources derived from `resource_inventory` in progress.json and the
   completed tasks that deployed them
 - Fall back to IMPLEMENTATION_PLAN.md only when no inventory exists — it is the Phase-0 origin

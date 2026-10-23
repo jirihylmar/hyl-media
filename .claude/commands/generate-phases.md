@@ -36,8 +36,11 @@ Check for environment info in:
 - `progress.json` context_hints
 
 **Minimum required:**
-- At least one AWS account/region/MCP tool combination
 - Project naming prefix
+- At least one AWS account/region/MCP tool combination — **unless the project uses no AWS**, which
+  it declares as `"aws": "none"` in `progress.json` `context_hints` (written by `/setup` § 2 item 1,
+  or on the operator's word). A missing account is never read as "none": the declaration is what
+  makes it an answer, and without one the check below still stops.
 
 **Structure is flexible** - may include:
 - Multiple accounts (cross-account scenarios)
@@ -47,7 +50,8 @@ Check for environment info in:
 
 **If missing:** STOP and direct user to run `/setup` (its environment-collection step gathers
 account/region/MCP/naming), or to add the values to `CLAUDE.md` / `input/environment.md` directly —
-then re-run this command.
+then re-run this command. A project with no AWS needs only the prefix and the declaration; its
+phases then name no AWS resource, and their verify steps check what the project actually runs.
 
 ### 2. Specification Must Be Approved
 
@@ -97,6 +101,8 @@ To add work to existing phases, use `/add-work` instead.
 ### Each Task MUST:
 1. **Single outcome** - one coherent, independently verifiable result
 2. **Verifiable** - has a concrete verification step
+   that comes out false on the defect it guards; a verify that would pass on a broken system is
+   rewritten (`PROJECT_CHARTER.md` § 10, *Verify reality*)
 3. **Session-sized** - completable in <30 min of Claude time
 4. **Deployable state** - code works after task completes
 5. **No implicit continuation** - doesn't require "then do X"
@@ -123,6 +129,7 @@ Run the checks from the Prerequisites section above:
 ```
 Checking prerequisites...
 ✓ Environment: Found in CLAUDE.md (AWS: {account}, Region: {region})
+   — or, for a project that declares no AWS: ✓ Environment: no AWS (context_hints.aws = "none"), prefix {prefix}
 ✓ Plan: IMPLEMENTATION_PLAN.md approved
 ✓ Tasks: Not yet generated
 
@@ -166,11 +173,11 @@ tasks/
 
 **GOOD (atomic):**
 ```json
-{"id": "2.1", "name": "Create Cognito User Pool via CDK", "verify": "aws cognito-idp list-user-pools --max-results 10 shows pool", "size": "small"},
-{"id": "2.2", "name": "Add signup Lambda function", "verify": "Lambda exists in console", "size": "small"},
-{"id": "2.3", "name": "Add login Lambda function", "verify": "Lambda exists", "size": "small"},
-{"id": "2.4", "name": "Create API Gateway auth endpoints", "verify": "POST /auth/signup returns 200", "size": "medium"},
-{"id": "2.5", "name": "Add JWT validation middleware", "verify": "Protected endpoint returns 401 without token", "size": "small"}
+{"id": "2.1", "name": "Create Cognito User Pool via CDK", "verify": "aws cognito-idp list-user-pools --max-results 10 --region eu-central-1 shows pool", "size": "small"},
+{"id": "2.2", "name": "Add signup Lambda function", "verify": "Invoked with a new email it creates the user; the same email again is refused", "size": "small"},
+{"id": "2.3", "name": "Add login Lambda function", "verify": "Invoked with valid credentials it returns a token; a wrong password is refused", "size": "small"},
+{"id": "2.4", "name": "Create API Gateway auth endpoints", "verify": "POST /auth/signup returns 201 for a new email and 409 for a repeated one", "size": "medium"},
+{"id": "2.5", "name": "Add JWT validation middleware", "verify": "Protected endpoint returns 401 without a token and 200 with a valid one", "size": "small"}
 ```
 
 ### 5. Add Required Fields to Each Task
@@ -182,7 +189,7 @@ tasks/
   "status": "pending",
   "repo": "infrastructure",
   "size": "small",
-  "verify": "aws lambda get-function --function-name X returns config",
+  "verify": "Invoked with valid credentials it returns a token; a wrong password is refused",
   "deliverable": "infrastructure/lambda/auth/login.py",
   "depends_on": ["2.1"]
 }
@@ -199,6 +206,10 @@ tasks/
 - `verify` - How to confirm it works (use correct naming convention!)
 - `deliverable` - Primary file(s) created/modified
 - `depends_on` - Task IDs that must complete first
+  - When a task's `verify` or `deliverable` names another task's deliverable (a path, a command,
+    an artifact id), that task's id goes in `depends_on`. A dependency stated only in prose is
+    invisible to `/open-work` and to whoever picks the next ready task, so the task looks ready
+    before it is.
 
 ### 6. Use Environment Values in Verify Steps
 
@@ -210,14 +221,16 @@ tasks/
 
 // GOOD - the generated task carries values RESOLVED from THIS project's environment.
 // Illustration for a project whose naming pattern is myproject-{service}-{env}:
-{"verify": "mcp__aws-<server>__call_aws aws dynamodb describe-table --table-name myproject-experts-dev"}
+{"verify": "mcp__aws-<server>__call_aws aws dynamodb describe-table --table-name myproject-experts-dev --region eu-central-1"}
 ```
 
 Resolve both halves at generation time, from the project you are generating for:
 - **The MCP handle**: read it from the LIVE tool inventory — never copy a server name from this
   file or from another project. Which `<server>` names exist depends on the host's AWS service
   model (per-account servers, or one central server); on a central-server host the command must
-  also carry `--profile <account>`. Detect, never assume — see /check-aws.
+  also name the account (`--profile`, or the tool's `aws_profile` argument). Every regional command
+  carries `--region` with the region the resource lives in. Detect, never assume — see /check-aws
+  Step 2.
 - **The resource name**: construct it from the project's own naming convention in
   `input/environment.md`. A real resource name belonging to some other project is wrong even if
   the command would run.

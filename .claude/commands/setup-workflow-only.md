@@ -220,16 +220,20 @@ own: extractions land in `~/.syndicate-knowledge-spool/` and stay there, because
 only by a run that *does* resolve a route.
 
 **The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
-for both, then:
+to run it with their URL, in their own terminal, from this project's root and outside this session.
+It prompts for the token without echo, so the token never enters this session (PROJECT_CHARTER.md
+§ 8, *Git contains the recoverable system*):
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>
 ```
 
 It proves the token against the endpoint (empty-body probe: `400` = good, `401` = bad; no file
 delivered) and writes `ingest.json` only after the proof. Re-run the resolver; it must print
-`ingest`. (No skill? `mkdir -p ~/.syndicate-remote-secrets && chmod 700` it, write
-`{"url":"...","token":"..."}` to `~/.syndicate-remote-secrets/ingest.json`, `chmod 600`.)
+`ingest`. (No skill? The operator does it by hand, in that same terminal:
+`mkdir -p ~/.syndicate-remote-secrets && chmod 700` it, write `{"url":"...","token":"..."}` to
+`~/.syndicate-remote-secrets/ingest.json` with an editor, never `echo` or `printf` with the token on
+the command line, then `chmod 600`.)
 
 **Where the project lives is irrelevant** — the resolver reads `$HOME` only, so this is machine-level
 setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`. Delivery
@@ -398,6 +402,46 @@ if [ -d "syndicate-playbooks-examples" ]; then
 fi
 ```
 
+Then make sure the playbook's own state is tracked. A `.gitignore` that ignores `*.json` to keep
+credentials out, re-including only `progress.json`, also ignores the distribution manifest and the
+hygiene clock. They then live on one disk only, and nothing says so.
+
+```bash
+STATE="progress.json session_notes.md .claude/commands/start-session.md"
+STATE="$STATE .claude/distribution-manifest.json .claude/hygiene-state.json"
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "GITIGNORE: not checked - not a git work tree"   # check-ignore would fail for every path
+else
+  [ -s .gitignore ] && [ -n "$(tail -c1 .gitignore)" ] && echo >> .gitignore   # end on a newline
+  # Decide with -q, not -v: -v also exits 0 for a path a `!` line re-includes. Append, never edit
+  # a line with an anchored sed: its `$` never matches on a CRLF .gitignore, so nothing changes.
+  for p in $STATE; do
+    git check-ignore -q -- "$p" && ! grep -qsxF -- '!'"$p" .gitignore || continue
+    why=$(git check-ignore -v -- "$p" | cut -f1)                 # <file>:<line>:<pattern>
+    case $why in /*|.gitignore:*|.git/info/exclude:*) ;; *) continue ;; esac  # deeper one wins
+    printf '!%s\n' "$p" >> .gitignore && echo "GITIGNORE: exception added for $p (was $why)"
+  done
+  STILL=$(for p in $STATE; do git check-ignore -q -- "$p" && printf '%s ' "$p"; done)
+  if [ -z "$STILL" ]; then
+    echo "GITIGNORE: ok - playbook state is tracked"
+  else
+    echo "GITIGNORE: STILL IGNORED: $STILL"
+    for p in $STILL; do git check-ignore -v -- "$p"; done        # what ignores it, and where
+  fi
+fi
+```
+
+`STILL IGNORED` means a directory pattern such as `.claude/` excludes the file's parent, or a deeper
+`.gitignore` (`.claude/.gitignore`, say) ignores the file. A `!` line in the root `.gitignore` can
+override neither, so Step 9's commit would leave those files out. Each `<file>:<line>:<pattern>`
+line names what to fix: fix it there by hand, keeping what it protected
+(`.claude/settings.local.json`, say), and run the block again.
+
+Then read each line a `was` or a `<file>:<line>` names. If a comment beside it records the exclusion
+as deliberate, that is the project's decision: leave the line, delete the exception the block added
+for it (after the last run, which would add it back), and report it. Name each exception added, each
+hand fix and each deliberate exclusion left in place in the Output.
+
 ---
 
 ## Step 8: Remove Examples Repository
@@ -456,6 +500,7 @@ Removed:
 | `session_notes.md` | Created | Session handoff notes |
 | `CLAUDE.md` | Merged/Created | Workflow rules appended |
 | `AGENTS.md` | Merged/Created | Thin Codex entry; detailed rules remain in CLAUDE.md |
+| `.gitignore` | Updated/Unchanged | Exceptions added, hand fixes, deliberate exclusions left (or: none) |
 
 ### Commands Available
 Enumerate the live directory rather than trusting a list (counts drift; the directory is truth):

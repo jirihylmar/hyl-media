@@ -141,10 +141,9 @@ COMPLETION_KEYS = ("completed_at", "completed")
 def iso_date(v):
     """'YYYY-MM-DD' if v is a string shaped like an ISO date, else None.
 
-    Values in the wild are both bare dates ("2026-08-25") and timestamps
-    ("2025-12-20T10:00:00Z" — the template's own example), so everything is truncated to its
-    first 10 characters and compared as a string. Anything not matching the shape is not a date
-    and is reported as malformed rather than guessed at.
+    Values in the wild are both bare dates ("2026-08-25") and timestamps ("2025-12-20T10:00:00Z"),
+    so everything is truncated to its first 10 characters and compared as a string. Anything not
+    matching the shape is not a date and is reported as malformed rather than guessed at.
     """
     if not isinstance(v, str) or not _ISO_DATE.match(v):
         return None
@@ -390,11 +389,59 @@ def completion_fields(doc):
                 if k in po:
                     yield f"phase {pk}", k, po[k]
         for k, t in iter_tasks_keyed(po):
-            tid = task_id_of(k, t)
-            label = f"phase {pk}: task {tid}" if tid is not None else f"phase {pk}: (task with no id)"
+            label = task_label(pk, k, t)
             for k in COMPLETION_KEYS:
                 if k in t:
                     yield label, k, t[k]
+
+
+def task_label(pk, key, task):
+    """How a task is named in a date warning. One function, so completion_fields() and
+    future_instants() can never name the same task two ways."""
+    tid = task_id_of(key, task)
+    return f"phase {pk}: task {tid}" if tid is not None else f"phase {pk}: (task with no id)"
+
+
+#: How far ahead of the clock a recorded instant may sit before it is reported FUTURE. Ten minutes
+#: absorbs ordinary skew between two hosts' clocks and an instant taken a moment before the
+#: commit; the defect this catches is measured in hours (see check(), FUTURE).
+FUTURE_TOLERANCE = datetime.timedelta(minutes=10)
+
+
+def future_instants(doc, now):
+    """[(label, key, raw, ahead)] for every recorded instant more than FUTURE_TOLERANCE after now.
+
+    Exactly these values are read: root `last_updated`, every field completion_fields() yields,
+    and `started_at` on every task, labelled as completion_fields() labels tasks. No other key and
+    nothing nested: an `unattended` block legitimately carries a future `next_action_at` and
+    `deadline_at` and its own `started_at`, and an informational notice carries a future `expires`.
+    A phase's `started_at` is not read either: `/setup-workflow-only` seeds it as `{today}`.
+
+    Skipped, never reported: absence (is_absent), a non-string, a bare date (a DAY, not an instant;
+    DATE-ONLY already speaks for a bare last_updated), and anything parse_instant() cannot place in
+    time — malformed, or outside UTC's range like '9999-12-31T23:59:59-23:59'. Never a traceback.
+    """
+    if not isinstance(doc, dict):
+        return []
+    found = []
+
+    def consider(label, key, raw):
+        if is_absent(raw) or not isinstance(raw, str):
+            return
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw.strip()):
+            return
+        when = parse_instant(raw)
+        if when is not None and when - now > FUTURE_TOLERANCE:
+            found.append((label, key, raw, when - now))
+
+    consider("last_updated", "last_updated", doc.get("last_updated"))
+    for label, key, raw in completion_fields(doc):
+        consider(label, key, raw)
+    for pk, po in iter_phases(doc):
+        for k, t in iter_tasks_keyed(po):
+            if "started_at" in t:
+                consider(task_label(pk, k, t), "started_at", t["started_at"])
+    return found
 
 
 def notice_markers(doc):
@@ -1140,6 +1187,34 @@ def check(text, base_text=None):
             f"DATE-ONLY last_updated: '{lu_bare}' carries no time. The estate dashboard's rule is to "
             f"show it as that date only, never as minutes or hours ago. Write an instant: "
             f"date -u +%Y-%m-%dT%H:%M:%SZ"
+        )
+    # FUTURE — a recorded instant more than FUTURE_TOLERANCE ahead of the current UTC time. Found
+    # twice. models-trainer, 2026-09-21: the last three commits touching last_updated each carried
+    # a value 3h30m after the commit that introduced it; every value was round and the offset equal
+    # to the authors' timezone — local wall-clock time labelled Z. This repo, 2026-10-22: estimated
+    # started_at/completed_at drifted past the commits that recorded them, and two phases needed
+    # repairs. Either way the record says the work happened after the commit that carries it, and
+    # the dashboard's relative "updated N ago" has nothing true to say. future_instants() names
+    # exactly what is read and why nothing nested is. It reads the clock, not git: the hook runs
+    # this at commit time, when the two agree. A WARNING, on the same charter reasoning as STALE
+    # below: nothing is lost — every value is still there, merely wrong — and exit stays 0.
+    now = datetime.datetime.now(datetime.timezone.utc)
+    ahead = future_instants(doc, now)
+    if ahead:
+        def lead(delta):
+            hours, minutes = divmod(round(delta.total_seconds() / 60), 60)
+            return f"+{hours}h{minutes}m"
+        shown = "; ".join(
+            f"{key}='{raw.strip()}' ({lead(delta)})" if label == key
+            else f"{label} {key}='{raw.strip()}' ({lead(delta)})"
+            for label, key, raw, delta in ahead[:3]
+        )
+        more = f" (+{len(ahead) - 3} more)" if len(ahead) > 3 else ""
+        warn.append(
+            f"FUTURE timestamp(s): {len(ahead)} recorded instant(s) ahead of the current UTC time "
+            f"{now:%Y-%m-%dT%H:%M:%SZ}: {shown}{more}. Usually local wall-clock time labelled Z, or "
+            f"an instant estimated instead of taken: the record then says the work happened after "
+            f"the commit that carries it. Write instants at the moment: date -u +%Y-%m-%dT%H:%M:%SZ"
         )
     for label, key, raw in completion_fields(doc):
         # absence (null, or an unsubstituted {{placeholder}}) is not malformation — see is_absent()

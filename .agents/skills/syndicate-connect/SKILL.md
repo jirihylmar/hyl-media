@@ -6,12 +6,14 @@ description: Connect this machine to the syndicate knowledge inbox using an inge
 # Connect this host
 
 Read `.claude/skills/syndicate-connect/SKILL.md` completely before acting; it is the canonical
-security and failure contract. With the operator-provided URL and per-host token, run the shared
-implementation from the project root:
+security and failure contract. Ask the operator to run the shared implementation with their ingest
+URL, in their own terminal, from the project root and outside this session. It prompts for the
+per-host token without echo (PROJECT_CHARTER.md § 8, *Git contains the recoverable system*):
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --url <ingest-url> --token <host-token>
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest-url>
 ```
 
-Never print or persist the token anywhere except through that script. It must prove the token
-before writing the machine-level route, and a failed proof must leave no route behind.
+Never ask for the token in the conversation, and never print or persist it anywhere except through
+that script. It must prove the token before writing the machine-level route, and a failed proof must
+leave no route behind.

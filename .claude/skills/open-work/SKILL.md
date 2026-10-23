@@ -92,6 +92,7 @@ accepts what exists rather than what the template prescribes:
 | `current_phase` as a **number** against string keys | compared as strings, so the renderer does not invent a defect out of its own type mismatch |
 | `current_task` holding **prose** instead of an id | reported as *"not a task id"* — a pointer that is a paragraph points at nothing |
 | a legacy `backlog` key | **reported once as a retired channel, never rendered as work.** It was an untyped array with no owner, no authorization and no closure; see § *Open work is tasks and phases* below |
+| `depends_on` as a list, a single string, or holding prose | an item that is exactly the id of a task still open anywhere adds `waits on <id>` to the State column; any other item is left alone, never guessed at |
 
 A renderer that assumed the template's shape would crash on the projects that need it most: the
 old ones, which are exactly where work goes invisible.

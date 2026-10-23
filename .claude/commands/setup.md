@@ -69,12 +69,12 @@ Use AskUserQuestion to select.
 ```
 ## Environment Configuration
 
-1. **AWS Account ID**:
+1. **AWS Account ID**: or **none**, if this project uses no AWS at all (then skip 2 and 3).
 2. **AWS Region**: (e.g., eu-west-1)
-3. **MCP Tool**: Which AWS MCP tool? Read it from the LIVE tool inventory — the handle is
-   mcp__aws-<server>__call_aws, and which <server> names exist depends on this host's AWS
-   service model (per-account servers, or one central server that needs --profile on every
-   call). Detect, never assume — see /check-aws.
+3. **MCP Tool**: Which AWS MCP tool? Read it from the LIVE tool inventory — which AWS tools exist,
+   and how a call names the account, depends on this host's AWS service model (per-account
+   servers, or one central server told the account on every call). Detect, never assume — see
+   /check-aws Step 2.
 4. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
    Repos, local folders, and AWS resources all derive from it — see Naming Convention below.
 5. **GitHub Org**: (optional)
@@ -184,7 +184,9 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
   manages nothing, so it is written only when the operator says "nothing". "Not decided yet", or no
   answer, leaves the block out: the question then stays open, and `/start-session` § 3.5 reports it
   every session until it is answered.
-- Update `context_hints` with environment values
+- Update `context_hints` with environment values. A project whose § 2 item 1 answer was **none**
+  gets `"aws": "none"` there and no `aws_*` key: `/generate-phases` accepts that declaration in place
+  of an account, and Steps 6 and 8 below do not apply.
 - Update resource names in verify steps
 - Reset task statuses if needed
 
@@ -199,8 +201,8 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
 ```bash
 node --version    # >= 18
 npm --version
-aws --version     # >= 2
-cdk --version     # >= 2
+aws --version     # >= 2   (AWS projects only)
+cdk --version     # >= 2   (CDK projects only)
 gh --version
 ```
 
@@ -223,10 +225,12 @@ lands in `~/.syndicate-knowledge-spool/` and stays there, because the spool is d
 that *does* resolve a route. That failure is invisible until the knowledge already exists — too late.
 
 **The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
-for both, then:
+to run it with their URL, in their own terminal, from this project's root and outside this session.
+It prompts for the token without echo, so the token never enters this session (PROJECT_CHARTER.md
+§ 8, *Git contains the recoverable system*):
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>
 ```
 
 It **proves** the token against the endpoint (a probe POST with an empty body: `400` = token good,
@@ -234,9 +238,10 @@ It **proves** the token against the endpoint (a probe POST with an empty body: `
 unproven route is worse than none, because it flips this host from `spool` (loud) to `ingest`
 (confident, and wrong when it matters). Re-run the resolver above; it must print `ingest`.
 
-No skill present? By hand: `mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets`,
-write `{"url":"<ingest url>","token":"<host token>"}` to `~/.syndicate-remote-secrets/ingest.json`,
-`chmod 600` it.
+No skill present? The operator does it by hand, in that same terminal:
+`mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets`, write
+`{"url":"<ingest url>","token":"<host token>"}` to `~/.syndicate-remote-secrets/ingest.json` with an
+editor (never `echo` or `printf` with the token on the command line), `chmod 600` it.
 
 **Where the project lives is irrelevant** — the resolver reads `$HOME` only, so this is machine-level
 setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`. Delivery
@@ -258,7 +263,10 @@ never commit it.
 {mcp_tool} aws sts get-caller-identity
 ```
 
-Must match environment config.
+Must match environment config. Skipped for a project that declares no AWS (`context_hints.aws` is
+`"none"`): there is no account to match.
+`{mcp_tool}` is only the first candidate: resolve the handle as `/check-aws` Step 2 does, and use
+that handle in Step 8 too.
 
 ### 7. Create Sub-Repositories
 
@@ -302,7 +310,7 @@ year in costs a coordinated rename across every checkout and host.
 ### 8. CDK Bootstrap (if using CDK)
 
 ```
-{mcp_tool} aws cloudformation describe-stacks --stack-name CDKToolkit
+{handle} aws cloudformation describe-stacks --stack-name CDKToolkit --region {region}
 ```
 
 If not bootstrapped:
@@ -359,6 +367,10 @@ chmod +x .claude/hooks/pre-commit          # BEFORE git add → the index record
 cp -n syndicate-playbooks-examples/_project-template/.gitignore ./.gitignore 2>/dev/null || true   # seed only if absent (don't clobber an existing one)
 git config core.hooksPath .claude/hooks
 ```
+
+If `.gitignore` already existed, run `/setup-workflow-only` Step 7's tracked-state block before
+§ 5's commit; otherwise a blanket ignore can keep `progress.json` or the playbook's other state out
+of it.
 
 ### 3. Create progress.json (if missing)
 

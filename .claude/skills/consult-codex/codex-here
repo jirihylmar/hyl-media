@@ -15,16 +15,23 @@ What it does, in order:
      named by content address (the shape policy section 9 mandates), or the legacy pipx
      console script / `uvx` package it replaced.
      By what it runs, never by name: server names encode no account (rule 4 of the estate).
-  2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary).
+  2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary) and
+     context_hints.aws_region. A declared region is the region, on every path. Without one
+     (a declared value that is not a region name counts as none, and is named as ignored),
+     profile-scan takes the profile's configured region, else the literal eu-central-1; a
+     bound server keeps the binding's AWS_REGION, else the region is reported unset.
+     The banner names the source: declared, profile, fallback, binding or unset.
   3. Binds exactly one account-bound candidate, or refuses:
         ACCOUNT-AMBIGUOUS  more than one candidate and no way to pick   (exit 3)
         profile-scan       an account is declared but Claude has no account-bound server for it
                            (including a sole central server with no AWS_PROFILE; the box:
                            its AWS reach is a user-level proxy whose --read-only drops every
                            executor tool) -> scan this host's AWS profiles for the one whose
-                           sts identity IS the declared account, then reuse that configured
-                           central command (or fall back to the pipx binary / `uvx`). Bound by
-                           proof, re-derived every run.
+                           sts identity IS the declared account, then reuse the sole configured
+                           candidate's command with that profile, else mint the pinned container
+                           by content address, else refuse ACCOUNT-NOT-BOUND. Never a venv
+                           launcher (pinning policy section 9). Bound by proof, re-derived
+                           every run.
         ACCOUNT-NOT-BOUND  declared, and no profile on this host resolves to it (exit 3)
         no-infra           nothing declared, nothing configured -> launch WITHOUT AWS, say so
   4. Injects the bound server per invocation with -c mcp_servers.<name>.…  — every env
@@ -215,23 +222,49 @@ def main(argv):
         return False
     cands = {n: s for n, s in servers.items() if is_awslabs(s)}
 
-    # 2. the declared primary account
-    declared = None
+    # 2. the declared primary account, and the declared region.
+    # The region is a project identity, not a host setting (charter § 9): until 2026-10-22 this
+    # read only the account, so the reviewer — which checks claims against live AWS — queried the
+    # HOST's region, and a healthy regional resource came back "not found" (EP-0052).
+    declared, declared_region = None, None
     pj = os.path.join(bind_from, "progress.json")
     if os.path.exists(pj):
         try:
-            declared = ((json.load(open(pj)).get("context_hints") or {}).get("aws_account"))
+            hints = json.load(open(pj)).get("context_hints") or {}
+            declared = hints.get("aws_account")
+            declared_region = hints.get("aws_region")
         except Exception as e:  # unreadable progress.json is the project's problem, not ours to hide
             print(f"codex-here: progress.json unreadable ({e}); treating as no declared account", file=sys.stderr)
+    # A declared region is injected as written, so it must BE a region name. The templates seed
+    # placeholders ("{if applicable}", "{from environment}"): a project that filled in its account
+    # and not its region would send every reviewer call to a region that does not exist, and a
+    # quote in the value would break Codex's -c parse. Such a value counts as not declared, and the
+    # banner says it was ignored — visible, never a quiet substitute.
+    region_note = ""
+    if declared_region in (None, ""):
+        declared_region = None
+    elif re.fullmatch(r"[a-z]{2,4}(-[a-z]+)+-[0-9]+", str(declared_region)):
+        declared_region = str(declared_region)
+    else:
+        region_note = (f"declared aws_region {json.dumps(str(declared_region))}"
+                       " is not a region name, ignored")
+        declared_region = None
+    # Without a usable declaration: a found region names where it came from (plus the note), and
+    # the last resort says whether nothing was declared or the declaration was ignored.
+    def found(src): return f"{src}; {region_note}" if region_note else src
+    undeclared = region_note or "aws_region not declared"
 
     # 3. bind exactly one, or refuse, or no-infra
     flags = ['-c', 'project_doc_fallback_filenames=["CLAUDE.md"]', '-c', 'project_doc_max_bytes=262144']
     mode, bound = "no-infra", None
-    # A sole awslabs process is not necessarily an account binding. The central-server model is
-    # deliberately unbound so a bare call fails loudly; selecting it here used to bypass the
-    # account-number profile scan and made consult preflight receive `none`. A candidate counts as
-    # bound only when its process environment names a profile. The caller still proves that
-    # profile's live account with STS, so this is routing—not trust in a nickname.
+    region_src = None  # set by profile-scan; a bound path decides it when the env is injected
+    # A sole awslabs process is not necessarily an account binding. An awslabs candidate whose
+    # environment names no profile (the central server) is not selected directly when an account
+    # is declared: it is routed through the STS-proved profile scan below, which reuses its
+    # command with the proved profile. Selecting it directly used to bypass that scan and made
+    # consult preflight receive `none`. A candidate counts as bound only when its process
+    # environment names a profile. The caller still proves that profile's live account with STS,
+    # so this is routing—not trust in a nickname.
     def has_profile_binding(server):
         env = server.get("env") or {}
         return bool(env.get("AWS_PROFILE") or env.get("AWS_DEFAULT_PROFILE"))
@@ -248,8 +281,9 @@ def main(argv):
     elif declared:
         # No per-project server in Claude's map (the box has none: its AWS reach is a user-level proxy whose
         # --read-only drops every executor tool — measured 2026-08-25, task 30.9). Bind by PROOF instead:
-        # scan this host's AWS profiles for the one whose sts identity IS the declared account, and run the
-        # same awslabs server the workstation uses — the pipx binary if present, else `uvx` fetches it.
+        # scan this host's AWS profiles for the one whose sts identity IS the declared account, then reuse
+        # the sole configured candidate's command with that profile, else mint the pinned container by
+        # content address, else refuse ACCOUNT-NOT-BOUND — never a venv launcher (policy section 9).
         # No install, no host setting written; the binding is derived from the declared account every run.
         import subprocess
         aws_cli = executable("aws")
@@ -264,7 +298,17 @@ def main(argv):
                 match = prof; break
         if not match:
             die(3, f"ACCOUNT-NOT-BOUND — aws_account {declared} declared; none of {len(profiles)} profiles on this host resolves to it")
-        region = subprocess.run([aws_cli, "configure", "get", "region", "--profile", match], capture_output=True, text=True).stdout.strip() or "eu-central-1"
+        # The declared region first. Without one, the profile's configured region is still
+        # ambient, so the banner names it as the profile's; the literal is the last resort and
+        # says whether nothing was declared or the declared value was ignored.
+        if declared_region:
+            region, region_src = declared_region, "declared"
+        else:
+            region = subprocess.run([aws_cli, "configure", "get", "region", "--profile", match],
+                                    capture_output=True, text=True).stdout.strip()
+            region_src = found("profile")
+            if not region:
+                region, region_src = "eu-central-1", f"fallback, {undeclared}"
         if len(cands) == 1:
             # Reuse the configured central command. On the box it is runnable by Codex even when
             # neither its absolute binary nor uvx is exposed on a non-login shell PATH. Copy it:
@@ -295,7 +339,16 @@ def main(argv):
 
     if bound:
         name, s = bound
-        env = dict(s.get("env") or {})
+        env = dict(s.get("env") or {})  # a copy: the dict read from ~/.claude.json is never changed
+        if region_src is None:
+            # A bound path: the binding came from Claude's map and carries the host's region, if
+            # any. A declared region replaces it in this copy; otherwise the binding's is kept.
+            if declared_region:
+                env["AWS_REGION"], region_src = declared_region, "declared"
+            elif env.get("AWS_REGION"):
+                region_src = found("binding")
+            else:
+                region_src = f"{undeclared}, none in the binding"
         env["READ_OPERATIONS_ONLY"] = "true"
         toml_env = "{" + ",".join(f'{k}="{v}"' for k, v in env.items()) + "}"
         toml_args = "[" + ",".join(json.dumps(a) for a in (s.get("args") or [])) + "]"
@@ -314,9 +367,12 @@ def main(argv):
     if not codex_bin:
         die(3, "HOST-NOT-PREPARED — Codex executable not found on PATH or in ~/.local/bin")
     cmd = [codex_bin] + flags + args
+    # The region and where it came from are printed, so a host-derived region is visible.
     banner = (f"codex-here: {os.path.basename(project)} · mode={mode}"
               + (f" · server={bound[0]} · profile={bound[1].get('env', {}).get('AWS_PROFILE')}"
-                 f" · declared={declared or '-'}" if bound else " · no AWS server, none declared"))
+                 f" · declared={declared or '-'}"
+                 f" · region={env.get('AWS_REGION') or 'unset'} ({region_src})"
+                 if bound else " · no AWS server, none declared"))
     print(banner, file=sys.stderr)
     if dry:
         print(" ".join(shlex.quote(c) for c in cmd))

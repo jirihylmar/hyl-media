@@ -259,8 +259,18 @@ timestamp of any form, or a value that is not a real calendar date does not fire
 already named as malformed). Surrounding whitespace is ignored — `"2026-09-15 "` is the bare date
 to the dashboard's collector and to the survey probe, so it is the bare date here too.
 
+**And an instant later than now.** A timestamped `last_updated`, `started_at` on a task, or
+`completed_at` or `completed` on a task or phase is compared with the current UTC time. One more
+than ten minutes ahead of it is reported as `FUTURE`, naming the values (first three, plus a
+count) and printing the same remedy, `date -u +%Y-%m-%dT%H:%M:%SZ`. The usual cause is local
+wall-clock time labelled `Z`, or an instant estimated instead of taken; either way the record then
+says the work happened after the commit that carries it. Same charter as STALE: a warning, never a
+failure. A bare date, a `null`, an unsubstituted `{{CREATION_DATE}}`, a value nothing can place in
+time, and every other key (an `unattended` block's own stamps, a notice's `expires`) never fire it.
+It reads the clock, not git: the hook runs it at commit time, when the two agree.
+
 Pinned by `scripts/test-progress-check-freshness.sh` in the central repo — including the shipped
-bootstrap and both example playbooks staying silent, and the DATE-ONLY cases.
+bootstrap and both example playbooks staying silent, and the DATE-ONLY and FUTURE cases.
 
 ## Terminal-task drift warning
 

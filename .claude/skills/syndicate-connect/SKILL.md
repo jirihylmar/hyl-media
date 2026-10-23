@@ -17,14 +17,21 @@ one under `~/work/...`, and one on a network path all use the same machine-level
 
 ## Procedure
 
-The operator hands over the **URL** and a **per-host token** (out of band, as the PEM used to be):
+The operator runs this with their ingest **URL**, in their own terminal, from this project's root
+and outside the session. The **per-host token** is theirs to enter, never typed into a session,
+whose transcript persists on disk (PROJECT_CHARTER.md § 8, *Git contains the recoverable system*):
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>
 ```
 
-Or paste the token on stdin (omit `--token`, paste, `Ctrl-D`). That is all — outbound HTTPS is the
-only requirement, so it works behind any firewall.
+At a terminal it prompts for the token without echo. A script that already holds the token pipes it
+in instead (`<token source> | bash .claude/skills/syndicate-connect/connect.sh --url <ingest url>`),
+as `syndicate-join` and the operator's member-host setup (the issuer's output, piped over ssh) do.
+Either way the token reaches no command line:
+`curl` reads it from a config on stdin and `python3` from its environment. The old `--token` option
+still works but warns, because a value there sits in the process list and the shell history. That
+is all — outbound HTTPS is the only requirement, so it works behind any firewall.
 
 ## What it does, in order
 

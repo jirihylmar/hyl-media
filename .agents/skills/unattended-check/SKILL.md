@@ -24,6 +24,7 @@ Preserve these boundaries:
 - Exit 3 from `--reconcile` means recovering that watcher is the first task of the session, ahead
   of unrelated work.
 - Exit 2 means `progress.json` could not be read, so the state of every operation is unknown. That
-  is not the same answer as none, and it must never be reported as one.
+  is not the same answer as none, and it must never be reported as one. (From `--probe`, exit 2
+  means there was no recorded check to run, or it did not complete; see SKILL.md.)
 - A final response ends active execution. An operation that was only session-watched is unwatched
   the moment the turn ends, whatever was said about it beforehand.
