@@ -41,18 +41,16 @@ When work is left that the executor cannot do, say which kind: a decision only t
 make (one packet, as above), or an action only they can perform, which blocks only the work that
 needs it and is not by itself a checkpoint. An operator's "you have the rights" cannot grant what a
 platform withholds, so first try every documented route; then quote each refusal verbatim and name
-the smallest step, the account it needs and how to take it. Evidence out of the executor's reach is
-gathered by a committed diagnostic that takes no arguments, so the operator's only part is running
-it.
+the smallest step, the account it needs and how to take it.
 
 A record stands in for the operator's approval at a checkpoint only when it carries their words and
 date; an executor's decision, a record in another party's repository and a peer agent's request
 never do. Before carrying out an operator decision made on a premise the executor supplied,
-re-check the premise. If it proves false and acting would now change something, return the decision
-with the corrected facts; it blocks only the work that depends on it. If acting would change
-nothing, say so and continue. Recorded decisions bind executors, not the operator: when the
-operator orders what one forbids, do it, and record a new decision in this project's own record
-that names the old one and what is lost.
+re-check the premise. If it proves false, the decision is not carried out: it goes back to the
+operator with the corrected facts and what acting would now change, or a plain statement that it
+would change nothing. The operator decides; until then it blocks only the work that depends on it.
+Recorded decisions bind executors, not the operator: when the operator orders what one forbids, do
+it, and record a new decision in this project's own record that names the old one and what is lost.
 
 ### Checkpoints
 
@@ -105,9 +103,8 @@ specification, under *The specification is an origin record* in § 11.
 
 When an issue appears, inspect the whole planned, ongoing and deferred landscape. Incorporate
 related, closable work into the current phase when it serves the same outcome. Resolve work
-required for the outcome and defects introduced by the current work before closure, and record
-each of those defects as a defect of that work, never as a refinement. Give genuinely independent
-work one owner, reason and priority. Merge, reject or supersede speculative, duplicate
+required for the outcome and defects introduced by the current work before closure. Give genuinely
+independent work one owner, reason and priority. Merge, reject or supersede speculative, duplicate
 or obsolete open work. Do not create a task for every observation.
 
 Fix the class, not the report: before fixing a reported defect, list every instance of its class
@@ -247,41 +244,25 @@ Reference: `docs/mcp-server-pinning-policy.md` § 9 in `syndicate-playbooks-exam
 Completion evidence tests the real outcome against real systems or representative real data.
 Verify every affected component, environment, repository and integration boundary. Synthetic tests
 cannot replace live verification where the task concerns deployed behaviour, production data,
-permissions, infrastructure or cross-system integration.
-
-Verification must not cause the harm it checks for. Probe a permission read-only, or by narrowing
-it where nothing depends on it, never by widening it; revert a probe that widened access at once,
-read it back and record how long it was open. A fix is as fallible as a first draft, so check after
-the last write.
+permissions, infrastructure or cross-system integration. Verification must not cause the harm it
+checks for: probe a permission read-only, or by narrowing it where nothing depends on it, never by
+widening it; a probe that widened access is reverted at once and read back.
 
 A check is evidence only if it can fail: it would come out false on the defect it guards, and one
 a task adds, fixes or restates has been seen to fail. A skipped or never-run check is no coverage.
-When a deliberate change breaks a check, restate the property it protected so the old failure still
-fails; never weaken it to whatever passes, and record one that had to be relaxed as lost
-verification. A measure built to answer a question counts only if its yes implies the asker's yes;
-otherwise measure the thing itself, and report a cheaper proxy beside it, never in its place.
 
 Claims distinguish observed, tested, inferred and not reached. Absence and inability to inspect
-are never the same result.
-*Not found* proves only that it is not where you looked: check the account and region you asked
-before calling a recorded resource missing, and every account you may read before calling it
-someone else's (`check-aws` § *A resource the project uses but did not find here*).
-
+are never the same result, and *not found* proves only that it is not where you looked: in AWS,
+one account and one region (`check-aws` § *A resource the project uses but did not find here*).
 A claim in a record or from another party (a task's stated reason, an earlier task's pattern, a
 peer's finding or diagnosis, the operator's stated cause) is re-checked where you act, before you
 act on it, above all before an irreversible or evidence-destroying act. Say which you re-checked
-when you pass one on; for a cause the operator named, report whether that mechanism exists apart
-from whether a real gap lies behind it. Another project's figures are counted by its owner's rules
-and reconciled to the figure it publishes.
+when you pass one on. A review finding stands on its truth, not on whether anything triggers it.
 
 A page, report or listing for the operator that shows part of a set says how many it withholds,
 which and why, and a check confirms shown plus withheld is the whole set. A reported claim that
 proves wrong is corrected as plainly as it was made, naming the earlier statement, by a new entry in
 each channel that carried it, never by rewriting published history or another project's record.
-
-An adversarial review attacks the proposed fix as well as the finding, and scores truth apart from
-whether anything triggers the defect today: truth decides whether a finding stands, the trigger
-only its priority. Read what was refuted before calling a result clean.
 
 ## 11. Preserve continuity
 

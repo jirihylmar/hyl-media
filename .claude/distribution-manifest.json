@@ -1,18 +1,18 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-10-23T08:39:17Z",
-  "canonical_commit": "07ada19bc3fa85820baffaee841a6e3d67eafa98",
+  "written_at": "2026-10-23T10:22:56Z",
+  "canonical_commit": "046119394fa75e2b8a4372b892c9d9a632af48cf",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "507e7f74ec6e141c7b195ccce2b66fc601b704143c49b9607f3afc555502f6a4", "source": "canonical" },
-    ".claude/commands/check-aws.md": { "sha256": "409be229f0d2a8600ae64cb522b89fd821a3c2070260083611922494180f76f2", "source": "canonical" },
+    ".claude/commands/check-aws.md": { "sha256": "9a6d668e8bb309119b212ddec84387a02b19ab46743afca413ad77f9dc8d2569", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "6f2d1530e528b3fc082bdb527328294128bed20eabfa83cd8aa2626843a81198", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "98df3f97c689b591518e638998bdf301fb64608b21e62724c00a39c32209e6d2", "source": "canonical" },
-    ".claude/commands/repo-hygiene.md": { "sha256": "ab3c583351145575637a1e7e18f2a03fe9cda3bfeb70a10a873cf02e99cb2a8f", "source": "canonical" },
+    ".claude/commands/repo-hygiene.md": { "sha256": "98045832de8f1c3a61dd0633e055e0c8112fd083f5012588b7739af0e6b0a56d", "source": "canonical" },
     ".claude/commands/syndicate-refresh-remote.md": { "sha256": "0f299512676f97d7ed5cf026e28e4e9d8ffb33ebbee697938b235f4c465b3bd4", "source": "canonical" },
     ".claude/commands/setup-workflow-only.md": { "sha256": "4b3af08c7453f6718415a983cd6db1d43ad38d378b715ca115488d9c570b97b7", "source": "canonical" },
     ".claude/commands/setup.md": { "sha256": "bdf7da7c1433f0a2a51877d8678f22f6374ccdddb307d5e00c72b5f80ea5f990", "source": "canonical" },
-    ".claude/commands/start-session.md": { "sha256": "edd8f87667a6762e6ebaadbbee274df7a096bb00a44ad0d3e9ba542b0338dc21", "source": "canonical" },
-    ".claude/commands/update-progress.md": { "sha256": "35b7493e6afbd7c9cdedb2da5d4826ecf500f1e13e233e0721d19a9bb1a17ab4", "source": "canonical" },
+    ".claude/commands/start-session.md": { "sha256": "469587541f97dd8f95e003ec5a76cada20881abeba5a20a1172a58caba13ad08", "source": "canonical" },
+    ".claude/commands/update-progress.md": { "sha256": "83360d83d88ddad0236c0ffb7cfa17673abdcc3af06aedc06e3ab5e82ab0b4b7", "source": "canonical" },
     ".claude/skills/server-report/report.py": { "sha256": "1556b3bb39dcd168462dea6c7acf5b60a356153bb316e6f631fff64101912bb4", "source": "canonical" },
     ".claude/skills/server-report/SKILL.md": { "sha256": "80cfaa9a3211f29e28833d52f8484c7f05b8f5e457761f76c8828b7d22807ef5", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "da39d931c67f2f8dca68f5101cf3f191cac885c21a6674b92d5815046bba0c46", "source": "canonical" },
@@ -52,6 +52,6 @@
     ".agents/skills/open-work/SKILL.md": { "sha256": "aee95cda2c20561d541453d482f5237c71c822258ea3490d313c393f4663b2d8", "source": "canonical" },
     ".agents/skills/update-progress/SKILL.md": { "sha256": "00419decf95b7765fb1d3115b3ac6cc94bc3548abc195af63c856874336022fc", "source": "canonical" },
     ".agents/skills/generate-phases/SKILL.md": { "sha256": "8e5e28495b6477c10dee4d264d6634caf076b419347cc38789d4c58b62350071", "source": "canonical" },
-    "PROJECT_CHARTER.md": { "sha256": "3e846b79e4f78556d368b13312c317155940ae59e836df2f64867da69e36f5dc", "source": "canonical" }
+    "PROJECT_CHARTER.md": { "sha256": "ecdb78f61f2127b46fc9fe0ef8bb515b2c93ba68618ab2321ca60d8db514dd1a", "source": "canonical" }
   }
 }

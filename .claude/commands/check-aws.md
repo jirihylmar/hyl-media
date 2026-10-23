@@ -74,8 +74,8 @@ correct. Detect which one this host runs — never assume.**
 | Model | How it is set up | How you call it |
 |---|---|---|
 | **Per-account servers** | one MCP server per account, each carrying its own `AWS_PROFILE` | pick the right server, pass **nothing** |
-| **One central server** | a single MCP server bound to **no** account, or to a default one (the box's Codex `aws_api`) | name the account with `--profile` on every call |
-| **One central server**, account chosen by argument | one MCP server launched with several profiles, the first its default | set its `aws_profile` argument on every call |
+| **One central server** | a single MCP server bound to **no** account (the box's Codex `aws_api`), or to a default one | name the account with `--profile` on every call |
+| **One central server**, account chosen by argument | one MCP server launched with several profiles (the box's Claude `aws-mcp`) | set its `aws_profile` argument on every call, never to `default` |
 
 > **Why two models exist — memory, and this is not negotiable.** Every configured AWS MCP server
 > spawns **its own process per session** (~120 MB each). A host with 12 per-account servers and 6
@@ -88,22 +88,28 @@ correct. Detect which one this host runs — never assume.**
 > **`--profile` silently OVERRIDES a binding — it does not fail.** Passing a profile that exists
 > returns *that* profile's account with `200 OK`, even on a server bound to a different one
 > (measured: a server bound to `030…`, given a profile for `299…`, returned `299…`). Only a profile
-> that does not exist on this host errors. **So a wrong profile does not break the run — it quietly
-> checks the wrong account.** Two consequences, both load-bearing: never pass `--profile` to a server
-> that already answered bare, and never trust "the call worked" — *only the returned account number
-> tells you where you landed.*
+> that does not exist on this host, or one with no credentials (the box's `default`), errors. **So a
+> wrong profile does not break the run — it quietly checks the wrong account.** Two consequences,
+> both load-bearing: never pass `--profile` to a per-account server that answered bare with
+> `aws_account`, and never trust "the call worked" — *only the returned account number tells you
+> where you landed.*
 
 **Candidates, in this order:** `context_hints.mcp_tool` if present, then every other
 `mcp__aws-*__call_aws` tool available in THIS session. Read your own live tool inventory — **never a
 list written down anywhere, including this file.** The set differs per machine and grows over time.
 
-**An AWS tool whose schema has an `aws_profile` argument is a candidate too, whatever its name, and
-is never probed bare:** it answers for its default, so a bare success proves nothing. Probe each
-value the argument's schema allows (its `enum` is that server's profile list) with the identity
-call in that tool's own form (on `run_script`: `await call_boto3(service_name="sts",
-operation_name="GetCallerIdentity")`), and accept only the profile whose `Account` equals
-`aws_account`. For such a tool this replaces the bare probe below: even when its default answers
-with `aws_account`, set `aws_profile` on every call.
+**A server known to be central is never probed bare** (the two below). Its bare call is meant to
+fail (`/start-session` § Two Environments), and a bare success would prove nothing about the
+account: it would mean its launch gave it a default, which that section says to report. So it is
+told the account on every call, and for it this replaces the bare probe below.
+
+- **An AWS tool whose schema has an `aws_profile` argument** is a candidate too, whatever its name.
+  Probe each value the argument's schema allows other than `default` (its `enum` is that server's
+  profile list) with the identity call in that tool's own form (on `run_script`:
+  `await call_boto3(service_name="sts", operation_name="GetCallerIdentity")`), accept only the
+  profile whose `Account` equals `aws_account`, and set `aws_profile` on every call.
+- **The box's Codex `aws_api`** (`/start-session` § Two Environments) takes `--profile`: match a
+  profile as for a central server (below) and pass it with `--profile` on every call.
 
 **Probe each candidate bare:**
 
@@ -114,7 +120,7 @@ with `aws_account`, set `aws_profile` on every call.
 | What comes back | Which model | What you do |
 |---|---|---|
 | Identity, `Account` **==** `aws_account` | per-account | **Resolved.** Use this candidate **bare** everywhere below. Adding `--profile` here can only move you off a correct binding. |
-| Identity, `Account` **!=** `aws_account` | per-account, wrong one — or a central server answering for its default | Say which account it hit. If `/start-session` § Two Environments names this host's server as central with a default (the box's Codex `aws_api`), find the profile that reaches your account (below) and pass it with `--profile` on every call. Otherwise, next candidate. |
+| Identity, `Account` **!=** `aws_account` | per-account, wrong one | Say which account it hit. Next candidate. |
 | Error: no credentials / no default account | **central** | Not broken — this is the central model. Find the profile that reaches your account (below). |
 | Error: unknown tool | not on this host | Next candidate. |
 | Error: `Unable to parse config file: <path>` | either | Stop probing: that file is malformed (§ the gaps after the report). |
@@ -330,10 +336,11 @@ Filter for project roles (matching project_prefix).
 
 When a resource is not in this account and is about to be reported as someone else's, or as a
 blocker on another party, look for it first, read-only, in every account this host reaches and the
-project's own rules let it read: each value a session AWS tool's `aws_profile` argument allows, and
-each other profile the Step 2 listing command names, through the local `aws` CLI with `--profile`.
-An account the rules exclude is reported *not searched (excluded)*. Name the owner by the account
-number the probe returns; these probes find an owner and never become this project's handle.
+project's own rules let it read: each value a session AWS tool's `aws_profile` argument allows
+other than `default`, and each other profile the Step 2 listing command names, through the local
+`aws` CLI with `--profile`. An account the rules exclude is reported *not searched (excluded)*.
+Name the owner by the account number the probe returns; these probes find an owner and never
+become this project's handle.
 
 A DNS zone is live where its parent delegates. Several accounts can hold a hosted zone of the same
 name, so compare each one's delegation set with the NS answer from public DNS (`dig +trace NS

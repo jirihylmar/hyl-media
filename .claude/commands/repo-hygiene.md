@@ -20,8 +20,8 @@ drifts far enough to need a crusade.
 **The standard this pass enforces:**
 - `docs/` contains **only canonical, current methods** (plus clearly-separated trail:
   `_archive/`, incidents, audit records). A doc that describes yesterday's system is corrected or archived.
-- **Skills** (`.claude/commands/`, `.claude/skills/`) are current: every referenced
-  tool/path/procedure exists and matches reality; no two skills duplicate one capability.
+- **Skills** (`.claude/commands/`, `.claude/skills/`, `.agents/skills/`) are current: every
+  referenced tool/path/procedure exists and matches reality; no two skills duplicate one capability.
 - **Indexes are true**: whatever index surfaces exist (CLAUDE.md pointers, a skill picker, an
   MCP/advisor knowledge base) reflect the real file set and route correctly.
 - **progress.json stays lean**: append-only is sacred, but verbose bodies of long-completed work
@@ -105,22 +105,26 @@ surfaces = (list((root/"docs").rglob("*.md")) + list((root/".claude/commands").g
             + list((root/"ops").rglob("*.md"))
             + [root/n for n in ("README.md", "CLAUDE.md")])
 surfaces = [p for p in surfaces if p.exists() and "_archive" not in p.parts]
-# Project skills (.claude/skills/*/SKILL.md) are live surfaces too: /update-progress Step 2b
-# rotates them. A distributed skill is left out, because it cites the engine's own docs, which no
-# project carries, and its remedy is a report (/update-progress § 11.b). The manifest says which
-# skills are distributed; without a readable one no skill is checked and the exclusion is printed.
+# Project skills are live surfaces too, in both trees: .claude/skills/*/SKILL.md and Codex's
+# .agents/skills/*/SKILL.md, which /update-progress Step 2b rotates alike. A distributed skill is
+# left out, because it cites the engine's own docs, which no project carries, and its remedy is a
+# report (/update-progress § 11.b). The manifest says which skill directories are distributed, per
+# tree; without a readable one no skill is checked and the exclusion is printed for each tree.
 # A manifest with no `files` map (absent, null, not a map) is unreadable too. It must not crash
 # this one script, which would silence every check (see A), nor count a distributed skill as the
 # project's own.
-_skills = sorted((root/".claude/skills").glob("*/SKILL.md"))
+_trees = (".claude/skills", ".agents/skills")
+_skills = sorted(s for t in _trees for s in (root/t).glob("*/SKILL.md"))
 if _skills:
     try:
         _files = json.loads((root/".claude/distribution-manifest.json").read_text()).get("files")
         if not isinstance(_files, dict): raise ValueError("manifest has no files map")
-        _dist = {k.split("/")[2] for k in _files if k.startswith(".claude/skills/")}
-        surfaces += [s for s in _skills if s.parent.name not in _dist]
+        _pfx = tuple(t + "/" for t in _trees)
+        _dist = {"/".join(k.split("/")[:3]) for k in _files if k.startswith(_pfx)}
+        surfaces += [s for s in _skills if s.parent.relative_to(root).as_posix() not in _dist]
     except (OSError, ValueError, TypeError, AttributeError, IndexError):
-        print("   (surfaces: .claude/skills/ excluded — no readable distribution manifest to tell project skills from distributed ones)")
+        for t in sorted({s.parent.parent.relative_to(root).as_posix() for s in _skills}):
+            print(f"   (surfaces: {t}/ excluded — no readable distribution manifest to tell project skills from distributed ones)")
 # Report the exclusion rather than hiding it — the same rule check F applies to the defaults.
 if (root/"IMPLEMENTATION_PLAN.md").exists():
     print("   (surfaces: IMPLEMENTATION_PLAN.md excluded — the approved specification is the Phase-0 origin record, not a live surface; see Step 3)")
@@ -258,11 +262,12 @@ uncommitted case above; the manifest is what closes that gap.)
 ## Step 1 — Per-file sweep (the judgment work)
 
 Go through **every file** in `docs/` (excluding `_archive/`) and **every skill** in
-`.claude/commands/` and `.claude/skills/`. For each, assign one disposition:
+`.claude/commands/`, `.claude/skills/` and `.agents/skills/`. For each, assign one disposition:
 
 > **Before you act on ANY disposition, ask who owns the file.** The distributed defaults — the list
 > is named once, in `/update-progress` § 11.b; do not copy it here, this exact list has gone stale
-> before — are **read-only to you**. Judge them, ground them, and
+> before — and the distributed skills in `.claude/skills/` and `.agents/skills/` (the same section
+> says which) are **read-only to you**. Judge them, ground them, and
 > **report** what you find — but never fix, archive, or consolidate one in place. See
 > `/update-progress` § 11.b. Every action column below applies to **project-owned files**; for a
 > default, the action is always *report it and move on*. An in-place edit is either silently
@@ -321,10 +326,11 @@ nothing is double-verified.
    attempt to refute it is a fact, not a maybe.
 
    A distributed skill (`/update-progress` § 11.b) is reported like a default, never edited.
-   Hand the refuter the proposed fix as well as the finding, and score per `PROJECT_CHARTER.md`
-   § *Verify reality*. A diagnosis that holds while its fix is refuted goes back to whoever
-   proposed the fix, marked *diagnosis confirmed, fix rejected*, for a new fix. It never goes
-   on the confirmed worklist.
+   Hand the refuter the proposed fix as well as the finding. Score each finding's truth apart from
+   whether anything triggers the defect today: truth decides whether it stands, the trigger only
+   its priority, and what was refuted is read before a result is called clean. A diagnosis that
+   holds while its fix is refuted goes back to whoever proposed the fix, marked *diagnosis
+   confirmed, fix rejected*, for a new fix. It never goes on the confirmed worklist.
 5. **Advance the cursor.** Update the `grounded` map in Step 5 so the next pass picks the next slice.
 
 Claims that cannot be verified this pass (resource offline, tool unavailable) are deferred with a
@@ -348,11 +354,11 @@ leaked in since the last pass.
 
 Quick check F sizes this slice, and the property that must hold is directional: **F never counts a
 file this step may not touch.** It reads the root docs, `docs/`, `ops/` and the project's own skills
-under `.claude/skills/` (a skill counts only when the distribution manifest shows it is not
-distributed, and with no readable manifest none does). It does not read a served KB or a project
-command under `.claude/commands/`, so it under-reports — which costs a smaller slice this pass. The
-reverse would hand the step a finding whose only remedy is forbidden, and a check like that is one
-agents learn to skip.
+under `.claude/skills/` and `.agents/skills/` (a skill counts only when the distribution manifest
+shows it is not distributed, and with no readable manifest none does). It does not read a served
+KB or a project command under `.claude/commands/`, so it under-reports — which costs a smaller
+slice this pass. The reverse would hand the step a finding whose only remedy is forbidden, and a
+check like that is one agents learn to skip.
 
 > **Scope must match its own gauge, and two classes of file sit outside both.**
 >

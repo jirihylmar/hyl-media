@@ -233,7 +233,9 @@ For each task being marked complete:
 - Confirm deliverables exist
 - Check AWS resources if applicable
 - **Ask what would make the verify fail.** If the honest answer is "nothing that exists yet", it
-  passes by absence: replace it with a check that fails when its premise changes.
+  passes by absence: replace it with a check that fails when its premise changes. A measure built
+  to answer a question counts only if its yes implies the asker's yes; otherwise measure the thing
+  itself, and report a cheaper proxy beside it, never in its place.
 - **A task that adds, fixes or restates a check shows it failing first** (`PROJECT_CHARTER.md`
   § 10, *Verify reality*). A check here is a test, gate, guard, lint, limit, threshold or negative
   control. Run it twice and record both runs in `verify_result` as
@@ -248,7 +250,9 @@ For each task being marked complete:
   Confirm the broken input really changed what the check reads, and that the failing assertion
   turns on something only correct behaviour produces, not a word or count the broken code also
   emits. When a real record exposed the defect, build the bad input from it, not from a fixture.
-  If a deliberate change made you relax a check instead, record `lost verification: <what>`.
+  When a deliberate change breaks a check, restate the property it protected so the old failure
+  still fails, never weakening it to whatever passes; if it had to be relaxed instead, record
+  `lost verification: <what>`.
 - **Read what was skipped.** `PASSED` means the checks covering this task ran: read a suite's skip
   count and reasons, and a CI job's or scheduled check's run history, where `completed / skipped`
   is not a run. If any were skipped, record `PASSED with N skipped: <reason>` or fix the skip. A
@@ -269,6 +273,8 @@ For each task being marked complete:
   third party outside the operator's estate would see is not a verification step: it is the
   *Irreversible or outward-facing* checkpoint (`PROJECT_CHARTER.md` § 3, *Protect operator
   attention*).
+- A permission probe that widened access (`PROJECT_CHARTER.md` § 10, *Verify reality*) is recorded
+  in `verify_result`: how long access was open, and the read-back that showed it closed.
 - If the task fixes a reported defect, `verify_result` says how many instances of its class were
   listed and measured, and where that list is kept (`PROJECT_CHARTER.md` § 5, *Make phases
   converge*).
@@ -699,9 +705,10 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 ### Issues Encountered
 - [Any problems and how they were resolved]
-- [A defect this work introduced: what failed, how it was found, the commit that fixed it. Call it
-  a defect here, in that commit's message and in the task's `verify_result` (its `notes` if the task
-  closed earlier), never a refinement (`PROJECT_CHARTER.md` § 5, *Make phases converge*)]
+- [A defect this work introduced, resolved before closure (`PROJECT_CHARTER.md` § 5, *Make phases
+  converge*): what failed, how it was found, the commit that fixed it. Call it a defect here, in
+  that commit's message and in the task's `verify_result` (its `notes` if the task closed
+  earlier), never a refinement]
 
 ### Context for Next Session
 - Task 2.4 is next: [description]
@@ -899,8 +906,9 @@ of its report. Run every command in it as written before the commit, then list i
 
 **First, re-run any verify that a later step overtook.** If a step after Step 2 changed a file that
 the verify of a task completed in this run covers, run that verify again now and record the new
-result as its `verify_result`; if it fails, the task is not complete. A pass recorded before the
-last write is not evidence (`PROJECT_CHARTER.md` § 10, *Verify reality*).
+result as its `verify_result`; if it fails, the task is not complete. A fix is as fallible as a
+first draft, so a pass recorded before the last write is not evidence (`PROJECT_CHARTER.md` § 10,
+*Verify reality*).
 
 ```bash
 # Orchestration

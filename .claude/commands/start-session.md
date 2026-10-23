@@ -134,6 +134,9 @@ be fixed by explaining more later — it is the normal condition, and it is what
    its last precondition does not authorise it. Name what was built, never the gated verb
    (*the training pipeline is built*, not *training started*), in commit subjects and task notes as
    well as here; where its status is shown, it reads *ready, not authorised*.
+6. **Answer a cause the operator names in two parts.** Say whether that mechanism exists and whether
+   a real gap lies behind the concern, each with its evidence: the mechanism can be wrong while the
+   concern is right, and agreeing or refuting it whole loses one of the two.
 
 **This binds mid-session, not only at the handoff.** Every progress line, every question you ask,
 every proposal — the operator has to be able to follow it *as it happens*, without reconstructing
@@ -148,6 +151,11 @@ output, tell the operator roughly how long it will take, what it is waiting on, 
 midway would leave behind, if anything. Better, run it in the background and keep reporting while
 you watch it, so the turn is never silent (session-watched, `PROJECT_CHARTER.md` § 11,
 *Unattended operations*).
+
+**Hand over a diagnostic, not an errand.** When evidence you need is where you cannot reach it (a
+hosted console's log, a live permission state), prefer a committed diagnostic over asking the
+operator to go and read it: it takes no arguments, gathers exactly that evidence, and comes with
+your statement of which reading would mean which cause, so running it is their only part.
 
 ---
 
@@ -193,7 +201,7 @@ the first two differ in ways that matter:
 |---|---|---|
 | `HOME` | `/home/<user>` | `/home/ubuntu` |
 | AWS **service model** | one server **per account**, each carrying its own profile | **one central** server for several accounts: Claude's chooses the account per call by its `aws_profile` argument, Codex's `aws_api` by `--profile` in the command |
-| A bare call (no profile named) | returns that server's bound account | returns a default account, with success (Claude's: its **first** profile's; Codex's: its own default profile's) — name the account on every call |
+| A bare call (no profile named) | returns that server's bound account | **fails**: both central servers are launched with `default`, a profile with no credentials (Claude's as its first profile, Codex's as its `AWS_PROFILE`), so Claude's answers *"failed due to expired or invalid AWS credentials"* and Codex's *"No AWS credentials found"*. There that error means no account was named, not a broken credential — name the account on every call |
 | A host config in `~/.syndicate-remote-secrets/` | present (it is the local pointer *to* the box) | absent, and that is correct |
 | Which repos exist | some live only here, by policy | some live only there, and are developed there |
 
@@ -209,7 +217,8 @@ the first two differ in ways that matter:
 > profile that exists returns **that** profile's account, with a `200 OK` and no warning — even on a
 > connection bound to a different account. Measured: the connection bound to account `030…`, given a
 > profile belonging to account `299…`, returned **`299…`** and success. Passing a profile that does
-> *not* exist on this machine is the only case that errors (`The config profile could not be found`).
+> *not* exist on this machine errors (`The config profile could not be found`), and so does one with
+> no credentials (the box's `default`).
 > This holds for every server that takes a CLI command. Claude's server on the box takes none (it
 > publishes `aws___run_script`); its `aws_profile` argument overrides its default the same way.
 >
@@ -231,11 +240,10 @@ the first two differ in ways that matter:
 > the account per call is the cost of having the mistake be loud. Revisit only with a measured case
 > where naming it cost more than a silent wrong-account write would.
 
-> **The box's central servers cannot honour that decision.** Claude's, `mcp-proxy-for-aws`, makes
-> the first profile it was launched with its default, and Codex's `aws_api` falls back to its own
-> default profile, so a call that names no account succeeds against that account and nothing says
-> so. The loud failure can come back only through host configuration; until then, naming the
-> account on every call is the only guard (`/check-aws` Step 2 finds the value that reaches it).
+> **The box's central servers honour that decision through how they are launched** (the table above;
+> Claude's is `mcp-proxy-for-aws`). `aws_profile: default` names no account either. If a central
+> server ever answers a bare call with an account, its launch has drifted: report it, and name the
+> account on every call meanwhile (`/check-aws` Step 2 finds the value that reaches it).
 
 > **The AWS connection usually cannot read this checkout's files.** A server in a container that
 > mounts only `~/.aws`, or one that runs your code in AWS's own sandbox, sees no local path, so a
@@ -1560,8 +1568,8 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 **Only if user chose Continue**
 
-Resolve the handle as `/check-aws` Step 2 does: `{mcp_tool}` is only the first candidate, and a
-tool with an `aws_profile` argument is never probed bare, because it answers for its default.
+Resolve the handle as `/check-aws` Step 2 does: `{mcp_tool}` is only its first candidate, and the
+bare call below is that step's probe for a per-account server, not for every server.
 
 ```
 {mcp_tool} aws sts get-caller-identity
