@@ -84,9 +84,10 @@ ARTIFACT_BIN='\.(so|o|dylib|dll|exe|bin)$'
 #       aws_secret_access_key assigned a 40-character value on a line without EXAMPLE.
 # The 40 characters are what make (b) safe: a bare `= …` form matched boto3 keyword arguments
 # (aws_secret_access_key=creds["SecretAccessKey"],) and placeholder docs across the estate. Run
-# over every local project, the tightened pattern hit exactly one tracked file. Evaluated AFTER
-# is_allowed, so a fake fixture listed in artifact-guard.allow passes. The message names the path
-# and the cause, never the matching line. If git cannot read the blob, the check fails open.
+# over every local project on 2026-10-22, the tightened pattern hit exactly one tracked file.
+# Evaluated AFTER is_allowed, so a fake fixture listed in artifact-guard.allow passes. The message
+# names the path and the cause, never the matching line. If git cannot read the blob, the check
+# fails open.
 # A blob that names neither marker (any case) is read once and passes; only one that does is read
 # again for the exact patterns.
 # Known limits, measured 2026-10-22. The PEM header matches anywhere on a line, so source code that
@@ -184,7 +185,7 @@ done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
 # distribution preflight when they differ, so a new central skill can never be refused by the
 # guard it is delivered with. `syndicate-*` is the central namespace (docs/terminology.md).
 # ---------------------------------------------------------------------------
-DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases open-work overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-refresh-remote unattended-check update-progress "
+DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases open-work overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-request syndicate-refresh-remote unattended-check update-progress "
 
 project_code() {
   local raw=""
