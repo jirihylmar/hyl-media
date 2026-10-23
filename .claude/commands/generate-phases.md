@@ -191,7 +191,9 @@ tasks/
   "size": "small",
   "verify": "Invoked with valid credentials it returns a token; a wrong password is refused",
   "deliverable": "infrastructure/lambda/auth/login.py",
-  "depends_on": ["2.1"]
+  "depends_on": ["2.1"],
+  "authored_by": "Claude",
+  "assigned_to": "Claude"
 }
 ```
 
@@ -200,6 +202,9 @@ tasks/
 - `name` - One sentence description
 - `status` - Always starts as "pending"
 - `repo` - Which repo this task works in
+- `authored_by` and `assigned_to` - who wrote the entry and whose job it is, on every phase and
+  every task (stable executor names, never a model version; `/add-work` § *Collect Work Details*).
+  The commit guard (`/progress-check`) refuses new work that lacks either.
 
 **Recommended fields:**
 - `size` - small/medium (no large tasks!)

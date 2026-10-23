@@ -18,7 +18,7 @@ Bidirectional git-based sync between your local repos and a single configured re
 **Scope: the remote dev box, and nothing else.** Its binary reads only the box's device-named host
 file, and it turns host-key checking off for that box. It must never be pointed at a **member host**
 (a host whose file declares `requires`, reached over a VPN): those pin their host keys, and moving a
-project onto one is always a specific transfer, run from the central repo's estate-operations
+project onto one is always a specific transfer, run from the central repo's `/syndicate-transfer`
 checklist, never a sync from here. The operator, 2026-10-21: *"cant be mixed and used for these
 machines"*.
 
