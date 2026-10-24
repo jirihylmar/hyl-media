@@ -86,6 +86,11 @@ makes no network call there:
 bash .claude/skills/syndicate-request/request.sh inbox --quiet
 ```
 
+**A receiver's session that stays open re-checks**, because step 2.8 runs only when a session starts.
+It checks at each task boundary, and at least hourly while it is open (a session cron or `/loop`
+does that). The first real request, on 2026-10-24, reached the operator before either receiver:
+both receivers' sessions had been open for days.
+
 - `OPEN <pr> <branch>`: one open request addressed to this project. `<pr>` is `-`, since no pull
   request is opened.
 - `MORE <n>`: more than 20 are open. `IGNORED <n>`: branch names under this project's prefix that are
