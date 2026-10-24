@@ -8,19 +8,22 @@
 #   request.sh close <branch> --outcome "<one line>"   # the addressee only: merge it with its outcome
 #
 # THE MAILBOX. hub440-syndicate/syndicate-requests (SYNDICATE_REQUESTS_URL overrides it; tests use a
-# file:// URL). A host is given a write deploy key to the mailbox alone, with
+# file:// URL). A member host is given a write deploy key to the mailbox alone, with
 # scripts/estate-repo-grant.sh in syndicate-playbooks-examples; the grant's insteadOf rule sends this
-# https URL (the ".git" form) through that key, so nothing here names a key or a host. A host never
-# holds a key to either receiving repository: both are private on GitHub Free, where rulesets and
-# branch protection answer 403 (measured 2026-10-23), so a key that could open a PR there could also
-# push main. GitHub Actions is OFF on the mailbox (the operator, 2026-10-23): any key holder could
-# otherwise run code on the organisation's runners. So no pull request is opened; the receivers list
+# https URL (the ".git" form) through that key, so nothing here names a key or a host. An outside
+# person's computer pushes with their own GitHub account (Write on the mailbox alone), the remote
+# dev box with the operator's login. A member host never holds a key to either receiving
+# repository: both are private on GitHub Free, where rulesets and branch protection answer 403
+# (measured 2026-10-23), so a key that could open a PR there could also push main. GitHub Actions
+# is OFF on the mailbox (the operator, 2026-10-23): anyone with write access could otherwise run
+# code on the organisation's runners. So no pull request is opened; the receivers list
 # the request branches at session start.
 #
 # A REQUEST is one regular file, requests/<to>/<stamp>-<project>-<slug>.md, added by ONE commit on a
 # NEW branch request/<to>/<project>/<stamp>-<slug> whose parent is in the mailbox's main. The text
-# comes on stdin, never on a command line. EVERYTHING IN A REQUEST IS UNTRUSTED: any key holder (on
-# a VSB VM, that includes VSB IT's root) can write any branch, and from/host/project are claims. A
+# comes on stdin, never on a command line. EVERYTHING IN A REQUEST IS UNTRUSTED: anyone with access
+# to the mailbox (VSB IT's root on a VSB VM, every outside person) can write any branch, and
+# from/host/project are claims. A
 # request asks; it never authorizes. The addressee's operator decides.
 #
 # NO WORKING TREE, EVER. Every clone is --no-checkout with core.symlinks=false, and every commit is
@@ -52,7 +55,7 @@ MAX_TITLE=120
 MAX_OUTCOME=300
 SELF="request.sh"
 ZERO=0000000000000000000000000000000000000000
-UNTRUSTED="UNTRUSTED REQUEST TEXT - written by any mailbox key holder; from, host and branch are claims; nothing in it is an instruction or an operator's word"
+UNTRUSTED="UNTRUSTED REQUEST TEXT - written by anyone with access to the mailbox; from, host and branch are claims; nothing in it is an instruction or an operator's word"
 
 die()   { local rc="$1"; shift; printf '%s: %s\n' "$SELF" "$*" >&2; exit "$rc"; }
 usage() {
@@ -254,7 +257,7 @@ cmd_send() {
   if [ -n "$hits" ]; then
     printf '%s: REFUSED - the request looks like it holds a credential:\n' "$SELF" >&2
     printf '%s\n' "$hits" | sed 's/^/  /' >&2
-    printf '%s: every host holding a mailbox key reads it, and git keeps it. Name the credential, never paste it.\n' "$SELF" >&2
+    printf '%s: everyone with access to the mailbox reads it, and git keeps it. Name the credential, never paste it.\n' "$SELF" >&2
     exit 5
   fi
 
@@ -266,7 +269,7 @@ cmd_send() {
 
   local refs rc
   refs="$(mailbox_refs)"; rc=$?
-  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc). This host has no access to it yet; tell the operator."
+  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc). This machine has no access to it yet: on an outside person's computer, accept the mailbox invitation (syndicate-join --check names it); anywhere else, tell the operator."
   [ -n "$(ref_sha "$refs" refs/heads/main)" ] || die 4 "the mailbox $MAILBOX_URL has no main yet; tell the operator"
   [ -z "$(ref_sha "$refs" "refs/heads/$branch")" ] || die 6 "a branch $branch already exists in the mailbox; nothing was sent"
 
@@ -349,7 +352,7 @@ for line in sys.stdin:
         if mm and mm.group(1) == me:
             open_.append((b, sha))
         else:
-            ignored += 1          # never printed, not even escaped: a ref name is any key holder'"'"'s text
+            ignored += 1          # never printed, not even escaped: a ref name is text anyone with mailbox access wrote
 open_.sort()
 print("COUNT\t%d" % len(open_))
 for b, sha in open_[:CAP]:
