@@ -82,4 +82,6 @@ key-permission trap are all gone — there is no key to place. The token is a *d
 ## Related
 
 - `/update-progress` § 11.0 — the resolver this satisfies (`ingest` / `spool`, on every host).
-- `docs/knowledge-ingest-lambda-instruction.md` — the endpoint's architecture and security posture.
+- `docs/knowledge-ingest-lambda-instruction.md` in `syndicate-playbooks-examples` (the estate's
+  engine, which is local-only; the file is not in this project) — the endpoint's architecture and
+  security posture.

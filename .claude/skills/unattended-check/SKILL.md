@@ -22,7 +22,8 @@ python3 .claude/skills/unattended-check/unattended_check.py --probe <id>  # reco
 recovery first (`--reconcile`) · `2` `progress.json` could not be read, which means the state of
 every operation is **unknown** — never read that as *none*. `--probe` exits `0` when its check
 completed, whether alive or not, and `2` when no task has that id and a `liveness_check`, when the
-check did not complete, or when there is no `progress.json`.
+check did not complete, when it holds a shell operator that `--probe` refuses (below), or when there
+is no `progress.json`.
 
 ## The block
 
@@ -68,7 +69,18 @@ yet delivered or failed whose `liveness_seen_failing` has no line showing its cu
 and a changed check needs a new line. Never stop a running target to clear the note: run `--probe`
 the next time the target is stopped, before it starts again.
 
-The check runs without a shell, so `$(...)`, a pipe or `&&` reaches the command as a literal word.
+The check runs without a shell, so `$(...)`, a pipe or `&&` reaches the command as a literal word:
+only the first command runs, with the rest as its arguments. Only single quotes protect: inside
+double quotes a shell still runs `$(...)` and a backtick, and the check does not, so
+`kill -0 "$(cat <pidfile>)"` can never succeed. The script of a `-c` option is the exception, since
+`sh -c "..."` runs it in a shell. A `liveness_check` holding `&&`, `||`, `|`, `;`, a line break,
+`>` or `<` outside quotes, or `$(` or a backtick outside single quotes, is noted by `--gate` and
+`--reconcile`, never refused.
+`--probe` refuses `&&`, `||`, `|`, `;`, `$(` and a line break: it exits `2` and records no line,
+so the check stays unproved until it is one command; put a compound check inside `sh -c '...'`,
+in single quotes, because inside double quotes the check keeps a backslash that a shell would drop.
+A backtick, `>` or `<` is only a note, and `--probe` still prints its line: without a shell each
+is a character of one word, as in an unquoted JMESPath literal (``--query X[?Y==`Z`]``).
 Avoid `pgrep -f`: it matches any process whose command line holds the pattern, the `sh -c` running
 it included, so a dead target reads as alive. Use a unit state
 (`systemctl --user is-active <unit>`), a pid file read as `sh -c 'kill -0 "$(cat <pidfile>)"'`,

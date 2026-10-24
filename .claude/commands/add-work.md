@@ -167,6 +167,10 @@ Every task MUST be:
   that comes out false on the defect it guards, measured where the user meets it
   (`PROJECT_CHARTER.md` § 10, *Verify reality*). A page-wide `scrollWidth` check passes while a
   table scrolls inside its own box; rewrite a verify like that before proposing the task.
+- **A verify that travels** - no MCP handle and no AWS profile in `verify`: both are nicknames
+  true on one machine only, and the session that runs the verify resolves them by `/check-aws`
+  Step 2. The rule and its example are `/generate-phases` § 6 *Use Environment Values in Verify
+  Steps*; it binds every `verify` written here as well.
 - **Deployable state** - code works after task
 - **Dependencies declared** - a verify or deliverable that names another task's deliverable puts
   that task in `depends_on` (`/generate-phases` § 5 *Add Required Fields to Each Task*)

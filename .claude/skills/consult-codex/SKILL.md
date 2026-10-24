@@ -130,12 +130,43 @@ the log as a finding against the reviewer.
 
 ## Refusal codes
 
-`NO-TARGET` · `NO-CODEX` · `NOT-LOGGED-IN` · `HOST-NOT-PREPARED` · `SHADOWED` ·
-`NOT-ORIGIN-LATEST` · `NOT-REVIEWABLE:progress-json` · `NOT-REVIEWABLE:no-claude-dir` ·
-`NOT-REVIEWABLE:codex-roots-present` · `NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS` · `ACCOUNT-AMBIGUOUS` ·
-`ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `AWS-SERVER-UNAVAILABLE` · `REVIEWER-UNAVAILABLE` ·
-`POSTURE-BREACH` · `CLONE-FAILED`. Every one is recorded in the log and committed. Absence and ignorance are
-different, and both look empty.
+| code | raised by | what it means, and what to do |
+|---|---|---|
+| `NO-TARGET` | `open` | no target was named: give `task:<id>`, `phase:<key>`, `file:<paths>` or `commit:<range>` |
+| `NO-CODEX` | `open` | `codex` is not on PATH; over a non-interactive ssh, run under `bash -lc` |
+| `NOT-LOGGED-IN` | `open` | Codex is not logged in on this host, and its config loads: log it in |
+| `HOST-NOT-PREPARED` | `open`, `codex-here`, the Codex adapter | the host-config predicate fails, the host entry is absent, or Codex cannot be found: `prepare-host.sh --apply` on this host |
+| `PROCEDURE-DRIFT` | `open`, the host entry, the Codex adapter | the host entry was installed against another version of the procedure block than this project carries: `prepare-host.sh --apply` on this host when this project's copy is the newer one, `/distribute-defaults` when it is the older |
+| `SHADOWED` | `open` | a personal `~/.claude/skills/consult-codex/` would shadow the distributed skill: retire it |
+| `NOT-ORIGIN-LATEST` | `open` | origin is unreachable, there is no upstream, the branch has diverged, or a clean checkout cannot fast-forward |
+| `NOT-REVIEWABLE:progress-json` | `open` | `progress-check` refuses this project's `progress.json` |
+| `NOT-REVIEWABLE:no-claude-dir` | `open` | `.claude/commands/` or `.claude/skills/` is missing |
+| `NOT-REVIEWABLE:codex-roots-present` | `open` | the checkout holds a `.codex/`; Codex configuration belongs to the host |
+| `ACCOUNT-AMBIGUOUS` | `codex-here` | more than one AWS server could be this project's binding: declare one primary account |
+| `ACCOUNT-NOT-BOUND` | `codex-here` | an account is declared and no profile on this host resolves to it, or there is no `aws` CLI to scan with, or the pinned image is absent |
+| `BINDING-REFUSED` | `open` | `codex-here` refused or crashed without a code the runner can read: an option it does not know, a `~/.claude.json` it cannot parse, a profile scan that timed out. The record quotes its stderr, which names the cause; one with no clear cause is a defect in `codex-here`, to report through `/syndicate-consult-loop` |
+| `NOT-REVIEWABLE` | `open` | the target could not be read at all; the record quotes the error |
+| `NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS` | `open` | the target yields no claims; the record names the near misses |
+| `CLONE-FAILED` | `open` | the transient clone could not be made |
+| `POSTURE-BREACH` | `open`, `close` | the clone, or a path the skill owns, changed: during the identity check this refuses the cycle; in a round it leaves no `agreed-*` outcome possible |
+| `REVIEWER-UNAVAILABLE` | `open` | Codex could not complete a single run, so nothing is known about this project (below) |
+| `AWS-SERVER-UNAVAILABLE` | `open` | the reviewer's AWS reach never started, so nothing is known about the account (below) |
+| `ACCOUNT-MISMATCH` | `open` | the server answered with a different account, which is a verdict and is never retried (below) |
+| `CYCLE-ALREADY-OPEN` | `open` | the log already holds an open cycle: let its session finish, or `consult.sh abandon` if that session is gone (below) |
+| `NO-REVIEW` | `close` | no reviewer round completed, so the `agreed-*` outcome asked for is recorded as this |
+| `REVIEWER-FAILED` | `review`, `close`, the host entry | a reviewer round crashed, timed out or said nothing. `review` then names this and `disputed` as the only closes, and the host entry closes with it when its reviewer never completed a round. `close` puts it in place of an `agreed-*` outcome only when another round did complete; with none it records `NO-REVIEW`. The host entry says `close` enforces this code when no round completed, which is wrong: `close` accepts it when asked and enforces only `NO-REVIEW`. The entry is corrected when every host is next re-prepared |
+| `LEDGER-INVALID` | `close` | round 1's ledger does not account for the claims |
+| `NO-PROOF` | `close` | `agreed-nothing` without a valid ledger that examined a claim, or without a matched identity |
+| `ABANDONED` | `abandon` | closes a cycle whose session is gone (below) |
+
+A refusal of `open` writes an opening record and a closing `not-reviewed:<CODE>` record, commits
+and pushes them, and exits 3. A `close` or `abandon` code is the outcome of the cycle's closing
+record. Three stops write nothing: `CYCLE-ALREADY-OPEN`, and an entry that stops before `consult.sh`
+runs, which is the host entry's own digest check (`PROCEDURE-DRIFT`) or the Codex adapter
+`consult-claude` finding no host entry (`HOST-NOT-PREPARED`). Absence and ignorance are different,
+and both look empty. The table is read against the code (`consult.sh`, `codex-here`, the host entry)
+by R41 of `scripts/test-consult-codex.sh` in syndicate-playbooks-examples, which fails when it misses
+a code or names one that nothing raises.
 
 **`AWS-SERVER-UNAVAILABLE` vs `ACCOUNT-MISMATCH` is that rule applied to the preflight**, and it
 was missing until 2026-09-03. `ACCOUNT-MISMATCH` now means one thing only: the server answered

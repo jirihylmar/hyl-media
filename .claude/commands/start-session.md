@@ -91,16 +91,22 @@ When your task needs a change another project owns (its files, its record, its s
 host-wide change (§ Two Environments), do not make it yourself, even to unblock this task. The one
 sanctioned way to change another project's files is the central repository's reviewed estate
 operations, and they reach its record only as an appended estate notice (`/add-work` § *The Four
-Destinations*). A defect in a distributed default goes to the operator (`/update-progress`
-§ *A framework defect is reported, never implemented*). Ask the owner instead:
+Destinations*). A defect in a distributed default is reported to the engine through the request
+mailbox, and to the operator (`/update-progress` § *A framework defect is reported, never
+implemented*). Ask the owner instead:
 
 1. **If its session is live, message it in the same turn.** In Claude Code, `ListAgents` shows the
    sessions you can reach and `SendMessage` sends to one. Say what is needed, why, and where any
    file or notice about it is, so the message stands on its own. It is a request, and that session
    decides.
-2. **Otherwise name it in your report:** what is blocked, which project or host must change, and
+2. **If the owner is `syndicate-playbooks-examples` or `hyl-resources-manager` and its session
+   cannot be reached** (always so from a member host, the remote dev box or an outside machine),
+   send it through the request mailbox, `/syndicate-request`. Record what you asked and the branch
+   it prints in the task's `notes` and in `session_notes.md`, as `/syndicate-request` says, and do
+   not wait for the answer: it comes back as an estate notice or from the operator.
+3. **Otherwise name it in your report:** what is blocked, which project or host must change, and
    what the change is. Put the same in your task's `notes`.
-3. **Then continue with other work.** Waiting on another owner is not a checkpoint.
+4. **Then continue with other work.** Waiting on another owner is not a checkpoint.
 
 A repository this one declares as a member in its `relations` block (`PROJECT_CHARTER.md` § 14) is
 not another owner: it is directed from here, so change its files as this project's procedures say.
@@ -170,10 +176,15 @@ your statement of which reading would mean which cause, so running it is their o
 > **A member host: the operator's own machine, reached only from the workstation.** Some remote hosts
 > answer only while the operator has connected a VPN on the workstation; their host file there says
 > so in `requires`. Projects the operator places on one live and run there, and are developed there
-> like the box's. Three things differ from the box: its `HOME` may be the **same path** as the
+> like the box's. Four things differ from the box: its `HOME` may be the **same path** as the
 > workstation's, so `HOME` tells you nothing about where you are; it holds no host files of its own
-> and reaches no other host; and while the VPN is down Step 2.5 reports it *not checked*, never
-> *no copy there*. Which project goes on which member host is the operator's decision.
+> and reaches no other host; while the VPN is down Step 2.5 reports it *not checked*, never
+> *no copy there*; and its AWS: there is none until a project placed there brings its profile, and
+> then one server bound to that profile alone, with no default profile and no other account on the
+> host. That is the per-account model of `/check-aws` Step 2 (its bare probe answers with that
+> account, and nothing is passed), not the box's central one. Until the profile arrives, Step 5 and
+> `/check-aws` report *no AWS connection on this host*, the expected state there, not a fault.
+> Which project goes on which member host is the operator's decision.
 
 > **Every host carries other projects, so what they share is never one project's to change.** The
 > projects on a host share its packages, Docker daemon and images, user systemd manager and timers,
@@ -195,7 +206,8 @@ your statement of which reading would mean which cause, so running it is their o
 
 **Which machine you are running on is not knowable from this file.** Every default command ships
 unchanged to every host — the local workstation, the remote dev box and any member host (above) — and
-the first two differ in ways that matter:
+the first two differ in ways that matter (a member host's differences from the box, AWS among them,
+are in its callout above, so neither column below is a member host):
 
 | | Local workstation | Remote dev box |
 |---|---|---|
@@ -245,13 +257,21 @@ the first two differ in ways that matter:
 > server ever answers a bare call with an account, its launch has drifted: report it, and name the
 > account on every call meanwhile (`/check-aws` Step 2 finds the value that reaches it).
 
-> **The AWS connection usually cannot read this checkout's files.** A server in a container that
-> mounts only `~/.aws`, or one that runs your code in AWS's own sandbox, sees no local path, so a
-> `file://` or `fileb://` argument, a pipe, a redirect or a `$VARIABLE` fails when the call runs.
-> Pass the content inline (a JSON argument, or `params` through `call_boto3`), or an `s3://` URI
-> where the operation takes one. Otherwise use the local `aws` CLI with `--region` and a profile
-> that `aws sts get-caller-identity --profile <p>` proves is this project's account (names from
-> the `/check-aws` Step 2 listing command).
+> **What the AWS connection can read of this machine depends on how its server is launched, so read
+> the launch before concluding.** Launches differ by host. A container that mounts only `~/.aws`
+> (the workstation's shape) sees no local path. A container run as the session's own uid with the
+> whole home bind-mounted at the same path (the box's container bindings, measured 2026-10-21, and a
+> member host's tooling containers, measured 2026-10-24) sees every file under the home, at the
+> host's own paths. A server that runs your code in AWS's own sandbox sees none. So before passing
+> a local path, or explaining an error by what the connection can or cannot see, read this
+> session's own server's launch, its `command` and `args` only: in `~/.claude.json` under
+> `mcpServers` (top level, or this project's entry) or in this project's `.mcp.json`, and for Codex
+> under `[mcp_servers.<name>]` in `~/.codex/config.toml`. Where it sees no local path, a `file://`
+> or `fileb://` argument fails when the call runs; a pipe, a redirect or a `$VARIABLE` fails on
+> every launch, because no shell runs the call. Pass the content inline (a JSON argument, or
+> `params` through `call_boto3`), or an `s3://` URI where the operation takes one. Otherwise use the
+> local `aws` CLI with `--region` and a profile that `aws sts get-caller-identity --profile <p>`
+> proves is this project's account (names from the `/check-aws` Step 2 listing command).
 
 > **A session should cost memory only for the AWS access it actually needs.** Servers belong in the
 > projects that use them, not in a global block every project inherits. Measured on the workstation
@@ -312,22 +332,29 @@ When you meet a fifth, it is still this rule.
 For the orchestration repo and each present sub-repo, fetch then fast-forward only:
 
 ```bash
-sync_ff() {  # $1=dir ('.' for orchestration), $2=label
-  git -C "$1" fetch --quiet 2>/dev/null || { echo "SKIP $2: origin unreachable (offline?) — proceeding on current checkout"; return; }
-  git -C "$1" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
-    || { echo "SKIP $2: no upstream (local-only) — nothing to pull"; return; }
-  [ -z "$(git -C "$1" status --porcelain)" ] \
-    || { echo "SKIP $2: working tree dirty — commit it, or leave it and skip this repo (see § 0a)"; return; }
+sync_ff() {  # arguments: the directory ('.' for orchestration), then the label
+  # The arguments are copied into names before anything reads them, and that is not style.
+  # Claude Code replaces a dollar sign followed by a digit with a word this command was invoked
+  # with (the digit is its index, from 0), inside this fence too: run as
+  # `/start-session task 5.1 complete`, the old body handed git the directory "5.1", printed
+  # "SKIP complete: origin unreachable" for every repo and left each stale checkout looking like
+  # an offline one. "$@" is not replaced, so the body reads its arguments only through it.
+  local args=("$@"); local repo="${args[0]}" label="${args[1]}"
+  git -C "$repo" fetch --quiet 2>/dev/null || { echo "SKIP $label: origin unreachable (offline?) — proceeding on current checkout"; return; }
+  git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
+    || { echo "SKIP $label: no upstream (local-only) — nothing to pull"; return; }
+  [ -z "$(git -C "$repo" status --porcelain)" ] \
+    || { echo "SKIP $label: working tree dirty — commit it, or leave it and skip this repo (see § 0a)"; return; }
   # Count both directions. The test here used to be `merge-base --is-ancestor HEAD @{u}`, which is
   # false for a repo that is merely AHEAD — so a checkout holding unpushed commits and nothing else
   # was reported "diverged / non-fast-forward, DO NOT force". That is not a divergence; it needs a
   # push, and the message sent the reader looking for a conflict that does not exist.
-  behind=$(git -C "$1" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
-  ahead=$(git -C "$1" rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
+  behind=$(git -C "$repo" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+  ahead=$(git -C "$repo" rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
   if [ "$behind" -gt 0 ] && [ "$ahead" -gt 0 ]; then
-    echo "SKIP $2: diverged ($ahead ahead, $behind behind) — DO NOT force; resolve per § 0a below (runs on ANY host)"
+    echo "SKIP $label: diverged ($ahead ahead, $behind behind) — DO NOT force; resolve per § 0a below (runs on ANY host)"
   elif [ "$behind" -gt 0 ]; then
-    git -C "$1" merge --ff-only @{u} >/dev/null && echo "OK   $2: fast-forwarded $behind to origin-latest"
+    git -C "$repo" merge --ff-only @{u} >/dev/null && echo "OK   $label: fast-forwarded $behind to origin-latest"
   elif [ "$ahead" -gt 0 ]; then
     # PUBLISH WHAT AN EARLIER SESSION STRANDED — and this is the ONE place that can.
     #
@@ -347,13 +374,13 @@ sync_ff() {  # $1=dir ('.' for orchestration), $2=label
     # session in every repo, it covers commit sites nobody has enumerated yet, and it is retroactive
     # — a commit stranded weeks ago is published the next time anyone opens the project. Step 0 has
     # just fast-forwarded this repo, so an ahead-only push is a fast-forward by construction.
-    if git -C "$1" push --quiet 2>/dev/null; then
-      echo "OK   $2: published $ahead commit(s) an earlier session left unpushed"
+    if git -C "$repo" push --quiet 2>/dev/null; then
+      echo "OK   $label: published $ahead commit(s) an earlier session left unpushed"
     else
-      echo "SKIP $2: $ahead commit(s) are unpushed and the push was refused — resolve per § 0a below"
+      echo "SKIP $label: $ahead commit(s) are unpushed and the push was refused — resolve per § 0a below"
     fi
   else
-    echo "OK   $2: up to date with origin"
+    echo "OK   $label: up to date with origin"
   fi
 }
 sync_ff "." orchestration
@@ -422,15 +449,16 @@ A mechanical pre-commit guard (`.claude/hooks/pre-commit`) blocks `git add -A` f
 This step only ARMS an already-delivered guard — it never creates or commits the hook file (delivery is `/distribute-defaults`'s job). For the orchestration repo and each present sub-repo:
 
 ```bash
-arm_guard() {  # $1=dir
-  local hp="$1/.claude/hooks/pre-commit"
+arm_guard() {  # one argument: the directory (named, never positional: see sync_ff in Step 0)
+  local args=("$@"); local repo="${args[0]}"
+  local hp="$repo/.claude/hooks/pre-commit"
   if [ -f "$hp" ]; then
     chmod +x "$hp" 2>/dev/null
-    [ "$(git -C "$1" config --get core.hooksPath 2>/dev/null)" = ".claude/hooks" ] \
-      || git -C "$1" config core.hooksPath .claude/hooks
-    echo "OK   $1: commit guard armed (core.hooksPath=.claude/hooks)"
+    [ "$(git -C "$repo" config --get core.hooksPath 2>/dev/null)" = ".claude/hooks" ] \
+      || git -C "$repo" config core.hooksPath .claude/hooks
+    echo "OK   $repo: commit guard armed (core.hooksPath=.claude/hooks)"
   else
-    echo "WARN $1: no .claude/hooks/pre-commit — run /distribute-defaults to deliver it (not creating it here)"
+    echo "WARN $repo: no .claude/hooks/pre-commit — run /distribute-defaults to deliver it (not creating it here)"
   fi
 }
 arm_guard "."
@@ -513,35 +541,48 @@ whose bytes have since changed on this host.**
 
 ### 2. Build Capability Inventory (before you build anything)
 
-**Why this step exists — the "reinventing the wheel" failure:** agents hand-rebuild functionality that already ships as a project command, because they trust a command list written in `CLAUDE.md` prose. Hand-maintained lists drift the moment a command is renamed, added, or is project-specific. The ONLY source of truth is the live filesystem: `.claude/commands/*.md`. Derive your toolset from the directory every session — never from memory or from prose.
+**Why this step exists — the "reinventing the wheel" failure:** agents hand-rebuild functionality that already ships as a project command or skill, because they trust a command list written in `CLAUDE.md` prose. Hand-maintained lists drift the moment a command is renamed, added, or is project-specific. The ONLY source of truth is the live filesystem: `.claude/commands/*.md` for commands, and `.claude/skills/*/SKILL.md` (Claude) and `.agents/skills/*/SKILL.md` (Codex) for skills. Derive your toolset from those directories every session — never from memory or from prose. Most skills have no command file, so an inventory of `.claude/commands/` alone never shows them: models-trainer reported in 2026-09 that its inventory missed every one of its skills.
 
 **Enumerate the live inventory (always safe; never hardcode a list):**
 
 ```bash
+seen=" "
 for f in .claude/commands/*.md; do
   [ -e "$f" ] || continue
   name=$(basename "$f" .md)
+  seen="$seen$name "
   desc=$(sed -n 's/^description:[[:space:]]*//p' "$f" | head -1)
   printf '/%s\t%s\n' "$name" "${desc:-(no description)}"
 done
+# Skills: a Claude skill is a directory under .claude/skills/, a Codex skill one under
+# .agents/skills/. A name already printed is skipped: every default command has a Codex adapter of
+# the same name, and a skill that ships in both trees is one capability.
+for f in .claude/skills/*/SKILL.md .agents/skills/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  name=$(basename "$(dirname "$f")")
+  case "$seen" in *" $name "*) continue ;; esac
+  seen="$seen$name "
+  desc=$(sed -n 's/^description:[[:space:]]*//p' "$f" | head -1)
+  printf '%s (skill, %s)\t%s\n' "$name" "${f%/*/SKILL.md}" "${desc:-(no description)}"
+done
 ```
 
-This answers **"does a command for this already exist / am I aware of it?"** — including project-specific commands the stale prose may omit. It does NOT answer **"is this command the latest canonical version?"** — version reconciliation against central is `/distribute-defaults`'s job, not yours. Do not edit command file contents here. (Output is display-only; descriptions may contain `—`/tabs, so don't re-parse it.)
+This answers **"does a command or skill for this already exist / am I aware of it?"** — including project-specific commands and skills the stale prose may omit. It does NOT answer **"is this command the latest canonical version?"** — version reconciliation against central is `/distribute-defaults`'s job, not yours. Do not edit command file contents here. (Output is display-only; descriptions may contain `—`/tabs, so don't re-parse it.)
 
 **Bind yourself to these rules:**
 
-- **Prefer-existing rule.** Before building, scripting, or hand-rolling ANY capability, scan the inventory for a command whose name/description covers the need. If one matches, invoke it instead of doing the work ad-hoc — reinventing an existing command is a defect, not initiative.
-- **Open before you reject.** If a command's name plausibly fits but its one-line description is terse, READ that command file before concluding "mine is different." This closes the most common reinvention loophole.
-- **Search past this project, too.** The inventory lists this project's commands only, and the mechanism you are about to design may already exist in another repository. Before designing one (a switch, a sync, a guard, a login, a report), search the other checkouts on this host for the job's verb and noun: `for g in "$HOME"/*/.git "$HOME"/*/*/.git; do [ -e "$g" ] || continue; r=${g%/.git}; git -C "$r" grep -il --all-match -e '<verb>' -e '<noun>' 2>/dev/null | sed "s|^|$r/|"; done`. A repository that lives on another host is searched there, over ssh with a timeout inside the remote command; if this host cannot reach it, say the search did not cover it. A local copy of a repository that lives elsewhere is stale (Step 2.5), not the one to port from. When the operator says "like X" or "as in <repo>", read X before designing anything. If the mechanism exists, port it and change only what the new context forces.
+- **Prefer-existing rule.** Before building, scripting, or hand-rolling ANY capability, scan the inventory for a command or skill whose name/description covers the need. If one matches, invoke it instead of doing the work ad-hoc — reinventing an existing command or skill is a defect, not initiative.
+- **Open before you reject.** If a command's or skill's name plausibly fits but its one-line description is terse, READ its file (the command's `.md`, or the skill's `SKILL.md`) before concluding "mine is different." This closes the most common reinvention loophole.
+- **Search past this project, too.** The inventory lists this project's commands and skills only, and the mechanism you are about to design may already exist in another repository. Before designing one (a switch, a sync, a guard, a login, a report), search the other checkouts on this host for the job's verb and noun: `for g in "$HOME"/*/.git "$HOME"/*/*/.git; do [ -e "$g" ] || continue; r=${g%/.git}; git -C "$r" grep -il --all-match -e '<verb>' -e '<noun>' 2>/dev/null | sed "s|^|$r/|"; done`. A repository that lives on another host is searched there, over ssh with a timeout inside the remote command; if this host cannot reach it, say the search did not cover it. A local copy of a repository that lives elsewhere is stale (Step 2.5), not the one to port from. When the operator says "like X" or "as in <repo>", read X before designing anything. If the mechanism exists, port it and change only what the new context forces.
 - **Re-derive, don't recall.** Consult the live directory each session; never act on a remembered list or `CLAUDE.md` prose.
 - **Read the skill that owns what you change.** Before changing a file or a surface (a page, a table, an endpoint), check whether a project skill names it, and read that skill first: `grep -l -F -- '<path or name>' .claude/skills/*/SKILL.md .agents/skills/*/SKILL.md .claude/commands/*.md 2>/dev/null | grep -vxF -f <(grep -oE '"\.(claude|agents)/[^"]+"' .claude/distribution-manifest.json | tr -d '"')`, which leaves out the distributed defaults the manifest lists, as `/update-progress` Step 7's sweep does. Whether the change then needs the skill updated is `/update-progress` Step 7's question.
 
 **Reconcile `CLAUDE.md` only if it has DRIFTED to a hardcoded list (authorized, scoped, idempotent):**
 
-The correct shape of the `CLAUDE.md` commands section is a **list-free prose pointer** to `.claude/commands/` — NOT an enumerated list (a hand-maintained list is the disease this step cures). Detect the section by a heading matching `^##[[:space:]]+Commands` (tolerant of `## Commands`, `## Commands (N total)`, `## Commands Available (N total)`), spanning to the next `## ` heading or `---`.
+The correct shape of the `CLAUDE.md` commands section is a **list-free prose pointer** to the directories this step reads — `.claude/commands/` for commands, `.claude/skills/` and `.agents/skills/` for skills — NOT an enumerated list (a hand-maintained list is the disease this step cures). Detect the section by a heading matching `^##[[:space:]]+Commands` (tolerant of `## Commands`, `## Commands (N total)`, `## Commands Available (N total)`), spanning to the next `## ` heading or `---`.
 
 - **If that section is already list-free prose → change NOTHING and do NOT commit.** This is the normal case; the step is a no-op.
-- **If — and only if — it contains a hardcoded command list** (e.g. a fenced block of `/cmd # …` lines), it has drifted. Self-heal by **replacing the enumerated list with the prose pointer** (no command names — heal toward the directory, never regenerate a list). Touch ONLY that section; touch no other part of `CLAUDE.md` and no other file.
+- **If — and only if — it contains a hardcoded command list** (e.g. a fenced block of `/cmd # …` lines), it has drifted. Self-heal by **replacing the enumerated list with the prose pointer** (no command or skill names — heal toward the directories, never regenerate a list). Touch ONLY that section; touch no other part of `CLAUDE.md` and no other file.
 - **Concurrency guard.** Other agents may be editing `CLAUDE.md` concurrently. Only heal when `CLAUDE.md` has no other unstaged changes (`git diff --name-only` does not list it before your edit), and commit by pathspec so you never sweep another agent's pre-staged files:
 
 ```bash
@@ -614,7 +655,12 @@ if [ -d "$SECRETS" ]; then
   # exactly as a machine with no host config does, and this step then prints the all-clear for a
   # correct state while the configured hosts were never asked. lib/estate-reach.sh (estate_read_workspaces) makes
   # this same argument for the same reason and propagates rc; the defaults did not.
-  HOSTS=$(python3 - "$SECRETS" <<'PY' 2>/tmp/secrets-parse.err
+  #
+  # The parser's stderr goes to a file of this run's own, removed below. It used to be one fixed
+  # file in /tmp, which every session on a host shares, so the cause line below could be another
+  # session's. No file at all (mktemp failed) only loses the cause, never the verdict.
+  PARSE_ERR=$(mktemp 2>/dev/null) || PARSE_ERR=""
+  HOSTS=$(python3 - "$SECRETS" <<'PY' 2>"${PARSE_ERR:-/dev/null}"
 import json, os, sys
 d = sys.argv[1]; bad = 0; seen = set()
 for n in sorted(os.listdir(d)):
@@ -636,15 +682,16 @@ print("BAD\t%d\t-" % bad)
 PY
 )
   PARSER_RC=$?
-  BAD=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1=="BAD"{print $2}')
-  HOSTS=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1!="BAD"')
+  BAD=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$(1)=="BAD"{print $(2)}')
+  HOSTS=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$(1)!="BAD"')
   if [ "$PARSER_RC" -ne 0 ]; then
     # NOT "no host configured". We could not look, so every configured host is UNKNOWN — the same
     # distinction Step 0.7 and the estate runners make, and the one this step was missing.
     echo "HOST CONFIGS UNREAD: the parser exited $PARSER_RC — the hosts in $SECRETS were NOT asked."
-    echo "  cause: $(head -c 300 /tmp/secrets-parse.err 2>/dev/null || echo '(no stderr captured)')"
+    echo "  cause: $(head -c 300 "$PARSE_ERR" 2>/dev/null || echo '(no stderr captured)')"
     HOSTS=""
   fi
+  [ -n "$PARSE_ERR" ] && rm -f "$PARSE_ERR"
 fi
 
 # A HOST THAT DECLARES `requires` IS ONLY THERE WHILE THAT LINK IS UP — and when it is down, TCP 22
@@ -668,13 +715,14 @@ fi
 # the bound was right, but the process died of a signal and bash reported it — a multi-line
 # "Alarm clock" job message, with the whole program below quoted under it, on every session start
 # that hit a stalled lookup. An exit code says the same thing and the shell has nothing to report.
-link_down() {  # $1 = user@host as ssh sees it
+link_down() {  # one argument: user@host as ssh sees it (named, never positional: see sync_ff in Step 0)
+  local args=("$@"); local target="${args[0]}"
   local G HN PT
-  G=$(ssh -G "$1" </dev/null 2>/dev/null) || return 1
-  printf '%s\n' "$G" | awk '($1=="proxyjump"||$1=="proxycommand") && $2!="none"{p=1} END{exit !p}' \
+  G=$(ssh -G "$target" </dev/null 2>/dev/null) || return 1
+  printf '%s\n' "$G" | awk '($(1)=="proxyjump"||$(1)=="proxycommand") && $(2)!="none"{p=1} END{exit !p}' \
     && return 1
-  HN=$(printf '%s\n' "$G" | awk '$1=="hostname"{print $2; exit}')
-  PT=$(printf '%s\n' "$G" | awk '$1=="port"{print $2; exit}')
+  HN=$(printf '%s\n' "$G" | awk '$(1)=="hostname"{print $(2); exit}')
+  PT=$(printf '%s\n' "$G" | awk '$(1)=="port"{print $(2); exit}')
   [ -n "$HN" ] || return 1
   python3 - "$HN" "${PT:-22}" <<'PY'
 import os, socket, sys, threading
@@ -725,9 +773,17 @@ while IFS=$'\t' read -r U H K R; do
   # ServerAlive* bounds the connection AFTER the handshake. ConnectTimeout does not: a host that
   # authenticates and then stalls (memory pressure, full disk) would hang this block, and this
   # block runs at the start of EVERY session in every project. 5s x 3 = a ~15s ceiling per host.
+  #
+  # Both of those bound only the ssh CLIENT here. THE `timeout 20` BOUNDS THE PROGRAM ON THE HOST,
+  # and only a bound inside the remote command can: without a tty, sshd never hangs up a remote
+  # program whose client died, so a listing stuck on a stale mount runs on there, re-parented to
+  # PID 1 (measured on vsb-rss, 2026-10-22). The workstation's ssh guard refuses any ssh whose remote
+  # side has no bound, and it refused this probe until the timeout went in. The `; :` stays inside
+  # the bounded program, so its rule above is unchanged; a listing that outruns 20 s exits 124 and is
+  # reported "did not answer", which is true: its repos are NOT in this probe.
   if L=$(ssh -n -i "$K" -o ConnectTimeout=15 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 \
              -o BatchMode=yes "$U@$H" \
-         'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done; :' 2>/dev/null); then
+         'timeout 20 bash -c '\''for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done; :'\''' 2>/dev/null); then
     ASKED=$((ASKED+1)); REMOTELIST="$REMOTELIST
 $L"
   else
@@ -1614,6 +1670,14 @@ bare call below is that step's probe for a per-account server, not for every ser
 ```
 
 - If `context_hints` has no `aws_account` (a Phase 0 project, or one without AWS), skip this step and record "AWS verify: n/a (no aws_account in context_hints)" in the Step 9 report.
+- If this session has **no AWS connection at all**, because none of `/check-aws` Step 2's
+  candidates exists (no tool named by `context_hints.mcp_tool`, no `mcp__aws-*__call_aws` tool, no
+  tool with an `aws_profile` argument, and in Codex no `aws_api`), the account is not checked. That
+  is an outcome, not a gap to fill with a guessed model. Record
+  "AWS verify: not checked (no AWS connection on this host)" in the Step 9 report, and carry on
+  with work that needs no AWS. A task that needs AWS cannot run on this host yet; say so in the
+  same report. On a member host this is the expected state until a project placed there brings its
+  profile (§ Two Environments).
 - **STOP if account ID does not match** `context_hints.aws_account`
 - Name the region on every regional call, never relying on the connection's default:
   `context_hints.aws_region`, or the resource's own region where it lives elsewhere (a CloudFront
@@ -1630,7 +1694,15 @@ Find the last `complete` task in progress.json:
 
 Run its verification step:
 - If `verify` field exists → run that check
-- If AWS resources → verify they exist
+- A `verify` that is an `aws …` command runs through the AWS handle Step 5 resolved, never through
+  the local `aws` CLI: `{handle} <verify>`, bare on a per-account server, with `--profile <p>` on a
+  central server that takes it, or with the `aws_profile` argument Step 5 matched set on one that
+  takes that (in the tool's own form where it takes no CLI command, as Step 5's identity call was
+  made). An MCP handle or a `--profile` written into an older task's `verify` is a nickname
+  (`/generate-phases` § 6): drop it and use what Step 5 resolved. Where Step 5 recorded
+  *not checked (no AWS connection on this host)*, this verify is not checked either, for the same
+  reason, and is never reported as passed
+- If AWS resources → verify they exist, through the same handle
 - If code → verify it builds/runs
 
 **If verification FAILS:**
@@ -1654,7 +1726,10 @@ above all before a deletion or other irreversible step, and record the result in
 
 ### 7. Check Context Budget
 
-Run `/context` to check usage:
+Estimate how much of your context is used. The exact percentage is the operator's to read:
+`/context` is a command of the operator's terminal, and no executor tool can run it. If the harness
+shows you a context or token figure, use it; otherwise judge from what this session has read and
+done, and say in the Step 9 report that the figure is an estimate.
 - **<40%**: Start any task
 - **40-60%**: Small/medium tasks only
 - **60-80%**: Finish current, then wrap up
@@ -1688,10 +1763,11 @@ check. The framework's own bootstrap once created folders whose origin carried a
 and two live projects still disagree folder-vs-origin — drift you cannot grep for):
 
 ```bash
-check_name() {  # $1=dir ('.' for orchestration)
+check_name() {  # one argument: the directory ('.' for orchestration); named, never positional (see sync_ff in Step 0)
+  local args=("$@"); local repo="${args[0]}"
   local o n
-  o=$(git -C "$1" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
-  n=$(basename "$(cd "$1" && pwd)")
+  o=$(git -C "$repo" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
+  n=$(basename "$(cd "$repo" && pwd)")
   [ -n "$o" ] && [ "$o" != "$n" ] && echo "NAMING MISMATCH: folder '$n' vs origin '$o'"
 }
 check_name "."
@@ -1718,15 +1794,18 @@ Update `git_repos` status in progress.json:
 ### AWS Account Verified
 - Account: {AWS_ACCOUNT_ID} ✓
 - Region: {AWS_REGION}, named on every regional call (or: not declared — taken from {source})
-- MCP Tool: {mcp_tool} (resolved handle: {handle})
+- AWS handle: {handle}, resolved by Step 5 (as `/check-aws` Step 2 does)
+(or, in place of these three lines, the one Step 5 recorded:
+ "AWS verify: n/a (no aws_account in context_hints)" or
+ "AWS verify: not checked (no AWS connection on this host)")
 
 ### Pre-Work Verification
 - Last completed: Task X.Y - [name]
-- Verification: [PASSED/FAILED]
+- Verification: [PASSED/FAILED/not checked (no AWS connection on this host)]
 
 ### Context Budget
-- Current usage: XX%
-- Recommended scope: [small/medium/wrap-up]
+- Usage: XX% as the harness shows it, or estimated: one of <40% / 40-60% / 60-80% / >80% (Step 7's bands; say it is an estimate)
+- Recommended scope: Step 7's row for that band [any task / small or medium tasks only / finish current, then wrap up / no new work: run /update-progress]
 
 ### Current Task
 - Phase: X - [Phase Name]
@@ -1740,7 +1819,7 @@ Update `git_repos` status in progress.json:
 | orchestration | FF-pulled / up-to-date / DIVERGED / offline / local-only | pushed/needs_push |
 | infrastructure | ... | ... |
 
-(If any repo shows DIVERGED, resolve it with /syndicate-refresh-remote before starting the task; if it shows offline, note the stale-checkout risk and re-sync when online.)
+(If any repo shows DIVERGED, resolve it per § 0a (it runs on any host) before starting the task; if it shows offline, note the stale-checkout risk and re-sync when online.)
 
 ### Ready to proceed with Task X.Y
 ```
@@ -1751,7 +1830,8 @@ Update `git_repos` status in progress.json:
 
 You MUST monitor context:
 
-1. **Check `/context`** to verify current usage
+1. **Estimate context used** as Step 7 says (a figure the harness shows you, else your own
+   estimate; the exact percentage is the operator's to read)
 2. **If context is low** (>60%), immediately:
    - Run `/update-progress`
    - Update `session_notes.md` with full context
@@ -1805,4 +1885,4 @@ If you (Claude) used `EnterPlanMode` during a session:
 - **ALWAYS** verify account before any AWS operation
 - **ALWAYS** verify last task before starting new work
 - **NEVER** assume discussion equals authorization
-- **BEFORE** writing any script, loop, or multi-step procedure, STOP and check the live `.claude/commands/` inventory for an existing command — prefer it over ad-hoc work
+- **BEFORE** writing any script, loop, or multi-step procedure, STOP and check the live Step 2 inventory (`.claude/commands/`, `.claude/skills/`, `.agents/skills/`) for an existing command or skill — prefer it over ad-hoc work

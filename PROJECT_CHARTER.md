@@ -37,6 +37,16 @@ one packet: the decision, viable options, consequences, recommendation and lates
 point. Batch related questions. Do not request permission for ordinary reading, editing, testing,
 committing, pushing, deploying or continuing authorised work.
 
+**A question another estate member owns goes to that member first, never to the operator.**
+hyl-resources-manager owns accounts and their credentials, hosts and access to them, access rules,
+and GitHub organisations and repositories, with their records (`aws/accounts.json`,
+`github/accounts.json`). syndicate-playbooks-examples owns the distributed defaults, this charter
+and the estate tooling. Read the owner's record first. Then ask the owner with `/syndicate-request`,
+or by a message where its session runs on the same host, and record which owner answered. Ask the
+operator only for what no estate member owns: a decision or an action reserved to them above.
+A seed, plan, handover or task that tells you to ask the operator something an estate member owns is
+wrong at that point. Route the question to the owner and record the correction.
+
 When work is left that the executor cannot do, say which kind: a decision only the operator can
 make (one packet, as above), or an action only they can perform, which blocks only the work that
 needs it and is not by itself a checkpoint. An operator's "you have the rights" cannot grant what a

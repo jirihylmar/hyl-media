@@ -151,7 +151,8 @@ Identify:
 **Also read environment config** to use correct:
 - Naming conventions in verify steps
 - AWS region in resource ARNs
-- MCP tool references
+- Account number in resource ARNs (an MCP tool reference or profile name in the config is never
+  copied into a task: § 6)
 
 ### 3. Create Phase Structure
 For each major phase, create a task file:
@@ -226,16 +227,19 @@ tasks/
 
 // GOOD - the generated task carries values RESOLVED from THIS project's environment.
 // Illustration for a project whose naming pattern is myproject-{service}-{env}:
-{"verify": "mcp__aws-<server>__call_aws aws dynamodb describe-table --table-name myproject-experts-dev --region eu-central-1"}
+{"verify": "aws dynamodb describe-table --table-name myproject-experts-dev --region eu-central-1"}
 ```
 
-Resolve both halves at generation time, from the project you are generating for:
-- **The MCP handle**: read it from the LIVE tool inventory — never copy a server name from this
-  file or from another project. Which `<server>` names exist depends on the host's AWS service
-  model (per-account servers, or one central server); on a central-server host the command must
-  also name the account (`--profile`, or the tool's `aws_profile` argument). Every regional command
-  carries `--region` with the region the resource lives in. Detect, never assume — see /check-aws
-  Step 2.
+Resolve at generation time what is true on every machine, from the project you are generating for,
+and nothing else:
+- **The MCP handle and the AWS profile**: never write the MCP handle or an AWS profile into
+  `verify`; the session that runs verify resolves both, by /check-aws Step 2. Both are nicknames,
+  true on one machine only, and `progress.json` travels (`/start-session` § Two Environments): a
+  project that moves to another host runs its old tasks' verify there. (Until 2026-10-24 this
+  bullet said to resolve both here and write them in, which /check-aws Step 2's "Record nothing"
+  forbids.)
+- **The region**: every regional command carries `--region` with the region the resource lives
+  in. A region is the same on every machine, so it travels.
 - **The resource name**: construct it from the project's own naming convention in
   `input/environment.md`. A real resource name belonging to some other project is wrong even if
   the command would run.

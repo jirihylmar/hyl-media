@@ -9,7 +9,10 @@ is how the two answers drift apart:
   --reconcile  at session start.         Exit 0 always; exit 3 if a watcher needs recovery FIRST.
 
 --probe TASK_ID is not a third answer to that question. It runs one task's recorded liveness_check
-once, as the gate does, and prints the line that liveness_seen_failing records.
+once, as the gate does, and prints the line that liveness_seen_failing records — unless the check
+holds one of PROBE_REFUSES where a shell would act on it ($( outside single quotes, the rest
+outside quotes), which it names instead. A backtick, > or < is only noted, by --probe too (see
+SHELL_OPERATORS).
 
 WHY THIS EXISTS (models-trainer, 2026-09-01). An executor said it was monitoring an AWS capacity
 operation. It then sent a final response, which ended polling. Its systemd supervisor went inactive
@@ -72,6 +75,48 @@ NEVER_SEEN_FAILING = ("liveness_check has not been recorded failing (liveness_se
 # One line --probe printed: `<time> exit <code>: <command>`. The time is not parsed.
 SEEN_FAILING_LINE = re.compile(r"\bexit (-?\d+): (.+?)\s*$")
 
+# The check runs without a shell, so a shell operator where a shell would act on it reaches the
+# first command as an argument: `A && B` runs A alone, with `&&`, B and B's arguments as A's, and
+# B never runs. models-trainer, 2026-10-02: a unit check `&&` a process check ran as one systemctl
+# call with seven arguments, and it was seen failing whenever the unit was down, so the record
+# looked proved while its second half had never run. --gate and --reconcile note every operator
+# below, for the same reason as NEVER_SEEN_FAILING, and never refuse because of one.
+#
+# --probe refuses PROBE_REFUSES: it exits 2 and prints no line, because a failure of the first
+# command alone would be recorded as a failure of the whole check. A line break is POSIX's other
+# spelling of `;`. A backtick, > or < (NOTED_ONLY) is only a note there too, and --probe prints its
+# line: without a shell each is a character of one word, as in an unquoted JMESPath literal such as
+# --query X[?Y==`Z`], and the check works as written. `||` comes before `|`, so it is named as
+# itself. A lone `&` is left out: unquoted in a URL it is a word here, and the check works as
+# written.
+#
+# Only single quotes protect. Inside double quotes a POSIX shell still runs `$(...)` and a backtick,
+# and this check does not (EXPANDED_IN_DOUBLE_QUOTES), so `kill -0 "$(cat f)"` hands kill the text
+# `$(cat f)` as its pid, cat never runs, and the check can never succeed. The one exception is the
+# script of a -c option: sh -c "kill -0 $(cat f)" gives sh that text, and sh runs the substitution.
+PROBE_REFUSES = ("&&", "||", "$(", "|", ";", "\n")
+NOTED_ONLY = (">", "<", "`")
+SHELL_OPERATORS = PROBE_REFUSES + NOTED_ONLY
+EXPANDED_IN_DOUBLE_QUOTES = ("$(", "`")
+SCRIPT_OPTION = re.compile(r"-[A-Za-z]*c[A-Za-z]*\Z")   # -c, -ec, -lc: the next word is a script
+# Both notes take (operator, where): where() says which quotes it stood outside.
+SHELL_OPERATOR_NOTE = ("liveness_check holds the shell operator %r %s, and it runs without a "
+                       "shell, so only its first command runs, with the rest as its arguments: its "
+                       "answer says nothing about the rest, and --probe records no line for it, so "
+                       "it stays unproved. Make it one command, or put it inside sh -c '...'; see "
+                       "SKILL.md")
+NOTED_ONLY_NOTE = ("liveness_check holds the shell operator %r %s, and it runs without a shell, "
+                   "so its command receives it as a character of a word, never as a redirection or "
+                   "a command substitution. That is right in a word such as an unquoted JMESPath "
+                   "literal (--query X[?Y==`Z`]), and --probe records its line; if a shell was "
+                   "meant, put the check inside sh -c '...'; see SKILL.md")
+
+
+def where(op):
+    """Where a named operator stood: a shell runs EXPANDED_IN_DOUBLE_QUOTES inside double quotes
+    too, so for those two 'outside quotes' would be false."""
+    return "outside single quotes" if op in EXPANDED_IN_DOUBLE_QUOTES else "outside quotes"
+
 
 def _now():
     return datetime.datetime.now(datetime.timezone.utc)
@@ -104,10 +149,49 @@ def _tasks(data):
                 yield key, t
 
 
+def shell_operator(cmd, ops=SHELL_OPERATORS):
+    """The first of ops in cmd where a shell would act on it and this check does not, else None:
+    the earliest position wins, then the order of ops. Quotes are read as a POSIX shell reads
+    them. Nothing is special inside single quotes, so the sh -c '...' that SKILL.md recommends for
+    a compound check is one word, and never named. Inside double quotes an operator is a word,
+    except EXPANDED_IN_DOUBLE_QUOTES, which a shell still runs there, and this check does not:
+    `kill -0 "$(cat f)"` is named.
+
+    One word is exempt from that: the script of a -c option (SCRIPT_OPTION, the word before it),
+    as in sh -c "kill -0 $(cat f)", because the program given -c runs its script in a shell, so the
+    substitution runs after all. A backslash outside single quotes makes the next character a word.
+    (shlex.split, which runs the check, keeps a backslash before $ or a backtick inside double
+    quotes where a shell drops it, so sh -c "kill -0 \\$(cat f)" hands its shell \\$( and fails:
+    write a -c script in single quotes, as SKILL.md does.)"""
+    quote, i, start, prev = None, 0, 0, ""
+    while i < len(cmd):
+        c = cmd[i]
+        if quote == "'":
+            quote = None if c == "'" else quote
+        elif c == "\\":
+            i += 1
+        elif quote == '"' and c == '"':
+            quote = None
+        elif quote is None and c in "'\"":
+            quote = c
+        else:
+            script = quote == '"' and SCRIPT_OPTION.match(prev)
+            for op in ops:
+                if (quote is None or (op in EXPANDED_IN_DOUBLE_QUOTES and not script)) \
+                        and cmd.startswith(op, i):
+                    return op
+            if quote is None and c in " \t\n":                # a word ends: remember it
+                prev = cmd[start:i] if i > start else prev
+                start = i + 1
+        i += 1
+    return None
+
+
 def _run_check(cmd, timeout):
     """Run a liveness command exactly as the gate does: split, no shell. Returns (exit code,
     detail). The exit code is None when the command timed out or could not run at all, because
-    a check that never completed has observed nothing — neither alive nor dead."""
+    a check that never completed has observed nothing — neither alive nor dead. A shell operator
+    in cmd is not refused here: callers name it with shell_operator() and operator_note()."""
     try:
         r = subprocess.run(shlex.split(cmd), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -128,13 +212,10 @@ def _probe(cmd, timeout):
     return (rc == 0), detail
 
 
-def seen_failing_note(op):
-    """NEVER_SEEN_FAILING for a durably supervised operation, not yet terminal, whose
-    liveness_seen_failing holds no line in which its current liveness_check exited non-zero; else
-    None. Naming the command is not enough: a copied alive line (`exit 0: <cmd>`), free text, or a
-    longer command that contains it proves no failure. Terminal delivery states take classify()'s
-    early exit, so the gate and reconcile agree, and finished work has nothing to stop. Decided
-    from the record alone: it never runs the probe, so the gate does not run a check twice."""
+def _noted_check(op):
+    """The liveness_check of a durably supervised operation not yet delivered or failed, else None:
+    the one scope both notes share. Terminal delivery states take classify()'s early exit, so the
+    gate and reconcile agree, and finished work has nothing to stop."""
     mode = str(op.get("supervisor_mode") or "").strip().lower()
     delivery = str(op.get("delivery_state") or "").strip().lower()
     cmd = op.get("liveness_check")
@@ -142,11 +223,48 @@ def seen_failing_note(op):
         return None
     if delivery == "delivered" or delivery in NON_DELIVERY_TERMINAL:
         return None
+    return cmd
+
+
+def seen_failing_note(op):
+    """NEVER_SEEN_FAILING for an operation in _noted_check()'s scope whose liveness_seen_failing
+    holds no line in which its current liveness_check exited non-zero; else None. Naming the
+    command is not enough: a copied alive line (`exit 0: <cmd>`), free text, or a longer command
+    that contains it proves no failure. Decided from the record alone: it never runs the probe, so
+    the gate does not run a check twice."""
+    cmd = _noted_check(op)
+    if cmd is None:
+        return None
     for line in str(op.get("liveness_seen_failing") or "").splitlines():
         m = SEEN_FAILING_LINE.search(line)
         if m and int(m.group(1)) != 0 and m.group(2) == cmd.strip():
             return None
     return NEVER_SEEN_FAILING
+
+
+def operator_note(cmd):
+    """The note for a liveness_check holding a shell operator that shell_operator() names, else
+    None: SHELL_OPERATOR_NOTE naming the first of PROBE_REFUSES when it holds one, wherever a
+    NOTED_ONLY character stands before it, else NOTED_ONLY_NOTE naming the first of those. --gate,
+    --reconcile and --probe all name it through here, so they never disagree about which it is."""
+    found = shell_operator(cmd, PROBE_REFUSES)
+    if found:
+        return SHELL_OPERATOR_NOTE % (found, where(found))
+    found = shell_operator(cmd, NOTED_ONLY)
+    return NOTED_ONLY_NOTE % (found, where(found)) if found else None
+
+
+def shell_operator_note(op):
+    """operator_note() for an operation in _noted_check()'s scope, whatever liveness_seen_failing
+    records: a recorded failure of a check holding one of PROBE_REFUSES may be its first command's
+    alone. Else None."""
+    cmd = _noted_check(op)
+    return operator_note(cmd.strip()) if cmd else None
+
+
+def notes(op):
+    """Every note for op, in the order printed. Notes never refuse a yield."""
+    return [n for n in (shell_operator_note(op), seen_failing_note(op)) if n]
 
 
 def classify(op, now, timeout):
@@ -186,9 +304,7 @@ def classify(op, now, timeout):
                            "supervisor cannot be proved alive")
         elif not alive:
             reasons.append("supervisor %r is NOT active (%s)" % (op.get("supervisor_id"), detail or "probe failed"))
-        note = seen_failing_note(op)
-        if note:
-            reasons.append(note)
+        reasons.extend(notes(op))
 
     nxt, dl = _ts(op.get("next_action_at")), _ts(op.get("deadline_at"))
     if dl is not None and now > dl:
@@ -286,6 +402,15 @@ def main():
         if cmd is None:
             print("unattended-check: no task %s with a liveness_check to probe" % a.probe)
             return 2
+        # Not run: a failure of its first command would print a line that proves the whole check.
+        # A NOTED_ONLY character is a word without a shell, so that check runs, and is noted below.
+        op_found = shell_operator(cmd, PROBE_REFUSES)
+        if op_found:
+            print("unattended-check: the check holds the shell operator %r %s and runs without a "
+                  "shell, so only its first command would run. Not run, and no line to record: "
+                  "make it one command, or put it inside sh -c '...'."
+                  % (op_found, where(op_found)))
+            return 2
         rc, detail = _run_check(cmd, a.timeout)
         if rc is None:
             print("unattended-check: the check did not complete (%s). Fix it: this is not a "
@@ -296,6 +421,9 @@ def main():
                         "target stopped." if rc == 0 else
                         "not alive. Record the line above in liveness_seen_failing.",
                         (" (%s)" % detail) if detail else ""))
+        note = operator_note(cmd)
+        if note:
+            print("note: %s" % note)
         return 0
 
     ops = []
@@ -312,12 +440,12 @@ def main():
     if a.gate:
         refusals = gate(ops, now, a.timeout)
         if a.json:
-            notes = [(tid, op.get("operation_id"), seen_failing_note(op))
-                     for key, tid, name, op in ops]
+            noted = [(tid, op.get("operation_id"), n)
+                     for key, tid, name, op in ops for n in notes(op)]
             print(json.dumps({"operations": len(ops), "refusals": [
                 {"task": r[0], "operation_id": r[2], "state": r[3], "reasons": r[4]} for r in refusals],
                 "notes": [{"task": tid, "operation_id": oid, "note": n}
-                          for tid, oid, n in notes if n]},
+                          for tid, oid, n in noted]},
                 indent=1))
         elif not ops:
             print("unattended-check: no open task declares an unattended operation — yield permitted")
@@ -327,8 +455,7 @@ def main():
                 print("  OK    %s  %s  supervisor=%s  next=%s  deadline=%s  delivery=%s"
                       % (tid, op.get("operation_id"), op.get("supervisor_id"),
                          op.get("next_action_at"), op.get("deadline_at"), op.get("delivery_state")))
-                note = seen_failing_note(op)
-                if note:
+                for note in notes(op):
                     print("           note: %s" % note)
         else:
             print("unattended-check: YIELD REFUSED — %d operation(s) cannot be left as they are."

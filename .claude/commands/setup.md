@@ -69,23 +69,24 @@ Use AskUserQuestion to select.
 ```
 ## Environment Configuration
 
-1. **AWS Account ID**: or **none**, if this project uses no AWS at all (then skip 2 and 3).
+1. **AWS Account ID**: or **none**, if this project uses no AWS at all (then skip 2).
 2. **AWS Region**: (e.g., eu-west-1)
-3. **MCP Tool**: Which AWS MCP tool? Read it from the LIVE tool inventory — which AWS tools exist,
-   and how a call names the account, depends on this host's AWS service model (per-account
-   servers, or one central server told the account on every call). Detect, never assume — see
-   /check-aws Step 2.
-4. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
+3. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
    Repos, local folders, and AWS resources all derive from it — see Naming Convention below.
-5. **GitHub Org**: (optional)
-6. **Description**: one sentence, in your words, saying what this project is for.
-7. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
+4. **GitHub Org**: (optional)
+5. **Description**: one sentence, in your words, saying what this project is for.
+6. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
    directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
 
-Write items 1-5 to `input/environment.md`. Items 6 and 7 go into `progress.json` in § 4, and only
+Write items 1-4 to `input/environment.md`. Items 5 and 6 go into `progress.json` in § 4, and only
 there: the sentence is the operator's (charter § 11) and the relations are theirs to declare
 (charter § 14), so neither is guessed when the operator leaves it unanswered.
+
+**No MCP tool and no AWS profile name is asked for or written down.** Each is a nickname, true on
+the machine it was read on (`/start-session` § Two Environments), and every file this command
+writes is committed and travels. § 6 resolves the AWS handle from this session's live tool
+inventory, as `/check-aws` Step 2 does, and records it nowhere.
 
 ### 2b. Naming Convention (binding from birth — collect the prefix once, derive everything)
 
@@ -168,7 +169,7 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
   is the project's own.** The central repository delivers commands and skills and never writes
   `progress.json`, so a placeholder left here is never repaired from outside; `/start-session`
   § 3.5 can transcribe the name from origin if it is still a token.
-- **`description` is the operator's sentence from § 2 item 6** — the only project-level prose any
+- **`description` is the operator's sentence from § 2 item 5** — the only project-level prose any
   estate-wide reader ever sees (`PROJECT_CHARTER.md` § 11). Where this project already has an
   approved specification, check the sentence against its overview and say so if they disagree. It
   is never composed from the playbook's own text, the folder name or a template's instruction text:
@@ -176,7 +177,7 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
   `sed` breaks on a quote, `&` or `|`), and set **`description_reviewed`** beside it to the same
   moment, `date -u +%Y-%m-%dT%H:%M:%SZ`. The playbook files carry it as `{{CREATION_DATE}}`; add the
   field beside `description` if the copied file has none.
-- **`relations` is the operator's answer to § 2 item 7, written as they gave it** (`PROJECT_CHARTER.md`
+- **`relations` is the operator's answer to § 2 item 6, written as they gave it** (`PROJECT_CHARTER.md`
   § 14): a root block beside `git_repos`, `{"version": 1, "members": [...]}`, each member with its
   `origin` (and its `path` too when it is nested here) and the operator's own `relation` word. The
   repositories § 7 creates may be shown to the operator as candidates, but only what they confirm is
@@ -184,14 +185,23 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
   manages nothing, so it is written only when the operator says "nothing". "Not decided yet", or no
   answer, leaves the block out: the question then stays open, and `/start-session` § 3.5 reports it
   every session until it is answered.
-- Update `context_hints` with environment values. A project whose § 2 item 1 answer was **none**
-  gets `"aws": "none"` there and no `aws_*` key: `/generate-phases` accepts that declaration in place
-  of an account, and Steps 6 and 8 below do not apply.
+- Write `context_hints` from § 2: `aws_account` and `aws_region` (items 1 and 2), and
+  `project_prefix` (item 3), the key `/check-aws` filters resources by. A project whose § 2 item 1
+  answer was **none** gets `"aws": "none"` there and no `aws_*` key: `/generate-phases` accepts that
+  declaration in place of an account, and Steps 6 and 8 below do not apply. Its `project_prefix` is
+  written all the same, since its repositories derive from it too.
+- **Fill in no nickname.** An older playbook's `context_hints` may carry an `aws_profile` or an
+  `mcp_tool` key, each a placeholder for a name true on one machine only: delete those keys, and
+  never fill them in. The handle is resolved where it is used, on the host that uses it.
 - Update resource names in verify steps
 - Reset task statuses if needed
 
 **Update executor instructions:**
-- Fill in all `{{PLACEHOLDER}}` values in `CLAUDE.md` and `AGENTS.md` from environment
+- Fill in every `{{PLACEHOLDER}}` in `CLAUDE.md` and `AGENTS.md`: `{{PROJECT_NAME}}` as in
+  `progress.json`, `{{AWS_ACCOUNT_ID}}` and `{{AWS_REGION}}` from § 2 items 1 and 2,
+  `{{PROJECT_PREFIX}}` from item 3, `{{GITHUB_ORG}}` from item 4. A placeholder asking for an MCP
+  server or tool name or an AWS profile name is not filled either: leave that line out, for the
+  reason above.
 - Leave line 3 of both as the template ships it, a pointer at `progress.json`'s `description`. Do
   not paste the sentence there: a copy is a second place that goes stale unseen.
 - Keep detailed project rules in `CLAUDE.md`; `AGENTS.md` is the thin Codex entry
@@ -259,14 +269,17 @@ never commit it.
 
 ### 6. Verify AWS Access
 
+Resolve the handle as `/check-aws` Step 2 does, from this session's live tool inventory, and prove
+it reached the account from § 2 item 1:
+
 ```
-{mcp_tool} aws sts get-caller-identity
+{handle} aws sts get-caller-identity
 ```
 
-Must match environment config. Skipped for a project that declares no AWS (`context_hints.aws` is
-`"none"`): there is no account to match.
-`{mcp_tool}` is only the first candidate: resolve the handle as `/check-aws` Step 2 does, and use
-that handle in Step 8 too.
+Must match environment config. Use that handle in Step 8 too, and record it nowhere. Skipped for a
+project that declares no AWS (`context_hints.aws` is `"none"`): there is no account to match. If
+this host has no AWS connection (`/check-aws` Step 2's outcome for a session with no AWS tool), the
+account is not checked here and Step 8 waits for a host that reaches it; say so in the Output.
 
 ### 7. Create Sub-Repositories
 
@@ -289,10 +302,13 @@ gh repo create {github_org}/{prefix}-{part} --private --source=. --push
 the orchestration repo itself** (same check `/start-session` Step 8 runs every session):
 
 ```bash
-check_name() {  # $1=dir ('.' for orchestration)
+check_name() {  # one argument: the directory ('.' for orchestration)
+  # Named, never positional: Claude Code replaces a dollar sign followed by a digit with a word
+  # this command was invoked with, inside this fence too. "$@" is not replaced.
+  local args=("$@"); local repo="${args[0]}"
   local o n
-  o=$(git -C "$1" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
-  n=$(basename "$(cd "$1" && pwd)")
+  o=$(git -C "$repo" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
+  n=$(basename "$(cd "$repo" && pwd)")
   [ -z "$o" ] && { echo "NOTE $n: no origin yet — name check deferred until origin exists"; return; }
   [ "$o" = "$n" ] && echo "OK   $n: folder = origin name" \
                   || echo "NAMING MISMATCH: folder '$n' vs origin '$o' — fix BEFORE first push"
@@ -386,7 +402,7 @@ If no `progress.json`, create from existing spec:
   "context_hints": {
     "aws_account": "{from environment}",
     "aws_region": "{from environment}",
-    "mcp_tool": "{mcp tool name}"
+    "project_prefix": "{from environment}"
   },
   "phases": {
     "phase_1": {
@@ -403,7 +419,12 @@ estate dashboard's rule is to render `last_updated` at the precision recorded, s
 time is shown as that date only and never as minutes or hours ago (`/update-progress` Step 3
 states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at commit time).
 
-Ask the operator for the two things only they can give, exactly as Scenario A § 2 items 6-7 do,
+`project_prefix` is the one name this project's repositories and resources share (Scenario A § 2
+item 3, which `/check-aws` filters by): take it from the existing spec or environment, and ask the
+operator when neither names it. No MCP tool or AWS profile key is written, for the reason Scenario
+A § 2 gives.
+
+Ask the operator for the two things only they can give, exactly as Scenario A § 2 items 5-6 do,
 and write them as Scenario A § 4 says:
 - **`description`**: their one sentence saying what this project is for, checked against the
   existing spec's overview, with `description_reviewed` set to the moment it is written. Never
@@ -448,7 +469,9 @@ git commit -m "setup: Add playbook commands to existing project
 ### Environment
 - Account: {account} ✓
 - Region: {region} ✓
-- MCP Tool: {tool} ✓
+- AWS handle: {the handle § 6 resolved} ✓ (this machine only, recorded nowhere; or: no AWS
+  connection on this host, so {account} was not checked)
+- Prefix: {project_prefix}
 - Naming: {pattern}
 
 ### Files Created/Updated
@@ -457,6 +480,7 @@ git commit -m "setup: Add playbook commands to existing project
 - CLAUDE.md [created/updated]
 - AGENTS.md [created/updated]
 - .claude/commands/ [created]
+- .claude/skills/ [created]
 - .agents/skills/ [created]
 - tasks/ [created/existed]
 

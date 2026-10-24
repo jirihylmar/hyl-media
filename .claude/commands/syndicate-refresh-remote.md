@@ -186,7 +186,7 @@ If the binary exits 2 (HALT) and `--keep-side` wasn't pre-set — **first read t
 
 1. Parse the output for the offending repo + divergence info.
 2. `AskUserQuestion`:
-   - **Keep local** — `git reset --hard origin/<branch>` on the box. ⚠ **The binary never checks whether the box tree is dirty.** Box-only commits are reflog-recoverable, but **uncommitted and staged changes to tracked files on the box are destroyed — no stash, no reflog, unrecoverable.** Verify the box tree is clean first: `ssh <box> "git -C '<box_path>' status --porcelain"` (must be empty).
+   - **Keep local** — `git reset --hard origin/<branch>` on the box. ⚠ **The binary never checks whether the box tree is dirty.** Box-only commits are reflog-recoverable, but **uncommitted and staged changes to tracked files on the box are destroyed — no stash, no reflog, unrecoverable.** Verify the box tree is clean first: `ssh <box> "timeout 30 git -C '<box_path>' status --porcelain; echo rc=\$?"` (must print `rc=0` and nothing else; `rc=124` means the check ran out of time, which is not clean).
    - **Keep box** — push box-only commits to origin; then local pulls.
    - **Manual** — print the SSH command + diff and stop; user resolves themselves.
    - **Skip this repo** — leave it diverged, move on.
@@ -292,8 +292,13 @@ box-side dirty check anywhere in the tool** — the only `git status --porcelain
 will not check for you:
 
 ```bash
-ssh <box> "git -C '<box_path>' status --porcelain"   # must be empty
+ssh <box> "timeout 30 git -C '<box_path>' status --porcelain; echo rc=\$?"   # must print rc=0 and nothing else
 ```
+
+Clean is `rc=0` with nothing above it, and any path listed means a dirty tree. `rc=124` means the
+check ran out of time on the box, which is **not** a clean answer: `git status` prints nothing until
+its scan completes, and `timeout` stops it silently, so without the `rc=` line a check that never
+finished looks exactly like a clean tree. Do not choose "Keep local" on it.
 
 Read the list above as: *the tool is genuinely safe by default — no force-push, no `git clean`, no
 deletions — and `--keep-side` is the single edge you must opt into knowingly, in both directions.*
@@ -332,7 +337,7 @@ The skill above is the conversational front-end that:
 | `! [rejected] main -> main (non-fast-forward)` | Local and box diverged | Skill's conflict-resolution dialog handles this. |
 | `unexpected status:  — treating as failure` (blank status), exit 2 | **Repo has no `origin` remote.** The binary does **not** skip it — `git fetch origin` fails, execution continues, and the empty box status falls through to `HALT_UNKNOWN` → **exit 2**, which is the same code as a real conflict. Misleading twice over: it prints `local synced with origin` first, for a repo that has no origin. | Add an origin, then re-run. Do not hunt for a conflict — there isn't one. |
 | Work disappeared from the **local** tree after a `--keep-side` run | `git stash push -u` fired on a dirty tree and was never popped (see the ⚠ under Step 3). One stash **per sub-repo**. | `git stash list` in the affected repo (and in **each** sub-repo of a nested project), then `git stash pop`. Nothing is lost — it is stashed, not deleted. |
-| Work disappeared from the **box** tree after `--keep-side local` on a diverged repo | `git reset --hard origin/<branch>` ran on the box. **There is no box-side dirty check in the tool at all.** | Box-only **commits**: recover via `git reflog` on the box. Box-only **uncommitted/staged changes to tracked files**: **unrecoverable** — no stash was taken. Untracked files survive. Check `ssh <box> "git -C '<box_path>' status --porcelain"` *before* choosing this, every time. |
+| Work disappeared from the **box** tree after `--keep-side local` on a diverged repo | `git reset --hard origin/<branch>` ran on the box. **There is no box-side dirty check in the tool at all.** | Box-only **commits**: recover via `git reflog` on the box. Box-only **uncommitted/staged changes to tracked files**: **unrecoverable** — no stash was taken. Untracked files survive. Check `ssh <box> "timeout 30 git -C '<box_path>' status --porcelain; echo rc=\$?"` (clean is `rc=0` alone) *before* choosing this, every time. |
 | A typo'd or never-cloned repo name reports **success** | `SKIP_NOT_GIT` exits **0**. A no-op is indistinguishable from a sync. | Read the Summary table rows — do not trust the exit code alone. Check the repo name spelling. |
 | Command hangs forever, no output, no timeout | `--keep-side` was passed as the **final** argument — the parser spins (see the ⚠ under Step 4). | Ctrl-C. Re-run with `--keep-side` **before** the repo list. |
 

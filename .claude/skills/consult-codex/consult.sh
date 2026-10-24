@@ -335,12 +335,19 @@ open)
   # `.agents/skills/` is the tracked prose workflow surface distributed by this repository and is
   # expected in dual-executor projects; refusing it would make every such project unreviewable.
   [ -e "$REAL/.codex" ] && refuse NOT-REVIEWABLE:codex-roots-present
-  # AWS binding — by command, via codex-here's own rules; 3 = refusal, else aws or no-infra
+  # AWS binding — by command, via codex-here's own rules; any non-zero exit = refusal, else aws or no-infra
   B="$("$HERE" --project "$REAL" --dry-run exec x 2>&1 >/dev/null)"; rc=$?
   # Every other refusal code is a literal; this one is EXTRACTED, and it lands in `not-reviewed:<CODE>`,
   # which the grammar requires to be non-empty and upper-case. An extraction that matched nothing would
   # produce `not-reviewed:` — a record the log refuses — making the refusal itself unrecordable.
-  [ $rc -eq 3 ] && { CODE="$(sed -n 's/codex-here: \([A-Z][A-Z0-9-]*\).*/\1/p' <<<"$B" | head -1)"; refuse "${CODE:-BINDING-REFUSED}" "$B"; }
+  # ANY non-zero exit, not only 3: a codex-here that CRASHES exits 1 (a truncated ~/.claude.json, an
+  # sts timeout in profile-scan), and refusing only on 3 let the open go on with MODE empty, so a
+  # project that declares an account skipped the identity proof. Found by the review of 107.2.
+  if [ $rc -ne 0 ]; then
+    CODE="$(sed -n 's/codex-here: \([A-Z][A-Z0-9-]*\).*/\1/p' <<<"$B" | head -1)"
+    [ -n "$CODE" ] || B="codex-here exited $rc and named no code: $B"
+    refuse "${CODE:-BINDING-REFUSED}" "$B"
+  fi
   MODE="$(sed -n 's/.*mode=\([^ ]*\).*/\1/p' <<<"$B")"; put mode "$MODE"; put bind "$B"
   # claims from the target
   python3 - "$REAL" "$T" > "$ST/claims" 2> "$ST/claims.note" <<'PY' || refuse NOT-REVIEWABLE "target unreadable: $(tail -1 "$ST/claims.note" 2>/dev/null)"
@@ -516,7 +523,7 @@ close)
     # in THIS invocation is recorded, so the quote below can never speak for a different cycle.
     rm -f "$SCR/recheck.out"; RECHECK_RAN=1
     ( cd "$CL" && timeout 600 "$HERE" --bind-from "$REAL" exec resume "$(st thread)" --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/recheck.out" \
-      "The agreed changes were applied. You are now in a fresh clone at commit $SHA. Re-read progress.json and the changed files; state the commit SHA you are looking at (git rev-parse HEAD), and confirm in one paragraph whether the applied state matches what was agreed, naming any gap. End with exactly one line: RECHECK: confirmed  or  RECHECK: gap — <what>" >"$SCR/recheck.log" 2>&1 </dev/null ); RRC=$?
+      "The agreed changes were applied. You are now in a fresh clone at commit $SHA. Re-read progress.json and the changed files; state the commit SHA you are looking at (git rev-parse HEAD), and confirm in one paragraph whether the applied state matches what was agreed, naming any gap. The caches and bytecode a test run writes (__pycache__, .pytest_cache and the like) count as writes to this clone and are recorded as a posture breach, so if you run tests, run them in a way that writes none. End with exactly one line: RECHECK: confirmed  or  RECHECK: gap — <what>" >"$SCR/recheck.log" 2>&1 </dev/null ); RRC=$?
     "$POSTURE" verify "$REAL" "$CL" "$ST" >/dev/null && PV=clean || PV=BREACH
     # agreed-applied is EARNED by the recheck, not assumed: any of these downgrades the outcome to disputed
     if [ $RRC -ne 0 ] || [ ! -s "$SCR/recheck.out" ]; then O=disputed; RECHECK="recheck reviewer failed (rc $RRC) — downgraded to disputed"

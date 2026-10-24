@@ -86,8 +86,14 @@ for d in sorted((root/"docs").glob("*")) if (root/"docs").exists() else []:
     if d.is_dir() and re.match(r"^(phase-|wip-|tmp-|scratch)", d.name):
         findings.append(f"B: working dir docs/{d.name}/ — extract-then-archive when its work closes")
 
-# (C) broken repo-relative doc refs from live surfaces (docs, ops, commands, root, project skills)
-ref_re = re.compile(r"(?<![\w/])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|html))")
+# (C) broken repo-relative doc refs from live surfaces (docs, ops, root, and the project's own
+#     commands, overlays and skills)
+# The lookbehind refuses every character that puts a `docs/` inside some other path. `-` above
+# all: another repository's `reports/handover-docs/X.md` was cut at the hyphen and reported missing
+# from THIS project's docs/ (3 of 9 findings in one project's pass, 2026-10-07, every one false).
+# `.`, `~` and `$` go with it, the set the engine's own path checks use. A real ref is preceded by
+# a backtick, a space, a parenthesis or the start of a line.
+ref_re = re.compile(r"(?<![\w/~.$-])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|html))")
 # The live-surface set must be every file a reader takes as CURRENT — see
 # /update-progress Step 2b. Restricting it to docs/ + .claude/commands/ silently
 # excluded README.md, CLAUDE.md and every ops/ runbook, which is how one project's
@@ -101,24 +107,44 @@ ref_re = re.compile(r"(?<![\w/])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|h
 # heading — has one remedy, editing an approved specification, which /start-session's
 # authorization table gates behind the operator. Measured 2026-09-20: 21 of the 34 projects
 # reached carry one, and the widest gap between its last change and progress.json's was 254 days.
-surfaces = (list((root/"docs").rglob("*.md")) + list((root/".claude/commands").glob("*.md"))
-            + list((root/"ops").rglob("*.md"))
+surfaces = (list((root/"docs").rglob("*.md")) + list((root/"ops").rglob("*.md"))
+            + list((root/".claude/local-overlays").glob("*.md"))
             + [root/n for n in ("README.md", "CLAUDE.md")])
 surfaces = [p for p in surfaces if p.exists() and "_archive" not in p.parts]
+# The distribution manifest says which commands and skills the engine delivered. It is read once,
+# here. A manifest with no `files` map (absent, null, not a map) is unreadable too. It must not
+# crash this one script, which would silence every check (see A), nor count a distributed file as
+# the project's own.
+try:
+    _files = json.loads((root/".claude/distribution-manifest.json").read_text()).get("files")
+    if not isinstance(_files, dict): raise ValueError("manifest has no files map")
+except (OSError, ValueError, TypeError, AttributeError):
+    _files = None
+# The project's own commands are live surfaces; a distributed command is not, for the reason a
+# distributed skill is not (below). The defaults cite the engine's own docs/ in worked examples and
+# anecdotes, so every project got the same "missing" findings, and the only remedy was a report
+# (one project's pass, 2026-09-10: four refs from three defaults). The manifest lists each command
+# the engine delivered; a command forked in .claude/local-overlays/.skip is never listed, so it
+# stays in. The text a project splices INTO a delivered command is its overlay, which is why
+# .claude/local-overlays/*.md is in the set above. Without a readable manifest no command is checked.
+_cmds = sorted((root/".claude/commands").glob("*.md"))
+if _cmds and _files is None:
+    print("   (surfaces: .claude/commands/ excluded — no readable distribution manifest to tell project commands from distributed ones)")
+elif _cmds:
+    _dcmds = [c for c in _cmds if c.relative_to(root).as_posix() in _files]
+    surfaces += [c for c in _cmds if c not in _dcmds]
+    if _dcmds:
+        print(f"   (surfaces: {len(_dcmds)} distributed command(s) under .claude/commands/ excluded — the manifest lists them; their engine-doc refs are reported, not fixed here: {', '.join(c.name for c in _dcmds)})")
 # Project skills are live surfaces too, in both trees: .claude/skills/*/SKILL.md and Codex's
 # .agents/skills/*/SKILL.md, which /update-progress Step 2b rotates alike. A distributed skill is
 # left out, because it cites the engine's own docs, which no project carries, and its remedy is a
 # report (/update-progress § 11.b). The manifest says which skill directories are distributed, per
 # tree; without a readable one no skill is checked and the exclusion is printed for each tree.
-# A manifest with no `files` map (absent, null, not a map) is unreadable too. It must not crash
-# this one script, which would silence every check (see A), nor count a distributed skill as the
-# project's own.
 _trees = (".claude/skills", ".agents/skills")
 _skills = sorted(s for t in _trees for s in (root/t).glob("*/SKILL.md"))
 if _skills:
     try:
-        _files = json.loads((root/".claude/distribution-manifest.json").read_text()).get("files")
-        if not isinstance(_files, dict): raise ValueError("manifest has no files map")
+        if _files is None: raise ValueError("no readable distribution manifest")
         _pfx = tuple(t + "/" for t in _trees)
         _dist = {"/".join(k.split("/")[:3]) for k in _files if k.startswith(_pfx)}
         surfaces += [s for s in _skills if s.parent.relative_to(root).as_posix() not in _dist]
@@ -160,6 +186,10 @@ if pj.exists():
 # hits in one real pass were generic examples inside defaults. Worse, it was unactionable BY
 # CONSTRUCTION — it pointed the agent at the one set of files the same skill forbids it to
 # hand-edit (fix them centrally, or via an overlay; never in place).
+# Check C now drops the distributed commands itself, so what reaches F under .claude/commands/ is
+# the project's own, and .claude/local-overlays/ holds what it splices into a default. F skips both
+# all the same: Step 3 does not de-phase command text, and a count that grew by them would size the
+# slice with files the step never names (the way adding skills to check C once widened F unseen).
 #
 # IMPLEMENTATION_PLAN.md is excluded one level up, by never entering `surfaces` at all (see above).
 # It is the same shape twice: a specification's own "## Phase 1" / "## Phase 2" headings are
@@ -169,18 +199,18 @@ if pj.exists():
 # A check whose only remedy is a forbidden act is noise that trains agents to ignore findings.
 meta_re = re.compile(r"\b(?:Phase|Session)\s+\d+\b|\btask\s+\d+\.\d+\b", re.I)
 mcount = mfiles = 0
-skipped_defaults = 0
+skipped_cmds = 0
 for f in surfaces:
     if "_archive" in f.parts: continue
-    if ".claude" in f.parts and "commands" in f.parts:
-        skipped_defaults += 1; continue
+    if f.parent in (root/".claude/commands", root/".claude/local-overlays"):
+        skipped_cmds += 1; continue
     try: text = f.read_text(errors="ignore")
     except OSError: continue
     n = len(meta_re.findall(text))
     if n: mcount += n; mfiles += 1
 if mcount > 20: findings.append(f"F: {mcount} phase/session/task refs across {mfiles} project-owned canonical files — de-phase slice due (Step 3)")
 # Report the exclusion rather than hiding it — a silent scope cut reads as "clean" when it is "not looked at".
-if skipped_defaults: print(f"   (F: skipped {skipped_defaults} file(s) under .claude/commands/ — distributed defaults; their phase/task vocabulary is the engine's own and is not leakage)")
+if skipped_cmds: print(f"   (F: skipped {skipped_cmds} file(s) under .claude/commands/ and .claude/local-overlays/ — the project's own command text, which Step 3 does not de-phase; the distributed defaults never entered the set)")
 
 # (G) terminology registry presence (Step 3a)
 if (root/"docs").exists() and not list((root/"docs").rglob("terminology.md")):
@@ -356,7 +386,8 @@ Quick check F sizes this slice, and the property that must hold is directional: 
 file this step may not touch.** It reads the root docs, `docs/`, `ops/` and the project's own skills
 under `.claude/skills/` and `.agents/skills/` (a skill counts only when the distribution manifest
 shows it is not distributed, and with no readable manifest none does). It does not read a served
-KB or a project command under `.claude/commands/`, so it under-reports — which costs a smaller
+KB, a project command under `.claude/commands/` or an overlay under `.claude/local-overlays/`
+(check C reads both for broken refs), so it under-reports — which costs a smaller
 slice this pass. The reverse would hand the step a finding whose only remedy is forbidden, and a
 check like that is one agents learn to skip.
 
@@ -449,22 +480,28 @@ MIN_LEN = 300             # only bodies longer than this move
 DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
         "cancelled", "canceled", "resolved", "obsolete", "abandoned")
 
-# NEVER moved. Two grounds, both checkable: machinery reads it (start-session EXECUTES `verify`;
+# NEVER moved. Three grounds, all checkable: machinery reads it (start-session EXECUTES `verify`;
 # update-progress Step 12 reads `verify_result` to report completions that carry no evidence —
 # archiving it made every compacted task read as unverified and made progress-check warn about
-# terminal drift its own sanctioned operation had just caused;
+# terminal drift its own sanctioned operation had just caused; progress-check freezes every field
+# in its DRIFT_FIELDS once a task is terminal, so ALL of them are kept here — `description` and
+# `dependencies` were not, so compacting a long one raised that same warning (found 2026-10-24);
 # open-work renders id/name/status/size and the dependency keys; progress-check compares
-# estate_notice; this script's own selection reads the timestamps), or it identifies the task.
+# estate_notice; this script's own selection reads the timestamps), it identifies the task, or it
+# is a terminal task's own account of why it did not finish. `superseded_reason` is that account:
+# it exists so that a reader of progress.json alone does not take a superseded task for abandoned
+# work, and behind a pointer it took a second hop to read (2026-10-07, two tasks in one project
+# whose reasons were written for exactly that reader). It is often long; it is kept anyway.
 # Everything else that is long prose in a FINISHED task moves.
 #
 # This is a DENY-list, and that IS the fix. The old rule named the three fields it WOULD move
 # ("findings", "verify_result", "notes"), so a project keeping its bulk under any other key got no
 # relief — and projects invent keys weekly (one estate project's tasks carry 556 distinct keys).
 # What must be KEPT is finite and knowable; what may be moved is not.
-KEEP_TASK = {"id", "name", "title", "status", "size", "priority", "type", "phase", "owner",
-             "repo", "branch", "verify", "verify_result", "estate_notice",
-             "depends_on", "depends_on_shipped", "blocked_by", "blocked_on", "blocks",
-             "superseded_by", "parent_task", "subtasks", "decomposed_into",
+KEEP_TASK = {"id", "name", "title", "description", "status", "size", "priority", "type", "phase",
+             "owner", "repo", "branch", "verify", "verify_result", "estate_notice",
+             "depends_on", "depends_on_shipped", "dependencies", "blocked_by", "blocked_on", "blocks",
+             "superseded_by", "superseded_reason", "parent_task", "subtasks", "decomposed_into",
              "added_by", "added_at", "added_on", "started_at", "completed_at", "superseded_at",
              "deferred_at", "verified_at", "filed_at", "approval_gate", "approval_status"}
 KEEP_PHASE = {"id", "key", "name", "title", "status", "goal", "description", "objective",

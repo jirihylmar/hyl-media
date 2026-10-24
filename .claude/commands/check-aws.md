@@ -28,17 +28,20 @@ Before running AWS checks, environment config must exist.
 **Required — and there is only one:**
 - **AWS Account ID** (`context_hints.aws_account`). It is the same twelve digits on every machine,
   which is exactly why it is the thing you verify against.
-- Also useful: AWS Region, project prefix (naming convention).
+- Also useful: AWS Region, and the project prefix (`context_hints.project_prefix`, the naming
+  convention Steps 3–9 filter by).
 
 **A hint, never a requirement — `context_hints.mcp_tool`.** It names an AWS connection, and a
 connection name is a **nickname**: true on the machine it was written on, quite possibly false on
 this one. `progress.json` is committed and travels to both machines, so a nickname stored there can
 only ever be correct on one of them. Treat `mcp_tool` as the first candidate to try, never as the
 answer — **a wrong, retired, or missing `mcp_tool` is not an error and needs no migration.** Step 2
-resolves it either way. (The rule and the reasoning: `/start-session` § Two Environments.)
+resolves it either way. `/setup` and `/setup-workflow-only` write none; an older project may still
+carry one. (The rule and the reasoning: `/start-session` § Two Environments.)
 
 **If the account ID is missing:** STOP and direct user to `/setup` (its environment-collection step
-gathers account/region/MCP/naming), or to add the values to `CLAUDE.md` / `input/environment.md`.
+gathers account, region and the naming prefix), or to add the values to `CLAUDE.md` /
+`input/environment.md`.
 
 ---
 
@@ -50,6 +53,12 @@ Read environment from standard locations.
 Extract: aws_account (REQUIRED), aws_region, project_prefix
 Also read mcp_tool if present — as a hint for Step 2, not as an instruction.
 ```
+
+**The prefix is `context_hints.project_prefix`**, the key `/setup` and `/setup-workflow-only` write
+from the prefix they ask for. Where `progress.json` has no such key, take the prefix from the
+`CLAUDE.md` Quick Reference (its *Project prefix* row), and say in the report which of the two it
+came from. A prefix kept under another key is not guessed at. If neither names one, say so, and
+match Steps 3–9 by the names `resource_inventory` gives instead of by a prefix.
 
 **Check that `aws_account` is actually an account number — twelve digits, nothing else.** A nickname
 has been found sitting in this field (e.g. `acme-prod` instead of `123456789012`), and it fails in the
@@ -111,6 +120,26 @@ told the account on every call, and for it this replaces the bare probe below.
 - **The box's Codex `aws_api`** (`/start-session` § Two Environments) takes `--profile`: match a
   profile as for a central server (below) and pass it with `--profile` on every call.
 
+**No candidate at all is an outcome of its own, decided before any probe.** When this session's
+live tool inventory has no `mcp__aws-*__call_aws` tool, no tool whose schema has an `aws_profile`
+argument and, in Codex, no `aws_api`, there is nothing to probe. A `context_hints.mcp_tool` that
+names a tool this session does not have is no candidate either. AWS documentation, IaC and
+knowledge servers are not candidates: none takes the calls this command makes. Report this, and
+stop:
+
+```
+This host has no AWS connection, so {aws_account} was not checked.
+
+  Host model:  none (no AWS tool in this session)
+  Gap:         no AWS connection on this host
+```
+
+On a member host this is the expected state until a project placed there brings its profile, and
+with it its AWS server. It is neither *unreachable*, since nothing was tried, nor a finding about
+the account. Do not fall back to the local `aws` CLI for Steps 2–9 (§ Notes). Leave
+`progress.json` as it is: whether a host has a connection is a fact of the host, and the file
+travels.
+
 **Probe each candidate bare:**
 
 ```
@@ -150,11 +179,45 @@ Use the union. **Decide by the error lines, not the exit code** — grep exits 2
 one. `No such file` for a file means that file holds no profiles; use the other file's headers. Any
 other error for a file (`Permission denied`, `cannot read`, `Is a directory`, `binary file matches`),
 or an output path *below* `…/config/` or `…/credentials/`, means that file was **not listed** — and
-the connection, which runs as root, may still read it. Probe the names you have; if none reaches the
-account, the gap is *could not look* (below), never *no profile reaches it*. The listing reads `~/.aws`
-because that is what this estate's AWS connection reads (its container mounts the host's `~/.aws`);
-a shell variable such as `AWS_CONFIG_FILE` does not change what the connection sees, so do not
-follow one.
+the connection may still read it (one launched without `--user` runs as the image's root). Probe the
+names you have; if none reaches the account, the gap is *could not look* (below), never *no profile
+reaches it*. The listing reads `~/.aws` because that is what this estate's AWS connections read, in
+either launch below; a shell variable such as `AWS_CONFIG_FILE` in this session does not change
+what the connection sees, so do not follow one.
+
+> **What the connection sees of this host depends on how it was launched, so read the launch rather
+> than assume one.** This estate's AWS servers are containers launched in one of two ways:
+>
+> - **`~/.aws` mounted alone** (`-v <home>/.aws:/aws:ro`, no `--user`): the server runs as the
+>   image's root and sees only that directory, at `/aws`. A file the listing cannot read may still
+>   be readable to it, a symlink pointing outside `~/.aws` does not resolve, and its errors name
+>   `/aws/config`.
+> - **the home mounted at its own path** (`--user <uid>:<gid>` and `-v <home>:<home>`, the shape
+>   of the box's bindings and of a member host's tooling servers): the server runs as this
+>   session's user and sees the whole home at the host's paths. A file the listing cannot read
+>   is unreadable to it too, a symlink to elsewhere under the home resolves, and its errors name the
+>   host's own path.
+>
+> Before concluding from an error that depends on which, print that server's two flags from its
+> entry in `~/.claude.json` (`mcpServers`, at the top level or under this project) and nothing else
+> of it, with this one local command. Never print its `env`, or another server's entry, which may
+> hold a token:
+>
+> ```bash
+> python3 -I -c 'import json, os
+> d = json.load(open(os.path.expanduser("~/.claude.json")))
+> here = (d.get("projects") or {}).get(os.getcwd()) or {}
+> for scope, servers in (("user", d.get("mcpServers") or {}), ("project", here.get("mcpServers") or {})):
+>     for name, s in servers.items():
+>         a = [str(x) for x in s.get("args") or []]
+>         f = [a[i] + " " + a[i + 1] for i in range(len(a) - 1) if a[i] in ("--user", "-u", "-v", "--volume")]
+>         f += [x for x in a if x.startswith(("--user=", "--volume="))]
+>         print(scope, name, "; ".join(f) or "no --user, no -v")'
+> ```
+>
+> Read the line of the server whose tool you resolved (`mcp__<server>__…`). In Codex, read the same
+> two flags in that server's `args` in `~/.codex/config.toml`. A launch of neither shape is taken at
+> what its own flags show.
 
 > **This command is the only way this step touches either file.** Do not view, page, print, parse or
 > copy them any other way — not with Read, `cat`, `less`, `head`, `tail`, `sed`, `awk`, `rg`, `nl`, a
@@ -235,12 +298,13 @@ belongs on another host — run /check-aws where it lives — or this host is mi
 server/profile, which is the operator's call to add.
 ```
 
-Two other outcomes are **not** "unreachable" and get their own report, because their remedy differs.
+Two more outcomes, besides *no AWS connection* above, are **not** "unreachable" and get their own
+report, because their remedy differs.
 
 *Could not look* — the listing was refused or could not run, a file was not listed (error lines
 above), or every profile listed from one file comes back *could not be found* through the connection
-(it cannot see that file — for example a symlink pointing outside `~/.aws`, which the container
-mount does not follow):
+(it cannot see that file — for example a symlink pointing outside what its container mounts:
+outside `~/.aws` where that is mounted alone, outside the home where the home is):
 
 ```
 Could not determine whether {aws_account} is reachable from this host.
@@ -252,8 +316,9 @@ Could not determine whether {aws_account} is reachable from this host.
 Allow the listing command (or make the file readable) and re-run /check-aws.
 ```
 
-*Malformed* — a probe returned `Unable to parse config file: <path>`. The path may be the
-connection's own view (such as `/aws/config`); it is this host's `~/.aws/<same file>`:
+*Malformed* — a probe returned `Unable to parse config file: <path>`. The path is the
+connection's own view: `/aws/config` where `~/.aws` is mounted alone, the host's own path where the
+home is mounted at it. Either way it is this host's `~/.aws/<same file>`:
 
 ```
 {file} cannot be parsed by the AWS connection, so no profile can be resolved on this host.
@@ -282,6 +347,15 @@ say in the report that the expectation came from it. A resource deployed in phas
 a specification frozen at Phase 0, so a spec-derived expectation reports a live resource as
 unexpected and a Phase-0 resource that was cancelled during implementation as missing — both false
 findings.
+
+**A type no step sweeps is *not checked*, never missing or clean.** Steps 3–9 each sweep one
+resource type, and a project's overlay may add steps for more. A `resource_inventory` entry of any
+other type (a SageMaker endpoint, an ECR repository, an EventBridge rule) is one this command never
+looked for: give its type a row of its own with the status *not checked (no step for this type; add
+one via `.claude/local-overlays/check-aws.md`)*, and never list it as missing or count it as found.
+Leaving it out is the worse error, because the report then reads as complete while what the project
+may spend most on was never looked at (`PROJECT_CHARTER.md` § 10: a skipped or never-run check is
+no coverage).
 
 **Every regional call names the region.** Steps 4–8 pass `--region {aws_region}`, or the region a
 resource's inventory entry names (a CloudFront certificate is in us-east-1); S3 listing and IAM are
@@ -362,7 +436,8 @@ and never as someone else's resource.
 - Region: {aws_region} ✓
   (or: not declared — taken from {infrastructure code | resource_inventory}; or: not declared and
   not found, so Steps 4–8 were not checked, never reported as missing)
-- Project: {project_prefix}
+- Project prefix: {project_prefix} (from context_hints.project_prefix | the CLAUDE.md Quick
+  Reference; or: not declared, so Steps 3–9 matched the names resource_inventory gives)
 
 ### Handle Resolved (this machine only — recorded nowhere)
 - Connection: {the candidate that worked}
@@ -383,6 +458,7 @@ and never as someone else's resource.
 | SNS Topics | 1 | 0 | ✗ Missing |
 | Lambda Functions | 7 | 0 | ✗ Not deployed |
 | CloudFormation Stacks | 2 | 0 | ✗ Not deployed |
+| SageMaker Endpoints | 1 | — | not checked (no step for this type; add one via .claude/local-overlays/check-aws.md) |
 
 ### Missing Resources
 - {resource} — created by {task/phase ref from progress.json}
@@ -393,9 +469,10 @@ and never as someone else's resource.
 - Or continue with current phase task
 ```
 
-**If the account was unreachable from this machine**, the report is the Step 2 block and nothing
-else. Do not render an empty resource table — *zero found* and *could not look* are different facts,
-and printing the first when the second is true is a false report.
+**If the account was unreachable from this machine, or this host has no AWS connection**, the
+report is the Step 2 block and nothing else. Do not render an empty resource table — *zero found*
+and *could not look* are different facts, and printing the first when the second is true is a false
+report.
 
 ---
 
@@ -406,10 +483,19 @@ and printing the first when the second is true is a false report.
   the *right* one
 - Use the MCP connection for every AWS call in Steps 2–9; the local `aws` CLI only where Step 10 or
   `/start-session` § Two Environments says so
-- `allowed-tools` pre-approves only the profile listing and `call_aws`, on purpose. An `aws_profile`
-  tool, the local `aws` CLI and `dig` each prompt: on the box that tool is `run_script`, which runs
-  any boto3 code, writes included, and a pattern wide enough for Step 10's CLI calls would approve
-  writes too. Every call this command makes is a read.
+- `allowed-tools` pre-approves only the profile listing and `call_aws`, on purpose: an
+  `aws_profile` tool (on the box it is `run_script`, which runs any boto3 code, writes included) and
+  a pattern wide enough for Step 10's CLI calls would approve writes too. **Whether anything else
+  prompts is the host's setting, not this file's.** An `aws_profile` tool prompts wherever the
+  settings do not allow its server. The local `aws` CLI and `dig` prompt where the host's settings
+  do not already allow every shell command. Where they do, nothing prompts for those two: a bare
+  `"Bash"` in `permissions.allow` allows every shell command, as on the member hosts, whose
+  `~/.claude/settings.json` takes it from the engine's `config/member-host/claude-settings.json`;
+  and a session started with `--dangerously-skip-permissions` is asked about nothing at all. There,
+  run only reads, each as its own command with nothing chained to it: `sts get-caller-identity`,
+  `s3 ls`, `list-*` and `describe-*` operations, a `get-*` that returns configuration (such as
+  `route53 get-hosted-zone`, which gives Step 10 a zone's delegation set), and `dig +trace NS`;
+  never a call that returns a secret value. Every call this command makes is a read.
 - Compare against expected resources derived from `resource_inventory` in progress.json and the
   completed tasks that deployed them
 - Fall back to IMPLEMENTATION_PLAN.md only when no inventory exists — it is the Phase-0 origin

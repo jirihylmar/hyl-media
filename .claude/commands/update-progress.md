@@ -59,11 +59,15 @@ The next ready task is an open task whose `depends_on` names no task that is sti
 - Update `current_task` pointer
 - Update `last_updated` timestamp — a UTC instant, never a bare date (Step 3)
 - Update `last_session_summary`
-- **Set a phase's `status` — but ONLY as the reconciliation in Step 3b, never as a free edit.**
+- **Set a phase's `status` — to `complete`, or from `pending` (or none) to `in_progress` together
+  with its `started_at` — but ONLY as the reconciliation in Step 3b, never as a free edit.**
   This entry exists because its absence made Step 3a unreachable: 3a is triggered by a phase's
   status flipping to `complete`, and nothing was permitted to flip it. Measured on one host as an
   **83-day lie** in the single source of truth — a phase sat `in_progress` with all 17 of its
-  tasks complete since 2026-05-13, and future sessions kept re-reading it as live work.
+  tasks complete since 2026-05-13, and future sessions kept re-reading it as live work. The same
+  absence held the other end shut: a phase `/generate-phases` writes as `pending` stayed `pending`
+  until it closed. Measured on a member host 2026-10-24: a current phase said `pending` with 25 of
+  its 60 tasks complete.
 - **Rewrite or confirm the root `description` and set `description_reviewed` — but ONLY as the
   review in Step 3c, never as a free edit.** `PROJECT_CHARTER.md` § 11 makes the sentence the
   project's own and its sessions the ones who keep it true; Step 3c is where they do.
@@ -389,7 +393,8 @@ cite flags that don't exist.
    **Keep grounding the defaults — just never edit them.** Reading them against reality is how
    framework defects get found at all; a real pass grounded them and surfaced four genuine engine
    bugs. That is this step working. But the remedy for a default is § 11.b's: **report requirements
-   only**, and record it in session_notes and the Step 12 report as *reported, not fixed*.
+   only** through the mailbox (§ 11.b), and record it in session_notes and the Step 12 report as
+   *reported, not fixed*, with the branch it printed.
    Fixing one in place does two kinds of damage: the next `/distribute-defaults` silently overwrites
    your edit (the fix is **lost**, and the defect returns to every project), or the engine classifies
    the file as changed-since-delivery, which **blocks distribution** — potentially for every project
@@ -505,9 +510,16 @@ Run this after the task updates above, over **every** phase, not only the curren
 ```bash
 python3 - <<'PY'
 import json
+from datetime import datetime, timezone
 d = json.load(open("progress.json"))
 DONE = ("complete","completed","superseded","done","closed","dropped","cancelled","canceled",
         "resolved","obsolete","abandoned")
+BEGUN = ("complete","completed","done","in_progress")   # done or under way; superseded/dropped are not a start
+def status(x): return str(x.get("status") or "").strip().lower()
+def instant(v):   # an ISO instant or date, else None; a bare date counts as its midnight UTC
+    try: t = datetime.fromisoformat(str(v or "").strip().replace("Z", "+00:00"))
+    except ValueError: return None
+    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
 ph = d.get("phases") or {}
 items = ph.items() if isinstance(ph, dict) else enumerate(ph)
 for key, p in items:
@@ -516,21 +528,30 @@ for key, p in items:
     tasks = tasks.values() if isinstance(tasks, dict) else tasks
     tasks = [t for t in tasks if isinstance(t, dict)]
     if not tasks: continue
-    st = str(p.get("status") or "").strip().lower()
-    open_n = sum(1 for t in tasks if str(t.get("status") or "").strip().lower() not in DONE)
+    st = status(p)
+    open_n = sum(1 for t in tasks if status(t) not in DONE)
+    begun = sum(1 for t in tasks if status(t).replace("-", "_") in BEGUN)
     if open_n == 0 and st not in DONE:
         print(f"READY-TO-CLOSE  {key}: all {len(tasks)} tasks terminal, phase says '{st}'")
     elif open_n and st in DONE:
         print(f"CONTRADICTION   {key}: phase says '{st}' but {open_n} task(s) are open")
+    elif begun and st in ("", "pending"):
+        seen = sorted((instant(t.get(k)), str(t.get(k))) for t in tasks
+                      for k in ("started_at", "completed_at") if instant(t.get(k)))
+        since = ("keep its started_at" if p.get("started_at") else
+                 f"started_at {seen[0][1]}" if seen else "no task records an instant: leave started_at absent")
+        print(f"STARTED         {key}: phase says '{st}' but {begun} of {len(tasks)} task(s) are "
+              f"done or under way; set in_progress, {since}")
 PY
 ```
 
-**The two findings are not symmetric, and treating them alike is the trap:**
+**The three findings are not alike, and treating them alike is the trap:**
 
 | Finding | What to do |
 |---|---|
 | `READY-TO-CLOSE` | **Set the phase to `complete` and run Step 3a.** Every task is terminal, so 3a's disposition gate has nothing to decide. This is the flip 3a was always waiting for. |
 | `CONTRADICTION` | **Report it. Do not auto-reopen.** A phase's *goal* may genuinely be met while a child task is stale or superseded-in-fact — that judgement is not derivable from the task list. Surface it in the Step 12 report and let the operator rule. `/open-work` already renders it with a `⚠ phase says …` marker. |
+| `STARTED` | **Set the phase to `in_progress`. If it has no `started_at`, set that to the instant the line names**, the earliest `started_at` or `completed_at` among its tasks. Unlike `CONTRADICTION`, this one is derivable from the task list: a task that is complete, done or in progress is a start, whatever the phase's goal. A task `superseded` or `dropped` while re-planning is not, so it does not count. When no task records an instant, leave `started_at` absent rather than estimate one (Step 3). |
 
 **Why the reconciliation runs at close and not at start.** The session that finished the last task
 is the one that knows whether the phase's goal is met; the next session inherits only the file.
@@ -729,20 +750,22 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 | File | Sync With | Check |
 |------|-----------|-------|
-| `CLAUDE.md` | `.claude/commands/` | Points at the directory — see below |
+| `CLAUDE.md` | `.claude/commands/`, `.claude/skills/`, `.agents/skills/` | Points at the directories — see below |
 | `README.md` | Actual playbooks, commands | Catalog and features accurate |
 
-> **`CLAUDE.md` must NOT carry a command count or an enumerated command list.** The canonical
-> shape of that section is **list-free prose pointing at `.claude/commands/`**, and it is defined
-> in exactly one place — `/start-session` Step 2, which *heals* an enumerated list away at the
-> start of the same session this step runs at the end of. This step used to assert the opposite
-> ("Command count and list matches", "Should match *Commands Available (N total)*"), so the two
-> defaults spent every session undoing each other. A hand-maintained list is the disease Step 2
-> cures; do not re-introduce it here. Reported upstream 2026-08-05 as framework defect 5.
+> **`CLAUDE.md` must NOT carry a command count or an enumerated command or skill list.** The
+> canonical shape of that section is **list-free prose pointing at `.claude/commands/`,
+> `.claude/skills/` and `.agents/skills/`**, and it is defined in exactly one place —
+> `/start-session` Step 2, which *heals* an enumerated list away at the start of the same session
+> this step runs at the end of. This step used to assert the opposite ("Command count and list
+> matches", "Should match *Commands Available (N total)*"), so the two defaults spent every session
+> undoing each other. A hand-maintained list is the disease Step 2 cures; do not re-introduce it
+> here. Reported upstream 2026-08-05 as framework defect 5. A table of skills is the same list
+> under another name, and Step 8c says what becomes of one.
 
-**When commands were added/removed this session:**
-1. Confirm `CLAUDE.md`'s commands section still points at the directory rather than listing it —
-   if a list or a count has crept back in, remove it (that is Step 2's canonical shape, not a
+**When commands or skills were added/removed this session:**
+1. Confirm `CLAUDE.md`'s commands section still points at the directories rather than listing
+   them — if a list or a count has crept back in, remove it (that is Step 2's canonical shape, not a
    competing one defined here)
 2. Check README.md references the commands that actually exist
 3. If mismatch → update README.md
@@ -755,6 +778,7 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 ```bash
 # What is actually there. A DISPLAY of live state — never a number CLAUDE.md must be synced to.
 ls -1 .claude/commands/*.md | wc -l
+ls -1d .claude/skills/*/ .agents/skills/*/ 2>/dev/null | wc -l
 ```
 
 ### 7. Update Project Documentation (If Registered)
@@ -875,23 +899,21 @@ Ensure each project-specific skill references related skills so Claude knows wha
 - `/process-handoff` - Use after completing a batch to hand off
 ```
 
-**8c. Document skills in project CLAUDE.md**
+**8c. Make each project skill describe itself**
 
-Ensure the project's `CLAUDE.md` has a section listing all project-specific skills with:
-- Skill name
-- When to use it
-- What it does
+Its frontmatter `description:` says when to use it and what it does (the `/start-session` Step 2
+inventory prints it), and 8b's Related Skills section names its neighbours. Do not list skills in
+`CLAUDE.md`; that is the hand-maintained list Step 6 forbids. This step used to ask for a table of
+skills there, and because Step 8's scope includes project commands, it asked for exactly the
+enumerated list Step 6 forbids.
 
-Example:
-```markdown
-## Project Skills
-| Skill | When to Use | Purpose |
-|-------|------------|---------|
-| /composition-editor | Editing product compositions | Guides through composition fields and validation |
-| /process-handoff | After completing a processing batch | Documents results and prepares next batch |
-```
-
-If skills were added, removed, or renamed this session, update this table.
+A `CLAUDE.md` that still carries such a table is not left as it is, because no other step reads
+it and nothing keeps it true. For each row about a project skill or command, move its "when to
+use" into that skill's frontmatter `description:` (both copies, where it has a Claude and a Codex
+one) unless the description already says it, and anything else the row states that the skill does
+not into the skill's own text; then delete the table. A row about a distributed
+skill or command is only deleted: its description ships with it and is not this project's to edit
+(§ 11.b). Commit this with the session's work in Step 10.
 
 **8d. Turn a hand-run audit into a project skill**
 
@@ -900,7 +922,8 @@ skill, so the next session does not start from nothing. Name it as `PROJECT_CHAR
 *A skill this project creates says so in its name* requires. It holds one command that finds its
 own inputs rather than this session's paths; the failure classes found, each with how it showed
 and how to check for it; the read-only scripts and the decision each one informs; and the shape
-of its report. Run every command in it as written before the commit, then list it per 8c.
+of its report. Run every command in it as written before the commit, then give it its description
+per 8c.
 
 ### 9. Check All Git Repos
 
@@ -1002,14 +1025,21 @@ done
 
 **FF-push every repo you committed — fast-forward only; skip + report; never force (same policy as `/start-session` Step 0 and `/distribute-defaults`):**
 ```bash
-push_ff() {  # $1=dir, $2=label; commit BEFORE calling
-  git -C "$1" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
-    || { echo "SKIP $2: no upstream (local-only) — committed, NOT pushed"; return; }
-  git -C "$1" fetch --quiet 2>/dev/null || { echo "SKIP $2: origin unreachable (offline) — committed locally, push when online"; return; }
-  if git -C "$1" push --quiet 2>/dev/null; then
-    echo "OK   $2: pushed to origin (commits published; NOT built or deployed)"
+push_ff() {  # arguments: the directory, then the label; commit BEFORE calling
+  # The arguments are copied into names before anything reads them, and that is not style.
+  # Claude Code replaces a dollar sign followed by a digit with a word this command was invoked
+  # with (the digit is its index, from 0), inside this fence too. Measured 2026-09-10: run as
+  # `/update-progress task 5.1 complete`, the old body asked git about a directory named "5.1" and
+  # printed "SKIP complete: no upstream (local-only) — committed, NOT pushed" for a repository that
+  # needed the push. "$@" is not replaced, so the body reads its arguments only through it.
+  local args=("$@"); local repo="${args[0]}" label="${args[1]}"
+  git -C "$repo" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
+    || { echo "SKIP $label: no upstream (local-only) — committed, NOT pushed"; return; }
+  git -C "$repo" fetch --quiet 2>/dev/null || { echo "SKIP $label: origin unreachable (offline) — committed locally, push when online"; return; }
+  if git -C "$repo" push --quiet 2>/dev/null; then
+    echo "OK   $label: pushed to origin (commits published; NOT built or deployed)"
   else
-    echo "SKIP $2: non-fast-forward — DO NOT force, DO NOT 'git pull'/merge to make it succeed; commit is safe locally; resolve per /start-session § 0a (runs on ANY host), then re-push"
+    echo "SKIP $label: non-fast-forward — DO NOT force, DO NOT 'git pull'/merge to make it succeed; commit is safe locally; resolve per /start-session § 0a (runs on ANY host), then re-push"
   fi
 }
 push_ff "." orchestration
@@ -1040,7 +1070,7 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 | | **A learning** | **A framework defect** |
 |---|---|---|
 | What it is | something you now know: a pattern, an anti-pattern, a check | a distributed default is *wrong* |
-| Where it goes | the knowledge inbox — this Step 11 | a report to the operator |
+| Where it goes | the knowledge inbox — this Step 11 | a report to the engine through the request mailbox, and to the operator |
 | Who consumes it | the Syndicate experts | the engine repo, as an approved task |
 | What you do | write the extraction (below) | **report it. Nothing else.** |
 
@@ -1058,10 +1088,34 @@ The same holds for a distributed **skill**: every directory under `.claude/skill
 here (the next distribution overwrites it, and the edit is *lost*); run `/distribute-defaults`; or
 decide that the framework should change. **Every one of those is the operator's call, not yours.**
 
-**Report requirements only** — the problem, the evidence, and what would have to change. Then stop.
-The operator carries it to the engine, where agents serving that repo implement it as a tracked,
-approved task. That two-step is the long-standing structure and it works: the report is one commit,
-the implementation is another, and a human decides in between.
+**Report requirements only** (the problem, the evidence, and what would have to change) **through
+the request mailbox**, even when the engine's session is live and you can message it. Message it
+too (`/start-session` § *Blocked on another owner's change*, item 1), but a message is no record:
+only the mailbox gives the engine a request it lists at every session start and closes with an
+outcome. The text goes on stdin and never on a command line, so write it to a file first, at an
+absolute path outside this repository (a file inside it is one more untracked file here, and a
+relative path resolves wherever the shell happens to stand). One block, so the path survives:
+
+```bash
+report="$(mktemp)"
+cat > "$report" <<'REPORT'
+<the problem, the evidence, and what would have to change>
+REPORT
+bash .claude/skills/syndicate-request/request.sh send \
+  --to syndicate-playbooks-examples --title "<one line>" < "$report"
+rc=$?
+if [ "$rc" -eq 0 ]; then rm -f "$report"; else echo "exit $rc: the report is kept at $report"; fi
+```
+
+Say the same in your report to the operator, with the branch it prints. If it prints no `SENT`
+line, say that instead, with its exit code (`/syndicate-request` says what each one means). Then
+stop. The engine lists the request at its next inbox check, the operator decides there, and agents
+serving that repo implement it as a tracked, approved task. That two-step is the long-standing
+structure and it works: the report is one commit, the implementation is another, and a human
+decides in between.
+
+Not into a file of this project. A list of findings kept here reaches nobody. Measured 2026-10-24:
+one project held seventeen, the oldest seven weeks old, and none had reached the engine.
 
 > **This is not hypothetical.** An agent found a real framework defect, hand-patched the engine
 > **and** filed its own feedback entry — doing both steps in one act, ticking its own
@@ -1072,7 +1126,8 @@ the implementation is another, and a human decides in between.
 
 **Why an extraction is not the channel for this.** An extraction becomes *expert expertise* in the
 knowledge base. A framework fix routed there lands as advice attached to an expert — it will never
-reach the skill file it was about. Right road, wrong vehicle: **say it to the operator.**
+reach the skill file it was about. Right road, wrong vehicle: **send it through the mailbox, and
+say it to the operator.**
 
 > **The inbox is one instance of a general rule — see `/start-session` Step 2.5.** A repo lives in
 > exactly ONE place, and **this file cannot tell you which one** — it ships unchanged to every

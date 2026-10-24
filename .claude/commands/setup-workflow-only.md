@@ -45,8 +45,12 @@ ls -la
 ## Step 2: Check What Already Exists
 
 ```bash
-# Check for existing playbook files
-ls CLAUDE.md AGENTS.md progress.json .claude/commands/ .agents/skills/ 2>/dev/null || echo "none"
+# Check for existing playbook files (each path on its own: one missing path must not hide the rest)
+found=""
+for p in CLAUDE.md AGENTS.md progress.json .claude/commands/ .claude/skills/ .agents/skills/; do
+  [ -e "$p" ] && found="$found $p"
+done
+echo "found:${found:- none}"
 ```
 
 If any exist, ask:
@@ -153,9 +157,11 @@ Read the existing file and append workflow sections. Do NOT overwrite existing c
 This project uses playbook session discipline for task tracking.
 
 ### Commands
-The live inventory is `.claude/commands/` — one file per command; `/start-session` enumerates
-it every session (do not maintain a hardcoded list here). Core workflow: `/start-session` →
-work → `/update-progress`.
+The live inventory is `.claude/commands/` — one file per command — and the skills in
+`.claude/skills/<name>/SKILL.md` (Codex: `.agents/skills/<name>/SKILL.md`), each with a one-line
+`description:`. `/start-session` enumerates both every session (do not maintain a hardcoded list
+here). Before building anything, check them for a command or skill that already does it. Core
+workflow: `/start-session` → work → `/update-progress`.
 
 ### Session Discipline
 - Start each session with `/start-session`
@@ -164,10 +170,9 @@ work → `/update-progress`.
 - Document handoffs in `session_notes.md`
 
 ### Working Style
-Work autonomously within tasks. Checkpoints only at:
-- Session start (after `/start-session`)
-- Task completion
-- Major decisions requiring user input
+Work autonomously within tasks. Pause for the operator only at the checkpoints in
+`PROJECT_CHARTER.md` § 3 (*Checkpoints*). Finishing a task and starting the next one is not one of
+them: completion is announced, not asked about.
 ```
 
 Use Edit tool to append, preserving all existing content.
@@ -181,9 +186,15 @@ cp $EXAMPLES_PATH/_project-template/CLAUDE.md.template ./CLAUDE.md
 
 Ask user for:
 - Project name
+- Project prefix (Step 5.1 item 3, asked once for both files)
 - AWS account/region (if applicable)
-- MCP tool name (if applicable)
+- GitHub org (optional)
 - Any project-specific rules
+
+Ask for no MCP tool and no AWS profile name, and fill in no placeholder that asks for one (leave
+that line out): each is a nickname, true on the machine it was read on (`/start-session` § Two
+Environments), and `CLAUDE.md` is committed and travels. `/check-aws` Step 2 resolves the AWS
+handle on each host from that session's live tool inventory.
 
 Leave line 3 as the template ships it, a pointer at `progress.json`'s `description`. The sentence
 is asked for in Step 5.1 and lives in `progress.json` alone, so it has one place to be corrected.
@@ -256,20 +267,22 @@ This is the key file for workflow tracking.
 
 1. **Project name**:
 2. **Description**: one sentence, in your words, saying what this project is for
-3. **Uses AWS?**: Yes/No
-   - If yes: Account ID, Region, MCP tool
-4. **Git remotes**: (I'll detect these)
-5. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
+3. **Project prefix**: the one name this project's repositories and resources share (an existing
+   project's is the one its resources already carry)
+4. **Uses AWS?**: Yes/No
+   - If yes: Account ID, Region
+5. **Git remotes**: (I'll detect these)
+6. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
    directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
 
 Use AskUserQuestion.
 
-Items 2 and 5 are the operator's to give, and nothing else may stand in for either. The description
+Items 2 and 6 are the operator's to give, and nothing else may stand in for either. The description
 (`PROJECT_CHARTER.md` § 11) is never composed from the README, the folder name or a template's
 instruction text; an existing project's README opening may be offered as a starting point, but
 what is written is the sentence the operator gives or confirms. The sub-repositories Step 5.2
-detects may be offered as candidates for item 5, but a nested checkout is evidence, not a
+detects may be offered as candidates for item 6, but a nested checkout is evidence, not a
 declaration (§ 14): only the members the operator confirms are written.
 
 ### 5.2 Detect Git Repos
@@ -320,7 +333,7 @@ Create based on gathered info:
   "context_hints": {
     "aws_account": "{if applicable}",
     "aws_region": "{if applicable}",
-    "mcp_tool": "{if applicable}"
+    "project_prefix": "{item 3}"
   },
 
   "phases": {
@@ -357,8 +370,11 @@ Step 3 states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at co
 `{today}` in `created_at` and `started_at` may stay a calendar date. `description_reviewed` is
 the same instant as `last_updated`: the sentence is reviewed at the moment it is written.
 
+`project_prefix` is item 3's answer, the key `/check-aws` filters resources by. No MCP tool and no
+AWS profile key is written, for the reason Step 4.3 gives.
+
 **`relations` is not in the template above, on purpose.** Add it at the root, beside `git_repos`,
-only as the operator answered item 5: `{"version": 1, "members": [...]}`, each member with its
+only as the operator answered item 6: `{"version": 1, "members": [...]}`, each member with its
 `origin` (and its `path` too when it is nested here) and the operator's own `relation` word
 (`PROJECT_CHARTER.md` § 14). **Never seed `"members": []`.** An empty array is a positive claim that
 this repository manages nothing, so it is written only when the operator says "nothing". "Not
@@ -471,6 +487,7 @@ git commit -m "workflow: Add playbook session discipline
 
 Added:
 - .claude/commands/ (distributed default commands)
+- .claude/skills/ (distributed default skills)
 - .agents/skills/ (Codex workflow adapters)
 - progress.json (task tracking)
 - session_notes.md (session handoff)
@@ -496,16 +513,20 @@ Removed:
 | File | Action | Purpose |
 |------|--------|---------|
 | `.claude/commands/*.md` | Added | Distributed default commands (count = files in the directory) |
+| `.claude/skills/*/` | Added | Distributed default skills (count = directories) |
+| `.agents/skills/*/` | Added | Codex adapters for the same commands and skills |
 | `progress.json` | Created | Task and phase tracking |
 | `session_notes.md` | Created | Session handoff notes |
 | `CLAUDE.md` | Merged/Created | Workflow rules appended |
 | `AGENTS.md` | Merged/Created | Thin Codex entry; detailed rules remain in CLAUDE.md |
 | `.gitignore` | Updated/Unchanged | Exceptions added, hand fixes, deliberate exclusions left (or: none) |
 
-### Commands Available
-Enumerate the live directory rather than trusting a list (counts drift; the directory is truth):
+### Commands and Skills Available
+Enumerate the live directories rather than trusting a list (counts drift; the directories are
+truth). Codex reads its adapters for both from `.agents/skills/`:
 ```bash
 for f in .claude/commands/*.md; do basename "$f" .md; done
+for d in .claude/skills/*/; do basename "$d"; done
 ```
 Core workflow: `/start-session` → work → `/update-progress`; `/add-work` to add tracked tasks.
 
