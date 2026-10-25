@@ -130,12 +130,14 @@ cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/
 # `bash .claude/skills/syndicate-connect/...`, /start-session § 4.0 and /update-progress § 12
 # (`open_work.py`) all reference files that would not exist until the next /distribute-defaults —
 # a fresh project would be broken for those the moment it is created.
+# Python's caches stay behind: the template's working tree holds __pycache__/ wherever a test has
+# run there, the engine never ships *.pyc, and the commit guard refuses a new __pycache__/.
 mkdir -p .claude/skills
-cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
+tar -C syndicate-playbooks-examples/_project-template/.claude/skills --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .claude/skills -xf -
 
 # Copy Codex repository skills. They are inert for Claude and require no Codex installation.
 mkdir -p .agents/skills
-cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/skills/
+tar -C syndicate-playbooks-examples/_project-template/.agents/skills --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .agents/skills -xf -
 
 # Materialize both executor entries. CLAUDE.md remains the detailed project-rule source;
 # AGENTS.md is the native Codex entry and points to it.
@@ -148,7 +150,7 @@ cp syndicate-playbooks-examples/_project-template/PROJECT_CHARTER.md ./PROJECT_C
 mkdir -p .claude/hooks
 cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
 cp -n syndicate-playbooks-examples/_project-template/.claude/hooks/artifact-guard.allow .claude/hooks/ 2>/dev/null || true
-chmod +x .claude/hooks/pre-commit          # BEFORE git add → the index records mode 100755
+chmod +x .claude/hooks/pre-commit          # the commit step stages it with --chmod=+x (core.fileMode=false)
 cp syndicate-playbooks-examples/_project-template/.gitignore ./.gitignore
 git config core.hooksPath .claude/hooks    # repo-local config — arms the guard for this clone
 ```
@@ -339,9 +341,20 @@ cdk bootstrap aws://{account}/{region}
 
 ```bash
 # Scoped add by named paths — NEVER `git add -A` (that is the exact pattern that
-# once swept a 36MB build zip into history). List only the framework paths that
-# exist; drop any that don't.
-git add -- CLAUDE.md AGENTS.md PROJECT_CHARTER.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ .agents/ tasks/ input/
+# once swept a 36MB build zip into history). Only the framework paths that exist: one
+# missing path makes `git add` stage nothing at all, and the commit below then must not run.
+set --
+for p in CLAUDE.md AGENTS.md PROJECT_CHARTER.md progress.json IMPLEMENTATION_PLAN.md session_notes.md \
+         .gitignore .claude/ .agents/ tasks/ input/; do
+  [ -e "$p" ] && set -- "$@" "$p"
+done
+git add -- "$@" || { echo "STOP: git add failed - nothing committed"; false; } &&
+# 100755 in the index whatever the disk says: where core.fileMode=false (every repository on
+# /mnt/c) a new file is staged at 100644, and no other clone would run the guard or the skill
+# helpers that are executable in the template.
+git add --chmod=+x -- .claude/hooks/pre-commit &&
+{ ( cd syndicate-playbooks-examples/_project-template && find .claude/skills .agents/skills -type f -perm -u+x ! -name '*.pyc' ) \
+    | while IFS= read -r f; do [ -f "$f" ] && git add --chmod=+x -- "$f"; done; true; } &&
 git commit -m "setup: Initialize from {playbook} template
 
 Template: {playbook}
@@ -371,15 +384,16 @@ mkdir -p .claude/commands .claude/hooks .claude/skills .agents/skills
 cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/commands/
 
 # Skills (each a directory). Without these, § 5b, /start-session § 4.0 and /update-progress § 12
-# reference files that would not exist until the next /distribute-defaults.
-cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
-cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/skills/
+# reference files that would not exist until the next /distribute-defaults. Python's caches stay
+# behind (__pycache__/, *.pyc): the engine never ships them and the commit guard refuses them.
+tar -C syndicate-playbooks-examples/_project-template/.claude/skills --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .claude/skills -xf -
+tar -C syndicate-playbooks-examples/_project-template/.agents/skills --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .agents/skills -xf -
 cp syndicate-playbooks-examples/_project-template/PROJECT_CHARTER.md ./PROJECT_CHARTER.md
 
 # Commit guard (mechanical protection against `git add -A` sweeping build artifacts)
 cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
 cp -n syndicate-playbooks-examples/_project-template/.claude/hooks/artifact-guard.allow .claude/hooks/ 2>/dev/null || true
-chmod +x .claude/hooks/pre-commit          # BEFORE git add → the index records mode 100755
+chmod +x .claude/hooks/pre-commit          # the commit step stages it with --chmod=+x (core.fileMode=false)
 cp -n syndicate-playbooks-examples/_project-template/.gitignore ./.gitignore 2>/dev/null || true   # seed only if absent (don't clobber an existing one)
 git config core.hooksPath .claude/hooks
 ```
@@ -447,7 +461,15 @@ Copy template and fill in values.
 ### 5. Commit Changes
 
 ```bash
-git add -- .claude/ .agents/ progress.json CLAUDE.md AGENTS.md PROJECT_CHARTER.md .gitignore
+set --
+for p in .claude/ .agents/ progress.json CLAUDE.md AGENTS.md PROJECT_CHARTER.md .gitignore; do
+  [ -e "$p" ] && set -- "$@" "$p"
+done
+git add -- "$@" || { echo "STOP: git add failed - nothing committed"; false; } &&
+# 100755 even where core.fileMode=false (/mnt/c), for the guard and the template's executables
+git add --chmod=+x -- .claude/hooks/pre-commit &&
+{ ( cd syndicate-playbooks-examples/_project-template && find .claude/skills .agents/skills -type f -perm -u+x ! -name '*.pyc' ) \
+    | while IFS= read -r f; do [ -f "$f" ] && git add --chmod=+x -- "$f"; done; true; } &&
 git commit -m "setup: Add playbook commands to existing project
 
 🤖 Generated with Claude Code"

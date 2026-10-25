@@ -17,7 +17,7 @@
 # project copies — the per-project variance point is artifact-guard.allow.
 #
 # Wired via repo-local `git config core.hooksPath .claude/hooks` (set by /setup,
-# the distribute engine, and re-affirmed by /start-session). Never copied into
+# /setup-workflow-only, the distribute engine, and re-affirmed by /start-session). Never copied into
 # .git/hooks (that would rot and not travel with the repo).
 #
 # Escape valves (so the guard is not bypassed wholesale):

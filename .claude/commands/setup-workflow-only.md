@@ -47,7 +47,7 @@ ls -la
 ```bash
 # Check for existing playbook files (each path on its own: one missing path must not hide the rest)
 found=""
-for p in CLAUDE.md AGENTS.md progress.json .claude/commands/ .claude/skills/ .agents/skills/; do
+for p in CLAUDE.md AGENTS.md progress.json PROJECT_CHARTER.md .claude/commands/ .claude/skills/ .agents/skills/ .claude/hooks/; do
   [ -e "$p" ] && found="$found $p"
 done
 echo "found:${found:- none}"
@@ -72,10 +72,35 @@ Use AskUserQuestion.
 ## Step 3: Locate Examples Repository
 
 ```bash
-# Check common locations
-ls -d syndicate-playbooks-examples 2>/dev/null || \
-ls -d ../syndicate-playbooks-examples 2>/dev/null || \
-echo "NOT_FOUND"
+EXAMPLES_PATH=""   # or the path the operator gave, when a first run printed NOT_FOUND
+# Inside this project (a tool clone made for this setup), beside it, then in $HOME, where the
+# workstation and syndicate-join keep their copy: a project under /mnt/c/Users/<name> has no
+# sibling copy. A folder counts only if it holds the template.
+if [ -z "$EXAMPLES_PATH" ]; then
+  for p in ./syndicate-playbooks-examples ../syndicate-playbooks-examples "$HOME/syndicate-playbooks-examples"; do
+    if [ -d "$p/_project-template/.claude/commands" ]; then EXAMPLES_PATH="$p"; break; fi
+  done
+fi
+if [ -n "$EXAMPLES_PATH" ] && [ -d "$EXAMPLES_PATH/_project-template/.claude/commands" ]; then
+  EXAMPLES_PATH="$(cd "$EXAMPLES_PATH" && pwd -P)"
+  echo "EXAMPLES_PATH=$EXAMPLES_PATH"
+  # What is copied is the template as that copy has COMMITTED it, extracted to a temporary folder.
+  # Never its working tree: on the workstation that is the engine's own checkout, which may hold
+  # uncommitted changes, and a project file that matches no committed version blocks the next
+  # distribution for the whole host. The committed tree also holds no Python cache, and
+  # core.autocrlf=false keeps a Windows-side clone's CRLF out of the guard's first line.
+  if git -C "$EXAMPLES_PATH" rev-parse -q --verify HEAD >/dev/null 2>&1; then
+    T="$(mktemp -d "${TMPDIR:-/tmp}/syndicate-template.XXXXXX")" \
+      && git -c core.autocrlf=false -C "$EXAMPLES_PATH" archive HEAD _project-template | tar -x -C "$T" \
+      && echo "TEMPLATE=$T/_project-template" \
+      && echo "  (committed at $(git -C "$EXAMPLES_PATH" log -1 --format='%h %cs'); a temporary copy, nothing to clean up)"
+  else
+    echo "TEMPLATE=$EXAMPLES_PATH/_project-template"
+    echo "  (not a git checkout: its files as they are)"
+  fi
+else
+  echo "EXAMPLES_PATH=NOT_FOUND"
+fi
 ```
 
 **If NOT_FOUND**:
@@ -93,7 +118,15 @@ Where is the examples repository?
 
 Use AskUserQuestion.
 
-Set `$EXAMPLES_PATH` to the found/specified path.
+Given a path, run the block again with it on the first line (`EXAMPLES_PATH="<that path>"`).
+
+The block prints two lines to keep: `EXAMPLES_PATH=` and `TEMPLATE=`. Shell variables do not
+survive between commands, so each later block starts by setting what it uses, quoted, with the
+value printed here in place of the placeholder.
+
+A copy found beside the project or in `$HOME` is only read from. It is someone's working checkout
+(on the workstation, the engine's own) or the one `syndicate-join` keeps current, and Step 8 leaves
+it where it is.
 
 ---
 
@@ -111,9 +144,11 @@ Commands should already be copied (per README instructions). Verify and copy if 
 > open-work render.
 
 ```bash
+EXAMPLES_PATH="<EXAMPLES_PATH printed by Step 3>"
+TPL="<TEMPLATE printed by Step 3>"
 if [ ! -d ".claude/commands" ] || [ -z "$(ls .claude/commands/ 2>/dev/null)" ]; then
   mkdir -p .claude/commands
-  cp $EXAMPLES_PATH/_project-template/.claude/commands/*.md .claude/commands/
+  cp "$TPL"/.claude/commands/*.md .claude/commands/
   echo "Commands copied"
 else
   echo "Commands already present (to UPDATE, run the distribute engine locally — see note above)"
@@ -122,22 +157,102 @@ fi
 # Skills (each a directory: SKILL.md + its files). Without these, § 4.4's
 # syndicate-connect, /start-session § 4.0 and /update-progress § 12 (open_work.py) reference
 # files that do not exist until the next /distribute-defaults.
+# Copied over what is there, so a skill of the project's own keeps its folder. Python's caches stay
+# behind: a TEMPLATE that is a working tree holds __pycache__/ wherever a test has run there, the
+# engine never ships *.pyc, and the commit guard refuses a new __pycache__/.
 mkdir -p .claude/skills
-cp -r $EXAMPLES_PATH/_project-template/.claude/skills/* .claude/skills/
+tar -C "$TPL/.claude/skills" --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .claude/skills -xf -
 echo "Skills copied ($(ls -1d .claude/skills/*/ | wc -l) present)"
 
 # Codex adapters are additive and inert for Claude-only projects.
 mkdir -p .agents/skills
-cp -r $EXAMPLES_PATH/_project-template/.agents/skills/* .agents/skills/
-cp $EXAMPLES_PATH/_project-template/PROJECT_CHARTER.md ./PROJECT_CHARTER.md
+tar -C "$TPL/.agents/skills" --exclude=__pycache__ --exclude='*.pyc' -cf - . | tar -C .agents/skills -xf -
 echo "Codex skills copied ($(ls -1d .agents/skills/*/ | wc -l) present)"
+
+# The charter is delivered byte for byte, but the name can be taken: an existing project may keep a
+# PROJECT_CHARTER.md of its own. It is written only when absent, already the template's, or an earlier
+# committed version of it, compared without CRs (a Windows checkout's), which is how the engine
+# decides (classify_charter).
+lf="$(mktemp)"; [ -f PROJECT_CHARTER.md ] && tr -d '\r' < PROJECT_CHARTER.md > "$lf"
+if [ ! -f PROJECT_CHARTER.md ] || cmp -s "$lf" "$TPL/PROJECT_CHARTER.md" \
+   || git -C "$EXAMPLES_PATH" log --format= --raw --no-abbrev -- _project-template/PROJECT_CHARTER.md 2>/dev/null \
+      | grep -qF " $(git hash-object --no-filters "$lf") "; then
+  cp "$TPL/PROJECT_CHARTER.md" ./PROJECT_CHARTER.md && echo "CHARTER: installed"
+else
+  echo "CHARTER: PROJECT_CHARTER.md is this project's own document and was not replaced - stop and ask the operator"
+fi
+rm -f "$lf"
 ```
+
+A `CHARTER:` line saying the file is the project's own stops the command until the operator
+answers. The distribution would refuse to overwrite it too, and reports it as divergent, which blocks
+its run for the whole host. Usually the operator renames the project's document, and Step 4.1 runs
+again.
+
+### 4.1b Commit Guard (install and arm)
+
+The guard is what `/setup` and every distribution install. Git runs it on every commit, however the
+files were staged. It refuses a commit that newly adds a build artifact, an oversize blob or a file
+that looks like a secret, and one whose `progress.json` loses data. Without it, Step 9's commit and
+every one after it are unguarded until the next distribution reaches this project.
+
+```bash
+TPL="<TEMPLATE printed by Step 3>"
+top="$(git rev-parse --show-toplevel 2>/dev/null)"
+G=.claude/hooks/pre-commit
+if [ -z "$top" ]; then echo "GUARD: NOT armed - this folder is not a git work tree"
+elif [ "$top" != "$(pwd -P)" ]; then
+  echo "GUARD: NOT armed - this folder is inside the repository at $top, not its root; ask the operator"
+elif [ ! -f "$TPL/$G" ]; then echo "GUARD: NOT armed - there is no guard at $TPL/$G"
+elif [ -f "$G" ] && ! cmp -s "$G" "$TPL/$G" && ! head -3 "$G" | grep -q 'syndicate framework commit guard'; then
+  echo "GUARD: NOT armed - $G is this project's own hook; ask the operator"
+else
+  # Hooks that stop running once core.hooksPath points at .claude/hooks: say so, never silently.
+  was="$(git config --get core.hooksPath)"
+  if [ -z "$was" ]; then
+    for h in "$(git rev-parse --git-common-dir)"/hooks/*; do
+      [ -f "$h" ] && [ -x "$h" ] && case "$h" in *.sample) ;; *) echo "HOOKS: $h no longer runs";; esac
+    done
+  elif [ "$was" != .claude/hooks ]; then echo "HOOKS: core.hooksPath was $was; its hooks no longer run"; fi
+  mkdir -p .claude/hooks
+  tr -d '\r' < "$TPL/$G" > "$G"      # LF whatever the copy's line endings: a CR after the shebang refuses every commit
+  chmod +x "$G"
+  cp -n "$TPL/.claude/hooks/artifact-guard.allow" .claude/hooks/ 2>/dev/null || true   # project-owned: seeded only if absent
+  # The .gitignore baseline: the template's managed block, appended once, as the engine does.
+  # Every line the project already had stays.
+  BEGIN='# >>> syndicate artifact-guard baseline'
+  if ! grep -qsF "$BEGIN" .gitignore; then
+    { [ -s .gitignore ] && printf '\n'
+      awk -v b="$BEGIN" 'index($(0),b){f=1} f{print} f && /<<< syndicate artifact-guard baseline/{exit}' "$TPL/.gitignore"
+    } >> .gitignore && echo "GITIGNORE: artifact-guard baseline appended"
+  fi
+  git config core.hooksPath .claude/hooks    # repo-local config: arms the guard for this clone
+  if [ -x "$G" ] && [ "$(git config --local --get core.hooksPath)" = .claude/hooks ]; then
+    echo "GUARD: armed (core.hooksPath=.claude/hooks); Step 9 commits it at 100755"
+    git check-ignore -q -- "$G" \
+      && echo "GUARD: a .gitignore line ignores $G - Step 7 must make it trackable before Step 9"
+  else
+    echo "GUARD: NOT armed - the guard is not in place and executable, or core.hooksPath did not take; read the lines above"
+  fi
+fi
+```
+
+Report the `GUARD:` line in the Output. `NOT armed` with "ask the operator" stops the command until
+the operator answers. A project's own `.claude/hooks/pre-commit` is not overwritten here; an older
+copy of the guard is. The distribution overwrites that path whatever it holds, so the operator's
+answer is needed before the project is next reached.
+
+A `HOOKS:` line names a hook the project had that stops running now; the distribution would arm
+the guard the same way at its next run. Report each one in the Output, and leave what to do about
+it to the operator. Do not edit `.claude/hooks/pre-commit` to call it: the guard is centrally
+owned, and the next distribution overwrites a changed copy.
 
 ### 4.2 Session Notes (if missing)
 
 ```bash
+TPL="<TEMPLATE printed by Step 3>"
 if [ ! -f session_notes.md ]; then
-  cp $EXAMPLES_PATH/_project-template/session_notes.md ./
+  cp "$TPL/session_notes.md" ./
 fi
 ```
 
@@ -181,7 +296,8 @@ Use Edit tool to append, preserving all existing content.
 
 Copy template and customize:
 ```bash
-cp $EXAMPLES_PATH/_project-template/CLAUDE.md.template ./CLAUDE.md
+TPL="<TEMPLATE printed by Step 3>"
+cp "$TPL/CLAUDE.md.template" ./CLAUDE.md
 ```
 
 Ask user for:
@@ -205,7 +321,8 @@ Do not duplicate the project-owned prose from `CLAUDE.md`. If `AGENTS.md` is abs
 Codex entry and fill its project placeholders:
 
 ```bash
-cp $EXAMPLES_PATH/_project-template/AGENTS.md.template ./AGENTS.md
+TPL="<TEMPLATE printed by Step 3>"
+cp "$TPL/AGENTS.md.template" ./AGENTS.md
 ```
 
 If `AGENTS.md` already exists, it is project-owned: preserve it and add only a short pointer to
@@ -460,47 +577,93 @@ hand fix and each deliberate exclusion left in place in the Output.
 
 ---
 
-## Step 8: Remove Examples Repository
+## Step 8: Remove the Tool Clone of the Examples Repository
 
-The examples repo is no longer needed — all workflow files have been copied.
+All workflow files have been copied. Only a clone inside this project was made for this setup, so
+only that one is removed. A copy Step 3 found beside the project or in `$HOME` is never removed.
+A clone counts as a tool clone only when nothing in it exists anywhere else. A copy that is not its
+own repository, that git cannot read, or that holds anything a fresh clone would not is kept,
+because removing it cannot be undone (`PROJECT_CHARTER.md` § 8: a copy is never retired because it
+looks like a leftover).
 
 ```bash
-rm -rf syndicate-playbooks-examples/
+C=./syndicate-playbooks-examples
+why=""
+if [ -L "$C" ]; then rm -- "$C" && echo "CLEANUP: removed the link $C; what it points at is kept"
+elif [ ! -d "$C" ]; then echo "CLEANUP: no tool clone in this project - nothing to remove"
+else
+  [ "$(git -C "$C" rev-parse --show-toplevel 2>/dev/null)" = "$(cd "$C" && pwd -P)" ] \
+    || why="it is not a git repository of its own, or git cannot read it"
+  [ -z "$why" ] && [ "$(cd "$C" && pwd -P)" = "$(cd "$HOME/syndicate-playbooks-examples" 2>/dev/null && pwd -P)" ] \
+    && why="it is the \$HOME copy"
+  [ -z "$why" ] && [ -n "$(git -C "$C" status --porcelain --ignored --untracked-files=all 2>&1)" ] \
+    && why="it holds changed, untracked or ignored files"
+  [ -z "$why" ] && [ -n "$(git -C "$C" stash list 2>&1)" ] && why="it holds a stash"
+  [ -z "$why" ] && [ -n "$(git -C "$C" log --branches --tags --not --remotes --oneline 2>&1)" ] \
+    && why="it holds commits no remote has"
+  if [ -n "$why" ]; then echo "CLEANUP: kept $C - $why, so it is not a tool clone; ask the operator"
+  else rm -rf -- "$C" && echo "CLEANUP: tool clone removed"; fi
+fi
 ```
 
-Remove the gitignore entry too (nothing to ignore anymore):
-
-```bash
-# Remove the syndicate-playbooks-examples/ line from .gitignore
-```
-
-Use Edit tool to remove the `syndicate-playbooks-examples/` line from `.gitignore`.
+If the clone was removed, use the Edit tool to remove the `syndicate-playbooks-examples/` line Step 7
+added to `.gitignore` (nothing is left to ignore).
 
 ---
 
 ## Step 9: Commit Workflow Files
 
 ```bash
-git add .claude/ .agents/ progress.json session_notes.md CLAUDE.md AGENTS.md
-[ -f .gitignore ] && git add .gitignore   # only if present — new projects may not have one yet
+TPL="<TEMPLATE printed by Step 3>"
+# The commit takes the whole index, because a pathspec commit re-reads each path from the disk and
+# would drop the executable bit staged below. So work the operator staged earlier would ride along:
+# stop instead, and leave it staged. .claude/project-code is allowed: it is the guard's own fix for
+# a skill the project named without its code.
+other="$(git diff --cached --name-only | grep -vE '^(\.claude/(commands|skills|hooks)/|\.agents/skills/|(PROJECT_CHARTER|session_notes|CLAUDE|AGENTS)\.md$|progress\.json$|\.gitignore$|\.claude/project-code$)')"
+if [ -n "$other" ]; then
+  printf 'STAGED BEFORE THIS COMMAND - nothing committed; ask the operator:\n%s\n' "$other"
+else
+  # Exactly what this command delivered, by name: the template's commands, skills, Codex adapters and
+  # guard, and the files written at the root. A skill or command of the project's own stays out, and
+  # so do .claude/settings.local.json and any worktree under .claude/.
+  set --
+  while IFS= read -r f; do [ -e "$f" ] && set -- "$@" "$f"; done < <(
+    cd "$TPL" && find .claude/commands .claude/skills .agents/skills -type f ! -name '*.pyc' ! -path '*/__pycache__/*'
+    printf '%s\n' .claude/hooks/pre-commit .claude/hooks/artifact-guard.allow .claude/project-code \
+      PROJECT_CHARTER.md progress.json session_notes.md CLAUDE.md AGENTS.md .gitignore)
+  git add -- "$@"
+  # The executable bit from the template, never from this disk: where core.fileMode=false (every
+  # repository on /mnt/c) git stages a new file at 100644 whatever chmod did, and no other clone
+  # of the project would run the guard.
+  git add --chmod=+x -- .claude/hooks/pre-commit
+  ( cd "$TPL" && find .claude/skills .agents/skills -type f -perm -u+x ! -name '*.pyc' ) \
+    | while IFS= read -r f; do [ -f "$f" ] && git add --chmod=+x -- "$f"; done
 git commit -m "workflow: Add playbook session discipline
 
 Added:
 - .claude/commands/ (distributed default commands)
 - .claude/skills/ (distributed default skills)
 - .agents/skills/ (Codex workflow adapters)
+- .claude/hooks/ (commit guard, armed by core.hooksPath)
+- PROJECT_CHARTER.md (the rules every project shares)
 - progress.json (task tracking)
 - session_notes.md (session handoff)
 
 Updated:
 - CLAUDE.md (workflow rules merged)
 - AGENTS.md (Codex entry merged/created)
-
-Removed:
-- syndicate-playbooks-examples/ (no longer needed)
+- .gitignore (artifact-guard baseline)
 
 🤖 Generated with Claude Code"
+git status --short --ignored -- "$@"
+git ls-tree HEAD -- .claude/hooks/pre-commit
+fi
 ```
+
+The armed guard runs on this commit. If it refuses, read what it names and fix that; never pass
+`--no-verify` to get past it. The status line must print nothing: a line is a file the command
+delivered that is not in the commit (`!!` means a `.gitignore` line ignores it); fix it as Step 7
+says, then run this block again. The last line must start `100755`: the guard as every clone gets it.
 
 ---
 
@@ -515,11 +678,13 @@ Removed:
 | `.claude/commands/*.md` | Added | Distributed default commands (count = files in the directory) |
 | `.claude/skills/*/` | Added | Distributed default skills (count = directories) |
 | `.agents/skills/*/` | Added | Codex adapters for the same commands and skills |
+| `.claude/hooks/` | Added | Commit guard: the `GUARD:` line, and each `HOOKS:` line (a hook that no longer runs) |
+| `PROJECT_CHARTER.md` | Added | The rules every project shares (or the `CHARTER:` line: the project's own, kept) |
 | `progress.json` | Created | Task and phase tracking |
 | `session_notes.md` | Created | Session handoff notes |
 | `CLAUDE.md` | Merged/Created | Workflow rules appended |
 | `AGENTS.md` | Merged/Created | Thin Codex entry; detailed rules remain in CLAUDE.md |
-| `.gitignore` | Updated/Unchanged | Exceptions added, hand fixes, deliberate exclusions left (or: none) |
+| `.gitignore` | Updated | Artifact-guard baseline (appended, or already present); exceptions added, hand fixes, deliberate exclusions left (or: none) |
 
 ### Commands and Skills Available
 Enumerate the live directories rather than trusting a list (counts drift; the directories are
@@ -536,7 +701,7 @@ Core workflow: `/start-session` → work → `/update-progress`; `/add-work` to 
 - Status: Ready
 
 ### Cleanup
-- Examples repo removed (no longer needed)
+- Step 8's `CLEANUP:` line: tool clone removed, none to remove, or kept and why
 
 ### Next Steps
 1. Review `CLAUDE.md` and adjust rules if needed
