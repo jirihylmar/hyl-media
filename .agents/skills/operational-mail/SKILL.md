@@ -10,7 +10,7 @@ agreed rule, word for word, and its numbered steps are the procedure.
 
 In short: send every alarm, notification and report to the central address of the account the
 project deploys into, taken as a parameter; name topics, alarms and subjects so the mail says which
-project and account it is from; never confirm an SNS email subscription by its link, and ask
-hyl-resources-manager through the request mailbox the same day instead. Until the naming convention
-lands (interim, 2026-10-26), ask through the mailbox for any new topic or alarm name first, and rename nothing. Do not restate or reword
+project and account it is from, in the one form the rule gives (the origin repository's name, the
+account's name and 12-digit id); never confirm an SNS email subscription by its link, and ask
+hyl-resources-manager through the request mailbox the same day instead. Do not restate or reword
 the rule in Codex prose; the canonical file is the only text.

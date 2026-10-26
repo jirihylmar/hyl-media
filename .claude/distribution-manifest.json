@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-10-26T13:23:13Z",
-  "canonical_commit": "ed8ca78e4cea99a3a96ac7c717a2d399d2ca4995",
+  "written_at": "2026-10-26T14:42:25Z",
+  "canonical_commit": "e9c207087e050cae9eed6c2f893f42aea6b0bc1a",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "9b8ca22161882ddf887b728b78786a5b6cf98ac6d44832bf1c20b2376f5e69f4", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "40aeb84fdd69c8f059027afc311d5abfb5eec02eea86272a2c046eb2f33a6c44", "source": "canonical" },
@@ -36,7 +36,7 @@
     ".claude/skills/consult-codex/consult-log.py": { "sha256": "0aba318a449e47b8d55597f1ad274c339e746ca372f6f6a9d7e1018a08948a32", "source": "canonical" },
     ".claude/skills/open-work/SKILL.md": { "sha256": "1c1444696f65aca0e35eb437b77091e0330da3a789ef50ac5d45ac1fd9cbbeb2", "source": "canonical" },
     ".claude/skills/open-work/open_work.py": { "sha256": "7d71d25461fed5b7929438be84fa5c99fcc69b2b2e00c1cf3633972ef081a7f9", "source": "canonical" },
-    ".claude/skills/operational-mail/SKILL.md": { "sha256": "e7854d57d61d7eea6f2d96d9f4a87779d444532cbd322bbd5d7a14777a057b32", "source": "canonical" },
+    ".claude/skills/operational-mail/SKILL.md": { "sha256": "f6d604cb68769a707d044cf43e0762cd65956f4b1cc08519f66771c8e1d1f095", "source": "canonical" },
     ".agents/skills/generate-architecture/SKILL.md": { "sha256": "d016ad76bc7aef058fda1f53a76ba54e27963a7bce6019241d800dd6d123a847", "source": "canonical" },
     ".agents/skills/server-report/SKILL.md": { "sha256": "78f9c8954068cab76b618e53c0ec556241478c5be963d473b6a32211c1d89b92", "source": "canonical" },
     ".agents/skills/setup-workflow-only/SKILL.md": { "sha256": "56db1fd8cafa1876015a3f3ff5663120c755ffc472d3b2f655068cd54f14403c", "source": "canonical" },
@@ -55,7 +55,7 @@
     ".agents/skills/unattended-check/SKILL.md": { "sha256": "54e4088c78078ade2bb68cf466a8907e296889268f9d00df81b890a91b27a018", "source": "canonical" },
     ".agents/skills/open-work/SKILL.md": { "sha256": "aee95cda2c20561d541453d482f5237c71c822258ea3490d313c393f4663b2d8", "source": "canonical" },
     ".agents/skills/update-progress/SKILL.md": { "sha256": "00419decf95b7765fb1d3115b3ac6cc94bc3548abc195af63c856874336022fc", "source": "canonical" },
-    ".agents/skills/operational-mail/SKILL.md": { "sha256": "82ffe0b97ea8d895637abcef0a2eff2b7457b43fd0b0d505cc43c0b7ccc07aad", "source": "canonical" },
+    ".agents/skills/operational-mail/SKILL.md": { "sha256": "0c02912174b1cb3b7286004d1a9a5d3c2f780e16d479805eb85795e4567920b2", "source": "canonical" },
     ".agents/skills/generate-phases/SKILL.md": { "sha256": "8e5e28495b6477c10dee4d264d6634caf076b419347cc38789d4c58b62350071", "source": "canonical" },
     "PROJECT_CHARTER.md": { "sha256": "e860a12f52fd62745a028aded6359fef3d8ee2979402fb018908e61030569f75", "source": "canonical" },
     ".claude/hooks/pre-commit": { "sha256": "daa1dc74207fccc5642a19b3b6249c0e1e10f1f8523a3adb5b3b7e37c8239c08", "source": "canonical" }
