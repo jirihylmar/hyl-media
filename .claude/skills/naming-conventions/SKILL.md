@@ -24,19 +24,21 @@ enything"*; and, asked how far the rule reaches: *"New names + tag all"*).
 - **`<project>`** is this project's estate identity: the name of its origin repository (the repository whose progress.json manages the code), lowercased, with `.` turned into `-`. It is the identity `/syndicate-request` uses. Never a resource prefix, a project code, a product or a family name (`nutritech-pdsm-orchestrator`, never `pdsm`; `hyl-resources-manager`, never `hrm`). Code in a repository nested inside the project that manages it is named for the managing project.
 - **Every new name a project creates starts with `<project>-`:** CloudFormation and CDK stacks, Lambda functions, IAM roles and policies, SNS topics, CloudWatch alarms, log groups, SQS queues, DynamoDB tables, EventBridge rules, Step Functions, ECR repositories, and on a host its systemd units, timers and containers. The rest is `<what>`, lowercase with hyphens. An S3 bucket, whose name is global, is `<project>-<what>-<account id>`.
 - **A name limit too short:** shorten `<what>`, never `<project>`. If `<project>` alone leaves no room (an S3 bucket 63, an IAM role or Lambda function 64), ask through the mailbox (`--to hyl-resources-manager`) for the agreed form before creating it; the answer is recorded and the check accepts it.
-- **Every AWS resource carries the tag `origin=<owner>/<repository>`,** new and existing (for example `origin=DigitalHorizonCz/nutritech-pdsm-orchestrator`). Adding a tag replaces nothing, so existing resources get it now, through the project's own infrastructure code: in CDK one line at the app (`Tags.of(app).add('origin', '<owner>/<repository>')`), in CloudFormation the stack's tags, which propagate to the resources that take tags.
+- **Every AWS resource carries the tag `origin=<owner>/<repository>`,** new and existing (for example `origin=DigitalHorizonCz/nutritech-pdsm-orchestrator`). Adding a tag replaces nothing, so existing resources get it now, through the project's own infrastructure code: in CDK one line at the app (`Tags.of(app).add('origin', '<owner>/<repository>')`), in CloudFormation the stack's tags, which propagate to the resources that take tags. For code in a nested repository the tag names the managing project's repository too, matching the name's prefix (booking-classic's code inside orchestrator-classic: `origin=master-goldsport/orchestrator-classic`).
+- **A prefix AWS or CDK sets** does not break the rule: a log group under `/aws/lambda/` or `/aws/events/` conforms when what follows starts with `<project>-`, and a physical name CDK generates conforms when it starts with the project-prefixed stack name.
 - **Existing names stay** until the owner rebuilds the resource anyway; it is then renamed to this form in the same change. Renaming only to rename is not asked, because a bucket, a table or a stack must be replaced to change its name.
 - **Couplings move with a name.** A policy, a topic policy's `aws:SourceArn`, an alarm's target or a host's check that names the resource changes in the same change, or something stops silently. A deploy identity whose IAM policy allows only an old prefix (`pdsm-*`) is widened first, through the mailbox, before the first resource under the new name: that is a policy change hyl-resources-manager answers.
 - **Code one project supplies and another deploys** (a sign-in kit) is named and tagged for the deploying project.
 - **Operational mail** (sender, alarm names, subjects, topics) follows `/operational-mail`, which uses the same `<project>`.
+- **An exception** (a resource that cannot be renamed without harm, such as a delegated hosted zone) is recorded by hyl-resources-manager for its account, asked for through the mailbox; the check reads it there.
 - hyl-resources-manager checks the registered accounts: a resource created from 2026-10-26 on whose name does not start with a known project's name, and any resource without the `origin` tag, is reported as drift.
 <!-- RULE END -->
 
 ## The steps
 
 1. **Find `<project>`:** `basename -s .git "$(git remote get-url origin)" | tr 'A-Z.' 'a-z-'`. For code in a nested
-   repository, the managing project's repository instead. `<owner>/<repository>` for the tag is the origin's path
-   as written (`DigitalHorizonCz/nutritech-pdsm-orchestrator`).
+   repository, the managing project's repository instead, for the name and for the tag alike. `<owner>/<repository>`
+   for the tag is that origin's path as written (`DigitalHorizonCz/nutritech-pdsm-orchestrator`).
 2. **Before a new resource:** name it `<project>-<what>` (a bucket `<project>-<what>-<account id>`), check its
    limit, and check that the deploy identity's policy allows that name; if it allows only an older prefix, ask
    through the mailbox first.
