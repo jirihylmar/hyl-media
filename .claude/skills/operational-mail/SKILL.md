@@ -20,6 +20,12 @@ syndicate-playbooks-examples, and approved by the operator. The operator's words
 we should not create tons of new addresses. they should yous the central on and emails there whould
 be identified by subject, who what"*.
 
+**Interim, 2026-10-26: names are being agreed.** The forms of `<project>` and `<account>` below are
+not settled yet, and the names made under them already disagree. Until the estate's naming convention
+replaces them here, ask through the mailbox (`--to hyl-resources-manager`) for any new topic or alarm
+name before you create it, and rename nothing. Existing names stay as they are; any renames come with
+the convention.
+
 <!-- RULE BEGIN -->
 ## Operational mail: alarms and notifications
 
