@@ -12,6 +12,8 @@ email subscription to the administrator side (hyl-resources-manager), which conf
 signed call so that no link in any mail can later unsubscribe it.
 
 This skill is information, not an order: it binds nothing until this project sends operational mail.
+Every name that is not mail (stacks, buckets, functions, roles, units) follows `/naming-conventions`,
+with the same `<project>`.
 
 ## The rule
 

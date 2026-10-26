@@ -185,7 +185,7 @@ done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
 # distribution preflight when they differ, so a new central skill can never be refused by the
 # guard it is delivered with. `syndicate-*` is the central namespace (docs/terminology.md).
 # ---------------------------------------------------------------------------
-DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases open-work operational-mail overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-request syndicate-refresh-remote unattended-check update-progress "
+DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases naming-conventions open-work operational-mail overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-request syndicate-refresh-remote unattended-check update-progress "
 
 project_code() {
   local raw=""
