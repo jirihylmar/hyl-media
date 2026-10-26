@@ -35,7 +35,7 @@ be identified by subject, who what"*.
   - A message the project publishes itself sets Subject to "[<project> <account>] <what>", at most 100 characters.
 - **Confirmation is the administrator side's.** Never confirm an SNS subscription by its link, and never ask the operator to.
   - The same day a change creates an email subscription, ask through the mailbox (--to hyl-resources-manager), naming the topic ARN, the account and the address it mails.
-  - The administrator side confirms it with a signed call within the 3 days the confirmation stays valid, and records it.
+  - The administrator side confirms it with a signed call within the 2 days (48 hours) the confirmation stays valid, and records it.
   - Until then the subscription is pending and delivers nothing.
 - **Silence is a fault.** If a subscription the project relies on disappears, or reads pending or not authenticated, say so through the mailbox at once. A missing alarm path looks like a quiet system.
 <!-- RULE END -->
@@ -61,7 +61,7 @@ be identified by subject, who what"*.
    created it, and when. No credential and nothing private: everyone with mailbox access reads it.
 4. **Record and carry on.** Note the branch and commit `send` printed in `session_notes.md` and on the
    task that waits. The answer comes back as an estate notice or a `session_notes.md` entry; do not
-   wait in the session. A confirmation not answered within three days has expired: ask again.
+   wait in the session. A confirmation not answered within two days (48 hours) has expired: ask again.
 5. **Check, not assume.** The project's own checks read its subscriptions
    (`aws sns list-subscriptions-by-topic`) and treat one that is missing, `PendingConfirmation`, or
    whose attributes show `ConfirmationWasAuthenticated` false as a fault to report through the
