@@ -23,6 +23,16 @@
 # Escape valves (so the guard is not bypassed wholesale):
 #   - .claude/hooks/artifact-guard.allow : committed glob allowlist (the right way).
 #   - git commit --no-verify             : standard one-off override (rare, audited).
+#
+# A project's own commit checks: .claude/hooks/pre-commit.d/ (optional; the project's files, never
+# written by the distribution). Once this guard's own checks pass, every executable regular file there
+# whose name is letters, digits, '.', '_' or '-' (not starting with '.') runs in name order, from the
+# top of the work tree, with stdin closed, and a non-zero exit refuses the commit naming the file. Each
+# is bounded by PRE_COMMIT_D_TIMEOUT seconds (default 60) where `timeout` exists; running out refuses
+# too. A file there that is not executable is not run and is named in a note on every commit, because
+# a checkout that drops the mode would otherwise skip the project's check in silence. Asked for by
+# nutritech-pdsm-orchestrator (a clock gate: an unsynchronised machine commits nothing), approved by
+# the operator 2026-10-27 as a general, opt-in point; a project that adds nothing sees no change.
 set -u
 
 # Size backstop for UN-patterned blobs. High on purpose: true artifacts match the
@@ -413,5 +423,39 @@ if [ -n "$violations" ]; then
     echo "Commit by named paths (git commit -- <files>), never 'git add -A'."
   } >&2
   exit 1
+fi
+
+# The project's own commit checks (see the header): .claude/hooks/pre-commit.d/, after this guard's.
+PRE_COMMIT_D=".claude/hooks/pre-commit.d"
+if [ -d "$PRE_COMMIT_D" ]; then
+  pcd_limit="${PRE_COMMIT_D_TIMEOUT:-60}"
+  case "$pcd_limit" in ''|*[!0-9]*|0) pcd_limit=60 ;; esac
+  pcd_bound=""
+  command -v timeout >/dev/null 2>&1 && pcd_bound="timeout $pcd_limit"
+  for pcd_f in "$PRE_COMMIT_D"/*; do
+    [ -e "$pcd_f" ] || continue
+    pcd_n="${pcd_f##*/}"
+    case "$pcd_n" in .*|*[!A-Za-z0-9._-]*) continue ;; esac
+    [ -f "$pcd_f" ] || continue
+    if [ ! -x "$pcd_f" ]; then
+      echo "NOTE: $pcd_f is not executable and was NOT run (chmod +x it, and commit the mode, for it to guard commits)." >&2
+      continue
+    fi
+    # shellcheck disable=SC2086  # $pcd_bound is empty or two words on purpose
+    $pcd_bound "./$pcd_f" </dev/null; pcd_rc=$?
+    if [ "$pcd_rc" != 0 ]; then
+      {
+        if [ -n "$pcd_bound" ] && [ "$pcd_rc" = 124 ]; then
+          echo "COMMIT BLOCKED by the project's own check $pcd_f: it ran out of time (${pcd_limit}s, PRE_COMMIT_D_TIMEOUT)."
+        else
+          echo "COMMIT BLOCKED by the project's own check $pcd_f (exit $pcd_rc)."
+        fi
+        echo "It is this project's file, run by .claude/hooks/pre-commit after the guard's own checks passed;"
+        echo "its output above says why. Fix what it reports, or change the check in this project."
+        echo "Override (audited): git commit --no-verify"
+      } >&2
+      exit 1
+    fi
+  done
 fi
 exit 0
