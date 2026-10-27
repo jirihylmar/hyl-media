@@ -66,7 +66,7 @@ If you ever read this skill markdown in any project and the binary isn't install
 
 | You type | What happens |
 |---|---|
-| `/syndicate-refresh-remote` | Skill asks: which repos? (offers a multi-select of all top-level repos under `~/`); then asks about env-file sync + conflict policy + dry-run. |
+| `/syndicate-refresh-remote` | Skill asks: which repos? (offers sets of the top-level repos under `~/`); then asks the divergence policy and the run's options (env-file sync, dry-run). |
 | `/syndicate-refresh-remote syndicate-remote` | Uses that one repo; still asks about options if relevant. |
 | `/syndicate-refresh-remote broadcasting-orchestration aps-brm-products-playbook` | Uses both repos. Skips the "which repos" prompt. |
 | `/syndicate-refresh-remote all` | Sync **every** top-level repo under `~/` (confirms count first — typically ~60–70 repos). |
@@ -109,25 +109,43 @@ When user input is ambiguous or incomplete, the skill **asks** rather than assum
 
 ### Step 2 — Gather the repo list (if not provided as args)
 
-Use `AskUserQuestion` (multi-select) populated by:
+List the repos:
 ```bash
 find ~ -mindepth 1 -maxdepth 1 -type d -not -name '.*' \
   | xargs -I {} sh -c 'test -d "{}/.git" && basename "{}"' \
   | sort
 ```
-Highlight "main" repos first (anything matching `*orchestration*`, `*playbook*`, `syndicate-*`, `*hub440*`, plus any repo already present on the box at `<workspace>/`).
 
-If user picks "all", confirm with a count first: "N repos, this will take ~5–10 min. Continue?".
+Then ask one question with `AskUserQuestion`, in the form `PROJECT_CHARTER.md` § 3
+*Putting a decision to the operator* gives. The tool holds at most four options, so offer the repos
+as sets, never one option per repo:
+- **The main repos (Recommended)** — its description names them: anything matching
+  `*orchestration*`, `*playbook*`, `syndicate-*`, `*hub440*`, plus any repo already present on the
+  box at `<workspace>/`; only those are synced;
+- **All N repos** — N from the listing above, about 5–10 min;
+- the tool's free-text answer takes a list of repo names.
 
 ### Step 3 — Gather options (if not provided as args)
 
-Use `AskUserQuestion`:
+Use `AskUserQuestion`, in the charter § 3 form:
 
-| Question | Options |
+| Question (header) | Options |
 |---|---|
-| Sync `.env*` files too? | Yes (default) / No |
-| If repos diverge between local and box, what to do? | Ask me per repo (default) / Keep local everywhere ⚠ auto-stashes / Keep box everywhere ⚠ auto-stashes / Abort the run |
-| Dry-run? | No, do it for real (default) / Yes, dry-run |
+| If repos diverge between local and box, what to do? (`Divergence`) | Ask me per repo (Recommended) / Keep local everywhere ⚠ auto-stashes / Keep box everywhere ⚠ auto-stashes / Abort the run |
+| Which of these apply to this run? (`Options`, multi-select) | Copy `.env*` files (Recommended) / Dry run only |
+
+Two questions, one call. The two options of the second can be combined, so they are one
+multi-select question and not two yes-or-no ones. Each option's description is its consequence:
+
+- **Copy `.env*` files (Recommended)**: each repo's `.env*` files are copied to the box, mode 600,
+  so a project that runs there has its own settings. Left unticked, the run passes `--skip-env`
+  and the box keeps whatever `.env*` it already has. A repo whose `.env*` looks like it holds a key
+  is synced in a run of its own with `--skip-env` (*What the skill never does*, below).
+- **Dry run only**: the binary reports what it would push, clone, pull and copy and changes nothing
+  on either side; the real run is a second invocation. Left unticked, the run is for real.
+
+For the two "everywhere" options of the first question the consequence is the auto-stash described
+below.
 
 > **⚠ Both "everywhere" options set `--keep-side`, which auto-stashes and never restores.** Do not
 > present them as a plain divergence policy — they are also a **dirty-tree** policy. When the tree is
@@ -185,10 +203,14 @@ Trust this table, not the binary's own header comment — the two disagree.
 If the binary exits 2 (HALT) and `--keep-side` wasn't pre-set — **first read the status: `HALT_CONFLICT` is a divergence, `HALT_LOCAL_DIRTY` means commit first, `HALT_UNKNOWN` usually means no `origin`.** Only a genuine divergence warrants the dialog below:
 
 1. Parse the output for the offending repo + divergence info.
-2. `AskUserQuestion`:
+2. `AskUserQuestion`, in the charter § 3 form. **Manual** goes first and is the recommended one:
+   Keep local drops the box's own commits from its branch, and Keep box pushes them and has local
+   pull them into its own, each before anyone has read the diff. Recommend Keep local only when the
+   status read shows the box holds no commit that origin lacks, and Keep box only when local holds
+   none.
+   - **Manual (Recommended)** — print the SSH command + diff and stop; user resolves themselves.
    - **Keep local** — `git reset --hard origin/<branch>` on the box. ⚠ **The binary never checks whether the box tree is dirty.** Box-only commits are reflog-recoverable, but **uncommitted and staged changes to tracked files on the box are destroyed — no stash, no reflog, unrecoverable.** Verify the box tree is clean first: `ssh <box> "timeout 30 git -C '<box_path>' status --porcelain; echo rc=\$?"` (must print `rc=0` and nothing else; `rc=124` means the check ran out of time, which is not clean).
    - **Keep box** — push box-only commits to origin; then local pulls.
-   - **Manual** — print the SSH command + diff and stop; user resolves themselves.
    - **Skip this repo** — leave it diverged, move on.
 3. Re-invoke the binary for just that repo with the resolved flag (or skip).
 
@@ -226,7 +248,12 @@ SPOOL="$HOME/.syndicate-knowledge-spool"
 commits it, and curation reads only its own clone of origin (83 box extractions never reached it).
 A backlog that does not drain means this host has no valid `ingest.json`: run `/syndicate-connect`.
 
-Then ask: "Anything else to sync?" (no / yes — back to step 2).
+Then ask one question, *"Is there more to sync?"*, in the charter § 3 form (header `More`):
+
+- **No, finish here (Recommended)**: the repos asked for have run, so the Summary above is the
+  report of this run, with each `SKIP_*` row named; nothing else is pushed, pulled or copied.
+- **Yes, more repos**: back to Step 2 for another set, asked as before. This run's results stand,
+  and the next run reports on its own Summary.
 
 ---
 

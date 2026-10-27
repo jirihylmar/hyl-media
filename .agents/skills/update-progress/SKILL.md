@@ -18,13 +18,21 @@ Preserve these boundaries:
 - First classify the invocation as `TASK_BOUNDARY` or `SESSION_CLOSE`. Completing, verifying,
   committing, pushing, or advancing from one task to the next is `TASK_BOUNDARY`; it is never by
   itself a reason to yield.
-- In `TASK_BOUNDARY`, run the task verification/progress/publication steps, announce the result in
-  one concise transition, and immediately work on the next ready authorized task in the same turn.
+- In `TASK_BOUNDARY`, run the task verification, documentation (Steps 2a and 7, recorded as
+  `docs:` in `verify_result`), progress and publication steps, announce the result in one concise
+  transition that names the documents brought into line,
+  and immediately work on the next ready authorized task in the same turn.
   Do not produce the Step 12 handoff or end the response unless a declared approval checkpoint,
   genuine blocker, explicit stop request, or absence of safe authorized work makes this a real
   `SESSION_CLOSE`.
 - Run session-only consolidation, knowledge extraction, handoff notes, and the final summary only
   for `SESSION_CLOSE` (or when closing a phase explicitly requires its hygiene gate).
+- Every progress update is this procedure, whoever writes it, a lane, a subagent or a workflow
+  step included, and in delegated work one executor records: you, or the one step you name as its
+  recorder; every other lane, subagent or workflow step returns its result, evidence and changed
+  paths and records nothing. That rule, and one canonical document for each subject, are
+  `PROJECT_CHARTER.md` section 11, *Recording progress and documents*. Read the rest there — do not
+  restate it here.
 - A queued or running asynchronous job is ongoing work, not a blocker or session boundary. Retain
   its job/session handle and wait or poll in bounded intervals no longer than 60 seconds, using
   commentary for interim updates. A final response ends active execution: never claim to be monitoring after sending one,

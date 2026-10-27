@@ -5,6 +5,7 @@ allowed-tools:
   - Edit
   - Write
   - Bash
+  - AskUserQuestion
   - mcp__aws-*__call_aws
 ---
 
@@ -33,13 +34,23 @@ not convert `TASK_BOUNDARY` into `SESSION_CLOSE`. A final-looking task summary i
 not emit one mid-run. And a yield of either kind is governed by `PROJECT_CHARTER.md`
 section 11, *Unattended operations*, whenever tracked work depends on a future external state
 change: Step 9a below is the command-backed check that must pass before the response goes out. The
-contract is stated in the charter once, for both executors; this file only enforces it. The correct transition is: `Task X.Y complete and pushed. Continuing with
-X.Z: <plain-language outcome>.` Then invoke tools for X.Z in the same response.
+contract is stated in the charter once, for both executors; this file only enforces it. The correct transition is:
+`Task X.Y complete and pushed (docs: <files brought into line> | none needed). Continuing with X.Z: <plain-language outcome>.`
+Then invoke tools for X.Z in the same response.
 
-For `TASK_BOUNDARY`, run Steps 1, 2, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped portion
-of Step 5. Defer Step 2b, Step 3c, the full session handoff in Step 5, Step 11, and Step 12 until an
-actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
-cost—or adopt the stopping posture—of ending a session.
+For `TASK_BOUNDARY`, run Steps 1, 2, 2a, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped
+portion of Step 5. Defer Step 2b, Step 3c, the full session handoff in Step 5, Step 11, and Step 12
+until an actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
+cost—or adopt the stopping posture—of ending a session. The documentation steps are not that cost.
+Step 12's *Documentation swept* table waits for the close, so at a task boundary Step 7's result is
+recorded in the task's `verify_result` as `docs:` and named in the transition.
+
+A progress update made any other way (inline, by a lane, by a subagent, by a step of a workflow
+script) is this procedure in this mode, and in delegated work one executor records: you, or the
+one step you name as its recorder; every other lane, subagent or workflow step returns its result,
+evidence and changed paths and records nothing (`PROJECT_CHARTER.md` § 11, *Recording progress and
+documents*). *You* is the executor that delegated the work, and the recorder records every
+delegated task once the results are in.
 
 The next ready task is an open task whose `depends_on` names no task that is still open;
 `/open-work` marks the others in the current phase's table as `waits on <id>`.
@@ -204,8 +215,12 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
 
 - **ALWAYS use the Edit tool** (find-and-replace) to modify progress.json — **NEVER use Write** (full file overwrite)
 - **Re-read progress.json immediately before each edit** — don't rely on what you read at session start
-- A lane executor modifies only its assigned task. The coordinating executor may reconcile any
-  non-terminal task after re-reading the whole open-work landscape; never rewrite terminal history
+- In delegated work one executor records: you, or the one step you name as its recorder; every
+  other lane, subagent or workflow step returns its result, evidence and changed paths and records
+  nothing (`PROJECT_CHARTER.md` § 11, *Recording progress and documents*). The recorder records
+  every delegated task once the results are in, by this procedure, not only a task of its own. The
+  coordinating executor may reconcile any non-terminal task after re-reading the whole open-work
+  landscape; never rewrite terminal history
 - **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
 - **One Edit call per field change** — smaller edits reduce the collision window
 
@@ -586,7 +601,9 @@ the task is not stale: re-scope it to today's figure, then finish it or re-home 
 
 The executor owns routine dispositions. Consult the operator only when dropping, deferring or
 re-scoping work would change the agreed product outcome, architecture or risk. Otherwise reconcile
-the open-work landscape, record the reasons, and close autonomously. Present any genuine decision plainly:
+the open-work landscape, record the reasons, and close autonomously. Present any genuine decision
+as a question in the form `PROJECT_CHARTER.md` § 3 *Putting a decision to the operator* gives;
+report the dispositions you made, as below, with no question:
 
 ```
 ### Phase 2 close — 2 tasks still open
@@ -610,11 +627,31 @@ it.** Carrying it forward only moves the staleness somewhere it will be discover
 
 Then the sweeps:
 
-1. **Working-dir sweep (extract-then-archive).** If `docs/<phase-dir>/` (or any working dir the
-   phase created) exists: repoint/extract every live inbound reference FIRST (a "closed" dir can
-   hold live dependencies — skill default paths, test fixtures, cited rules), then `git mv` the
-   remainder to `docs/_archive/`. Never blind-move, never delete. A reference check after the move
-   must show zero new broken refs.
+1. **Working-dir sweep (extract-then-archive).** The phase's working material lives in
+   `work/phase-<id>/` at the project root (`PROJECT_CHARTER.md` § 11, *Recording progress and
+   documents*). Look there, and in the legacy place under `docs/`: a `docs/phase-<id>/` (or any
+   `docs/phase-*`, `wip-*`, `tmp-*` or `scratch*` dir the phase created), or any other working dir
+   the phase created. For each one that exists: move what stays canonical into its canonical
+   document or the path its task declares, and repoint every live inbound reference, FIRST (a
+   "closed" dir can hold live dependencies — skill default paths, test fixtures, cited rules), then
+   move the remainder to `docs/_archive/` under its own name with this block, `src` set to the dir
+   (`work/phase-<id>`, or the legacy `docs/<dir>`):
+
+   ```bash
+   src="work/phase-<id>"
+   src="${src%/}"; dest="docs/_archive/${src##*/}"
+   if [ -e "$dest" ]; then
+     echo "NOT MOVED: $dest already exists; move $src to a name of its own, such as $dest-work"
+   else
+     mkdir -p docs/_archive && git mv -- "$src" "$dest" && echo "archived: $src -> $dest"
+   fi
+   ```
+
+   The destination is named in full because `git mv work/phase-<id> docs/_archive/` with no
+   `docs/_archive/` yet renames the dir itself to `docs/_archive`, and its files land loose there;
+   into an existing `docs/_archive/<dir>` git would nest it instead. Never blind-move, never
+   delete. A reference check after the move must show zero new broken refs.
+   `/repo-hygiene` quick check B lists the working dirs in both places whose phase has closed.
 2. **progress.json weight check.** If `progress.json` exceeds ~300KB, run the compaction step from
    `/repo-hygiene` (Step 4: dry-run, read the account, `--apply`) — verbose bodies of *finished*
    tasks in *finished* phases outside the newest two move to committed sidecars under
@@ -861,10 +898,23 @@ committed. Do not leave it to a follow-up task: the knowledge the fix needs is i
 and until the fix lands the skill teaches the old method. Name each skill checked under
 *Canonical surfaces checked* in the Step 12 *Documentation swept* table.
 
+**The sweep leaves a record, whoever runs it.** Before Step 10's commit, end the task's
+`verify_result` with `; docs: <canonical files brought into line>`, or
+`; docs: none, nothing this task touched their subject`. A task already committed as complete
+takes it in `notes`. A completion with no `docs:` is one this step did not run for.
+
 **When adding a new document to the project:**
-1. Create the document
-2. If it needs a per-session review trigger, add it to `.claude/local-overlays/update-progress.md`
-3. **Never edit this file to register it.** It is a distributed default; the next distribution
+1. First find the document that already covers its subject:
+   `git grep -il -e '<the subject, by its canonical name>' -- README.md CLAUDE.md docs ':(exclude,glob)**/_archive/**' .claude/skills .agents/skills`.
+   If one does, change that one instead. A second document on a covered subject is not written,
+   and working material is not a project document (`PROJECT_CHARTER.md` § 11, *Recording progress
+   and documents*, says where it and deliverables go). A dated record (an incident report, an
+   audit, a baseline, a periodic review) or a dated hand-off that the search finds is not changed
+   instead: the next one on its subject is a new dated file, the earlier one is left as written,
+   and the subject's canonical document is changed to point at the latest.
+2. Create the document
+3. If it needs a per-session review trigger, add it to `.claude/local-overlays/update-progress.md`
+4. **Never edit this file to register it.** It is a distributed default; the next distribution
    overwrites your edit and the drift check flags the project until a human adjudicates it.
 
 ### 8. Maintain Project-Specific Skills
@@ -996,7 +1046,8 @@ this file.
 1. **Scope to your own work.** Commit by named paths only — never `git add -A` / `git add .` — and only in repos you actually modified for your task. Do not sweep unrelated dirty files, and do not commit or push a repo you did not touch. This is the Multi-Agent Discipline rule "commit only files related to your task," applied across repos. _This rule is now also enforced **mechanically**: a pre-commit guard (`.claude/hooks/pre-commit`, armed by `/start-session` Step 0.5) blocks any commit that newly adds a build artifact or an oversized blob, regardless of how you staged — so `git add -A` cannot silently sweep a build zip into history. The prose here is the intent; the hook is the backstop. If the guard blocks a legitimately-intended large file, allowlist it in `.claude/hooks/artifact-guard.allow` rather than reaching for `--no-verify`._
 2. **Push is publish, not deploy** (see the blockquote below).
 
-**Commit the orchestration repo (scoped to its two files, task-ID message):**
+**Commit the orchestration repo (scoped by name to `progress.json`, `session_notes.md` and every
+file this task changed in it, the documents Step 7 brought into line included; task-ID message):**
 ```bash
 git commit -m "progress: complete task X.Y - [brief description]
 
@@ -1005,7 +1056,7 @@ Completed:
 
 Next: Task X.Z
 
-🤖 Generated with Claude Code" -- progress.json session_notes.md
+🤖 Generated with Claude Code" -- progress.json session_notes.md <your-changed-files>
 ```
 
 (The `-m` message comes BEFORE the `--` pathspec — `git commit -- <paths> -m "msg"` fails because

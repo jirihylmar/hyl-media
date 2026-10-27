@@ -147,6 +147,8 @@ be fixed by explaining more later — it is the normal condition, and it is what
 **This binds mid-session, not only at the handoff.** Every progress line, every question you ask,
 every proposal — the operator has to be able to follow it *as it happens*, without reconstructing
 your reasoning first. A report they have to decode is a report that has not been delivered.
+A question that puts a decision to the operator takes the form `PROJECT_CHARTER.md` § 3
+*Putting a decision to the operator* gives.
 
 > **The test, before you send anything:** could someone who has not read this project's
 > `progress.json` today act on this sentence? If not, rewrite it. Information the reader cannot use
@@ -171,7 +173,11 @@ your statement of which reading would mean which cause, so running it is their o
 > its person runs `syndicate-join` in a WSL terminal, which updates every project there
 > (`syndicate-join --check` shows whether they are current). Defaults older than the operator's are
 > therefore expected there, not a fault. Its knowledge goes by the `ingest` route, never inbound
-> SSH. Full lifecycle: `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*.
+> SSH. It has no remote host and none of the estate's pinned MCP images: Step 2.5 asks no host there
+> and says so in one line (a `box.json` left there by the retired remote route is not a host), and
+> an AWS server copied from the operator's setup cannot start there, so `/check-aws` Step 2 names
+> each declared one that did not start, and why. Full lifecycle:
+> `syndicate-playbooks-examples/README.md` § *Syndicate External Onboarding*.
 
 > **A member host: the operator's own machine, reached only from the workstation.** Some remote hosts
 > answer only while the operator has connected a VPN on the workstation; their host file there says
@@ -576,6 +582,7 @@ This answers **"does a command or skill for this already exist / am I aware of i
 - **Search past this project, too.** The inventory lists this project's commands and skills only, and the mechanism you are about to design may already exist in another repository. Before designing one (a switch, a sync, a guard, a login, a report), search the other checkouts on this host for the job's verb and noun: `for g in "$HOME"/*/.git "$HOME"/*/*/.git; do [ -e "$g" ] || continue; r=${g%/.git}; git -C "$r" grep -il --all-match -e '<verb>' -e '<noun>' 2>/dev/null | sed "s|^|$r/|"; done`. A repository that lives on another host is searched there, over ssh with a timeout inside the remote command; if this host cannot reach it, say the search did not cover it. A local copy of a repository that lives elsewhere is stale (Step 2.5), not the one to port from. When the operator says "like X" or "as in <repo>", read X before designing anything. If the mechanism exists, port it and change only what the new context forces.
 - **Re-derive, don't recall.** Consult the live directory each session; never act on a remembered list or `CLAUDE.md` prose.
 - **Read the skill that owns what you change.** Before changing a file or a surface (a page, a table, an endpoint), check whether a project skill names it, and read that skill first: `grep -l -F -- '<path or name>' .claude/skills/*/SKILL.md .agents/skills/*/SKILL.md .claude/commands/*.md 2>/dev/null | grep -vxF -f <(grep -oE '"\.(claude|agents)/[^"]+"' .claude/distribution-manifest.json | tr -d '"')`, which leaves out the distributed defaults the manifest lists, as `/update-progress` Step 7's sweep does. Whether the change then needs the skill updated is `/update-progress` Step 7's question.
+- **One home per document, one recorder per run.** Before writing a document, find the one that already covers its subject and change it in place. Progress is recorded with `/update-progress`, and in delegated work one executor records: you, or the one step you name as its recorder; every other lane, subagent or workflow step returns its result, evidence and changed paths and records nothing. Where working material and deliverables go: `PROJECT_CHARTER.md` § 11, *Recording progress and documents*.
 
 **Reconcile `CLAUDE.md` only if it has DRIFTED to a hardcoded list (authorized, scoped, idempotent):**
 
@@ -616,13 +623,49 @@ there and not restated here; if this step and that section ever disagree, that s
 SECRETS="$HOME/.syndicate-remote-secrets"
 SELF="$(basename "$PWD")"
 
+# AN OUTSIDE MACHINE HAS NO REMOTE HOST TO ASK, by design (README § Syndicate External
+# Onboarding): no box, no member host, no host file of the estate's. join-syndicate.sh installs
+# ~/.local/bin/syndicate-join there once the person's credentials open, and on no host of the
+# operator's; the syndicate-connect skill tells an outside machine by the same file. A *.json in the
+# secrets dir there is not a host. Measured 2026-10-27: a 0-byte box.json, left on an outside
+# machine by the remote route that retired in July 2026, printed "Those hosts were NOT asked; fix
+# or remove them", and the person reported a remote machine that had not been asked.
+OUTSIDE=no; [ -x "$HOME/.local/bin/syndicate-join" ] && OUTSIDE=yes
+
 # Repos that are local-only BY POLICY. This is not a nickname and not a location claim: it is a
 # host-independent fact, equally true on both machines, so it belongs in a file that ships to both.
 # Their absence from the box is the INTENT, never a fault. Stated once, here.
 POLICY_LOCAL="syndicate-playbooks-examples syndicate-remote"
 
-# Discover which OTHER repos this project's skills point at — live grep, never a hardcoded list.
-REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/commands/*.md 2>/dev/null \
+# Discover which OTHER repos THIS PROJECT's own commands point at — live grep, never a hardcoded
+# list. The distributed defaults are not this project's: every repository they name (the engine,
+# syndicate-remote, the knowledge inbox) is the estate's. Since 2026-10-22 /update-progress § 11.0
+# names the inbox's checkout only to forbid writing into it, and reading every default here made
+# every project on every host resolve the inbox as a repository it reaches into (measured
+# 2026-10-27: "UNKNOWN" on an outside machine, where nothing could answer for it). So a default
+# command is skipped by its file name, on DEFAULT_COMMANDS below, and so is any other command
+# .claude/distribution-manifest.json lists (Step 0.7). The manifest alone was not enough: a project
+# bootstrapped by README Step 2 copies the template's .claude, which holds none, and has none until
+# its next distribution, and a hand-edited default is never recorded in it. Such a project read every
+# default again, and on an outside machine the inbox came out UNRESOLVABLE, which says stop (review
+# of 127.10). A default forked in .claude/local-overlays/.skip (one file name per line, as
+# distribute-defaults.sh reads it) is the project's own and is read, and so are a project's additions
+# to a default, which live in .claude/local-overlays/.
+#
+# DEFAULT_COMMANDS is scripts/distribute-defaults.sh's DEFAULTS, written out here because that
+# script is on no host this runs on; test-start-session-sync.sh fails when the two differ.
+DEFAULT_COMMANDS="add-work.md check-aws.md generate-architecture.md generate-phases.md repo-hygiene.md syndicate-refresh-remote.md setup-workflow-only.md setup.md start-session.md update-progress.md"
+OWN=$(for f in .claude/commands/*.md .claude/local-overlays/*.md; do
+  [ -f "$f" ] || continue
+  n="${f##*/}"
+  if [ "$f" = ".claude/commands/$n" ] \
+     && ! grep -qxE "[[:space:]]*$n[[:space:]]*" .claude/local-overlays/.skip 2>/dev/null; then
+    case " $DEFAULT_COMMANDS " in *" $n "*) continue ;; esac
+    grep -qF "\"$f\"" .claude/distribution-manifest.json 2>/dev/null && continue
+  fi
+  printf '%s\n' "$f"
+done)
+REFS=$(printf '%s\n' "$OWN" | while IFS= read -r f; do [ -n "$f" ] && grep -hoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' "$f"; done \
        | sed -E 's#^(/home/[A-Za-z0-9._-]+|\$HOME|~)/##; s/[.,:;)]+$//' \
        | grep -vE '^\.?$|^\.' | sort -u)
 
@@ -648,7 +691,7 @@ REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/com
 # empty/corrupt file (measured: a 0-byte config, 2026-07-24) must read as "no host configured", NOT
 # as a false "unreachable", which invites chasing a network fault that is really a bad file.
 HOSTS=""; BAD=0; PARSER_RC=0
-if [ -d "$SECRETS" ]; then
+if [ "$OUTSIDE" = no ] && [ -d "$SECRETS" ]; then
   # THE EXIT STATUS IS CAPTURED, and that is not defensive habit — it is the difference between
   # two opposite answers. With `2>/dev/null` and no rc check, a python3 that exists but FAILS
   # (a broken install, a partial upgrade, an interpreter killed by the OOM killer) empties HOSTS
@@ -807,7 +850,9 @@ fi
 # not run. With no UNCHECKED host the wording is the one it always was.
 SILENT=$((TOTAL-ASKED-UNCHECKED))
 NC="$UNCHECKED not checked (never asked: no connection from here)"
-if   [ "${BAD:-0}" -gt 0 ] && [ "$TOTAL" = 0 ]; then
+if   [ "$OUTSIDE" = yes ]; then
+  PROBE="n/a — an outside machine (it joined with syndicate-join): no remote host is asked from here"
+elif [ "${BAD:-0}" -gt 0 ] && [ "$TOTAL" = 0 ]; then
   PROBE="unavailable — $BAD host config(s) present but unusable (treat as no host configured; fix or remove them)"
 elif [ "$TOTAL" = 0 ]; then
   PROBE="unavailable — no host configured (this may BE the host, or a machine that syncs with none)"
@@ -838,8 +883,14 @@ for r in $REFS; do
     printf 'REPO %-34s local-only by policy, absent here — EXPECTED, not a blocker\n' "$r"
   elif printf '%s\n' "$REMOTELIST" | grep -qx "$r"; then
     printf 'REPO %-34s REMOTE (host) — local paths to it are DEAD\n' "$r"
+  elif [ "$OUTSIDE" = yes ]; then
+    printf 'REPO %-34s UNRESOLVABLE — not on this machine, and an outside machine has no remote host it could live on\n' "$r"
   elif [ "$TOTAL" -gt 0 ] && [ "$ASKED" = "$TOTAL" ] && [ "${BAD:-0}" = 0 ]; then
     printf 'REPO %-34s UNRESOLVABLE — not local, and every configured host answered that it is not there either\n' "$r"
+  elif [ "$TOTAL" = 0 ] && [ "${BAD:-0}" = 0 ] && [ "$PARSER_RC" = 0 ]; then
+    # Nothing here to ask: the box, a member host, or a machine with no host file. The line below
+    # used to say a host "could not be asked" here too, of a host that does not exist.
+    printf 'REPO %-34s UNKNOWN — not local, and no remote host is configured here to ask. Do NOT conclude it is missing.\n' "$r"
   else
     printf 'REPO %-34s UNKNOWN — not local; at least one host could not be asked. Do NOT conclude it is missing.\n' "$r"
   fi
@@ -853,8 +904,9 @@ done
 | `local` | The repo is here. | Use it directly. Normal case; say nothing. |
 | `local-only by policy` | It is one of the repos policy keeps off the remote host, and you are not on the machine that holds it. **Its absence is the intent.** | **Nothing.** This is a correct state, not a finding — do not surface it, do not "fix" it, and above all do not clone it here. If your task genuinely needs it, that task belongs on the workstation, and *that* is what you say. |
 | `REMOTE (host)` | It lives on a configured host and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on that host** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the remote copy is the real one. |
-| `UNRESOLVABLE` | Not local, **and every configured host answered that it does not have it either.** Genuinely nowhere. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
-| `UNKNOWN` | Not local, and **at least one host could not be asked** — none is configured, one did not answer, or one was `not checked` because its config `requires` a link (a VPN, say) and this machine could not connect to it. | **Report it; do not conclude anything.** You have no evidence about that host, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
+| `UNRESOLVABLE` | Not local, **and every configured host answered that it does not have it either.** Genuinely nowhere. On an outside machine, not local is enough: no other host could hold it. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
+| `UNKNOWN` | Not local, and **no host has answered for it**: none is configured here (the box, a member host), one did not answer, or one was `not checked` because its config `requires` a link (a VPN, say) and this machine could not connect to it. The line says which: *no remote host is configured here to ask*, or *at least one host could not be asked*. | **Report it; do not conclude anything.** You have no evidence about that host, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
+| `HOST PROBE: n/a — an outside machine` | This machine joined with `syndicate-join` (it has `~/.local/bin/syndicate-join`), so no remote host is asked from it, by design. | **Nothing.** Omit it from the handoff. A file in `~/.syndicate-remote-secrets/` there (a `box.json` the retired remote route left) is not a host: never report it as one to fix or remove. |
 
 > **Why `UNKNOWN` exists at all.** This step used to treat "the probe returned nothing" and "the probe
 > could not run" as the same answer. A host config is a **local workstation artifact** — this machine's
@@ -998,12 +1050,17 @@ This can happen if:
 - Setup was interrupted
 - Commands were injected to existing project without tasks
 
-Would you like me to:
-1. **Run /setup** - Complete the setup process
-2. **Use /add-work** - Define tasks manually
+How should this project get its tasks?
+1. **Run /setup** — the setup runs again: environment, repositories and the first tasks, each
+   asked for again
+2. **Use /add-work** — you describe the work, it becomes tasks once you approve them, and the
+   rest of the setup stays as it is
 ```
 
-Use AskUserQuestion.
+Use AskUserQuestion, in the form `PROJECT_CHARTER.md` § 3 *Putting a decision to the operator*
+gives. Recommend **Run /setup** when `CLAUDE.md` still carries a `{{` placeholder (the setup did not
+finish); otherwise recommend **Use /add-work** (the commands were injected into a project that has
+its own setup). The recommended one goes first.
 
 #### If tasks exist:
 Proceed to Step 3.5, then the session handoff (Step 4).
@@ -1582,8 +1639,8 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  will improvise into the current repo and report success.]
 [repo → UNRESOLVABLE: not local, and every configured host answered that it is not there.
  Do not start work that depends on it.]
-[repo → UNKNOWN: not local, and the box could not be asked. Say so and say why. Do NOT
- present this as missing — you have no evidence either way.]
+[repo → UNKNOWN: not local, and a configured host could not be asked, or none is configured here.
+ Say so and say which. Do NOT present this as missing — you have no evidence either way.]
 [repo → local-only by policy: OMIT ENTIRELY. Its absence is the intent, not a finding.
  Mentioning it trains the operator to ignore this section.]
 
@@ -1627,12 +1684,16 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 ---
 **What would you like to do?**
-1. **Continue** — [what Task X.Y actually is, in plain words] (Task X.Y)
-2. **Redirect** — work on a different task
-3. **Discuss** — talk about something first (may lead to new tasks)
+1. **Continue (Recommended)** — [what Task X.Y actually is, in plain words] (Task X.Y): the AWS
+   account and the last completed task are checked, then this task starts
+2. **Redirect** — you name other work; Task X.Y stays open where it is
+3. **Discuss** — nothing starts until we agree; anything we decide to track goes through /add-work
 ```
 
-**Use AskUserQuestion tool.**
+**Use AskUserQuestion tool**, in the form `PROJECT_CHARTER.md` § 3
+*Putting a decision to the operator* gives. Continue comes first and is the recommended one, unless
+a ⚠ section above says Task X.Y cannot start as it stands. Then the option that deals with it comes
+first and is the recommended one, with the ⚠ line as its reason.
 
 > **Option 1 must say what the task IS — the bare ID is not an option, it is a lookup.** This is the
 > one line the operator has to act on, and they are running several projects with none of this one's
@@ -1640,16 +1701,18 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 > they are agreeing to before they can agree to it; `Continue — stop every session loading all seven
 > AWS servers (Task 6.7)` can be answered on sight. Keep the ID — it is how they refer back to it —
 > but never let it stand alone. Same rule for the option *descriptions*: state the consequence of
-> choosing, not a restatement of the label. (This prompt violated the rule that § Writing for the
-> Operator states in this very file, for as long as both have shipped together — a rule and its
-> counter-example in one document. If you find another, treat it the same way.)
+> choosing, not a restatement of the label (charter § 3). (This prompt violated the rule that
+> § Writing for the Operator states in this very file, for as long as both have shipped together — a
+> rule and its counter-example in one document. If you find another, treat it the same way.)
 
 **If user chooses Discuss:**
 - Have the discussion
-- If work is identified, ask: "Should I add this as tracked tasks?"
-- If yes, follow `/add-work` workflow
-- If no, it is an untracked observation: `session_notes.md` only, never `progress.json` under any
-  key (`/add-work` § *The Four Destinations*)
+- If work is identified, follow `/add-work`. Its Step 1 puts the one question, *"Where does this
+  work go?"*, in the form `PROJECT_CHARTER.md` § 3 gives (new tasks in a phase, a new phase, or an
+  untracked observation, each with what choosing it does), so ask no yes-or-no question of your own
+  before it
+- An untracked observation goes to `session_notes.md` only, never `progress.json` under any key
+  (`/add-work` § *The Four Destinations*)
 - If the operator supplies the project's display name or its one-line description in the
   discussion, write it with § 3.5's Block B — the same anchor predicate, the same guards, the same
   one-line diff assertion, the same pathspec commit. That is the operator supplying a value, not
@@ -1669,7 +1732,15 @@ bare call below is that step's probe for a per-account server, not for every ser
 {mcp_tool} aws sts get-caller-identity
 ```
 
-- If `context_hints` has no `aws_account` (a Phase 0 project, or one without AWS), skip this step and record "AWS verify: n/a (no aws_account in context_hints)" in the Step 9 report.
+- If `context_hints` has no `aws_account` (a Phase 0 project, or one without AWS), there is no
+  account to verify: skip the probe and the checks below, and record
+  "AWS verify: n/a (no aws_account in context_hints)" in the Step 9 report. Still run `/check-aws`
+  Step 2's local listing of the AWS servers declared for this session (its `DECLARED` command):
+  a declared server that cannot start fails at every start, whether or not this project names an
+  account. For each `DECLARED` line of a server this session has no tool of, record
+  "AWS verify: n/a (no aws_account in context_hints) — {name} did not start: {cause}" instead, one
+  suffix per server (and " — {file} not read: {cause}" for each `UNREAD` line). Change nothing
+  about the declaration from the session, as the next item says.
 - If this session has **no AWS connection at all**, because none of `/check-aws` Step 2's
   candidates exists (no tool named by `context_hints.mcp_tool`, no `mcp__aws-*__call_aws` tool, no
   tool with an `aws_profile` argument, and in Codex no `aws_api`), the account is not checked. That
@@ -1677,7 +1748,11 @@ bare call below is that step's probe for a per-account server, not for every ser
   "AWS verify: not checked (no AWS connection on this host)" in the Step 9 report, and carry on
   with work that needs no AWS. A task that needs AWS cannot run on this host yet; say so in the
   same report. On a member host this is the expected state until a project placed there brings its
-  profile (§ Two Environments).
+  profile (§ Two Environments). When `/check-aws` Step 2 lists an AWS server declared here that
+  did not start, record "AWS verify: not checked (no AWS connection on this host) — {name} did not
+  start: {cause}" instead, one suffix per server (and " — {file} not read: {cause}" for each
+  `UNREAD` line), and change nothing about the declaration from the session: it is this machine's
+  configuration (§ Two Environments), not this project's.
 - **STOP if account ID does not match** `context_hints.aws_account`
 - Name the region on every regional call, never relying on the connection's default:
   `context_hints.aws_region`, or the resource's own region where it lives elsewhere (a CloudFront
@@ -1797,7 +1872,9 @@ Update `git_repos` status in progress.json:
 - AWS handle: {handle}, resolved by Step 5 (as `/check-aws` Step 2 does)
 (or, in place of these three lines, the one Step 5 recorded:
  "AWS verify: n/a (no aws_account in context_hints)" or
- "AWS verify: not checked (no AWS connection on this host)")
+ "AWS verify: not checked (no AWS connection on this host)", either one with
+ " — {name} did not start: {cause}" after it for each declared server /check-aws Step 2 named,
+ and " — {file} not read: {cause}" for each file it could not read)
 
 ### Pre-Work Verification
 - Last completed: Task X.Y - [name]
@@ -1863,7 +1940,8 @@ Work on **existing tasks** in progress.json.
 - "Add this to the tasks"
 - "Yes, do it"
 
-**When uncertain:** ASK: "Should I add this as tracked tasks, or just note it?"
+**When uncertain:** ask `/add-work` Step 1's question, *"Where does this work go?"*, in the form
+`PROJECT_CHARTER.md` § 3 gives. Its *Untracked observation* option is the one that only notes it.
 
 ---
 

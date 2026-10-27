@@ -62,22 +62,33 @@ Present options:
 Which template matches your project?
 ```
 
-Use AskUserQuestion to select.
+Ask it as one question in the form `PROJECT_CHARTER.md` § 3 *Putting a decision to the operator*
+gives. Each template is an option whose description says what it ships and what it assumes (from
+the table). The one matching `input/` goes first and is marked (Recommended). With more than four
+templates, offer the four closest to `input/` and name the rest in the question.
 
 ### 2. Collect Environment Info
 
 ```
 ## Environment Configuration
 
+Group 1 of 2: accounts and names
+
 1. **AWS Account ID**: or **none**, if this project uses no AWS at all (then skip 2).
 2. **AWS Region**: (e.g., eu-west-1)
 3. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
    Repos, local folders, and AWS resources all derive from it — see Naming Convention below.
 4. **GitHub Org**: (optional)
+
+Group 2 of 2: what this project is
+
 5. **Description**: one sentence, in your words, saying what this project is for.
 6. **What does this repository manage (PROJECT_CHARTER.md § 14)?** Which repositories it
    directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
+
+Six values, so two groups (charter § 3): group 2 is asked once group 1 is answered. Each item is a
+value, asked in plain words; no option is offered that the record does not prove.
 
 Write items 1-4 to `input/environment.md`. Items 5 and 6 go into `progress.json` in § 4, and only
 there: the sentence is the operator's (charter § 11) and the relations are theirs to declare

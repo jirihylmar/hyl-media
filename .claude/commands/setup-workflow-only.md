@@ -59,13 +59,16 @@ If any exist, ask:
 
 Found: [list files]
 
-Options:
-1. **Merge** - Keep existing, add missing pieces
-2. **Replace** - Overwrite with fresh workflow files
-3. **Cancel** - Stop and review manually
+What should happen to them?
+1. **Merge (Recommended)** — every existing file is kept and only what is missing is added;
+   nothing of the project's is lost
+2. **Replace** — the listed files are overwritten with fresh workflow files; what they held
+   survives only where a commit already holds it
+3. **Cancel** — nothing is written; you review the files yourself
 ```
 
-Use AskUserQuestion.
+Use AskUserQuestion, in the form `PROJECT_CHARTER.md` § 3 *Putting a decision to the operator*
+gives.
 
 ---
 
@@ -109,14 +112,15 @@ fi
 
 The examples repo is needed to copy workflow files.
 
-Options:
-1. Clone it: `git clone https://github.com/hub440-syndicate/syndicate-playbooks-examples.git`
-2. Specify path if it's elsewhere
-
 Where is the examples repository?
+1. **Clone it (Recommended)** — cloned into this project as the tool clone Step 8 removes:
+   `git clone https://github.com/hub440-syndicate/syndicate-playbooks-examples.git`;
+   then the block above runs again
+2. **Give its path** — your free-text answer; the block above runs again with it, and Step 8
+   leaves that copy where it is
 ```
 
-Use AskUserQuestion.
+Use AskUserQuestion, in the charter § 3 form.
 
 Given a path, run the block again with it on the first line (`EXAMPLES_PATH="<that path>"`).
 
@@ -382,10 +386,15 @@ This is the key file for workflow tracking.
 ```
 ## Project Information
 
+Group 1 of 2: what this project is (items 1-3)
+
 1. **Project name**:
 2. **Description**: one sentence, in your words, saying what this project is for
 3. **Project prefix**: the one name this project's repositories and resources share (an existing
    project's is the one its resources already carry)
+
+Group 2 of 2: what it reaches (items 4 and 6; item 5 is detected and only shown)
+
 4. **Uses AWS?**: Yes/No
    - If yes: Account ID, Region
 5. **Git remotes**: (I'll detect these)
@@ -393,7 +402,11 @@ This is the key file for workflow tracking.
    directs, each by origin, and the word for how. "Nothing" and "not decided yet" are both answers.
 ```
 
-Use AskUserQuestion.
+Ask in those two groups (`PROJECT_CHARTER.md` § 3 *Putting a decision to the operator*), group 2
+after group 1 is answered. Items 1-3 and 6 are values: ask for them in plain words, offering only
+candidates the record proves (the origin name, the README opening, the sub-repositories Step 5.2
+detects). Item 4 is a question with two options: **Yes** (the account ID and region are asked next)
+and **No** (`progress.json` gets no AWS account or region).
 
 Items 2 and 6 are the operator's to give, and nothing else may stand in for either. The description
 (`PROJECT_CHARTER.md` § 11) is never composed from the README, the folder name or a template's
@@ -421,17 +434,19 @@ done
 ```
 ## Define Current Work
 
-What phase is this project in?
+What state is this project in? The first phase is named for it.
 
-1. **Planning** - Still defining what to build
-2. **Early development** - Initial implementation
-3. **Mid-project** - Significant work done
-4. **Maintenance** - Core features complete
+1. **Planning** — the first phase is about defining what to build
+2. **Early development** — the first phase is the initial implementation
+3. **Mid-project** — the first phase carries on work that is well under way
+4. **Maintenance** — the first phase keeps finished core features running and fixed
 
 What are you currently working on? (This becomes your first task)
 ```
 
-Use AskUserQuestion.
+Ask the first as one question in the charter § 3 form: the state the repository's history and code
+show goes first and is marked (Recommended). Ask the second in plain words; it is a value only the
+operator gives.
 
 ### 5.4 Generate progress.json
 
@@ -508,12 +523,15 @@ quote, `&` or `|` in it would otherwise break the file or the sentence.
 ```
 ## Additional Tasks
 
-Would you like to define more tasks now?
+Define more tasks now?
 
-1. **Yes** - Add tasks for current phase
-2. **Later** - Use `/add-work` when needed
-3. **Generate** - Let me analyze codebase and suggest tasks
+1. **Later (Recommended)** — Step 5.3 already set the first task; `/add-work` adds more when they
+   are needed
+2. **Yes** — you name tasks for the current phase; they are added once you approve them
+3. **Generate** — the codebase is scanned and tasks are proposed; none is added until you approve
 ```
+
+Ask it in the charter § 3 form (`PROJECT_CHARTER.md` § 3 *Putting a decision to the operator*).
 
 If "Generate":
 - Scan codebase for TODOs, FIXMEs

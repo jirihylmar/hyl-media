@@ -207,6 +207,10 @@ request_file() {   # <branch> -> RQ_TO, RQ_FROM, RQ_FILE; refuses anything else 
 
 # Every ref of the mailbox, read once. rc 0 with the refs on stdout, or the git rc.
 mailbox_refs() { timeout "$NET_TIMEOUT" git ls-remote "$MAILBOX_URL" 2>/dev/null; }
+# What an unreachable mailbox means where. An outside person reaches it with their own GitHub login,
+# so either the invitation is not accepted or git keeps no login. Until 2026-10-27 this named the
+# invitation alone, which sends a person who has accepted it back to an invitation that is gone.
+NO_ROUTE="This machine has no access to it yet: on an outside person's computer, accept the mailbox invitation, or give git a GitHub login it keeps (syndicate-join --check says which); anywhere else, tell the operator."
 ref_sha() { printf '%s\n' "$1" | awk -F'\t' -v r="$2" '$2 == r { print $1; exit }'; }
 
 # The plumbing every write uses: a clone with no working tree and no symlinks, hooks off.
@@ -269,7 +273,7 @@ cmd_send() {
 
   local refs rc
   refs="$(mailbox_refs)"; rc=$?
-  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc). This machine has no access to it yet: on an outside person's computer, accept the mailbox invitation (syndicate-join --check names it); anywhere else, tell the operator."
+  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc). $NO_ROUTE"
   [ -n "$(ref_sha "$refs" refs/heads/main)" ] || die 4 "the mailbox $MAILBOX_URL has no main yet; tell the operator"
   [ -z "$(ref_sha "$refs" "refs/heads/$branch")" ] || die 6 "a branch $branch already exists in the mailbox; nothing was sent"
 
@@ -384,7 +388,7 @@ cmd_show() {
   workdir
   local refs rc tip main
   refs="$(mailbox_refs)"; rc=$?
-  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc)"
+  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc). $NO_ROUTE"
   tip="$(ref_sha "$refs" "refs/heads/$branch")"; main="$(ref_sha "$refs" refs/heads/main)"
   [ -n "$tip" ] || die 2 "no open request $branch in the mailbox (closed already?)"
   clone_bare_tree || die 3 "could not clone the mailbox $MAILBOX_URL"

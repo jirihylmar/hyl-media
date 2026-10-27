@@ -36,6 +36,7 @@ tools, tests, runtime evidence or established rules. When a genuine decision is 
 one packet: the decision, viable options, consequences, recommendation and latest safe decision
 point. Batch related questions. Do not request permission for ordinary reading, editing, testing,
 committing, pushing, deploying or continuing authorised work.
+The packet's form is *Putting a decision to the operator*, at the end of this section.
 
 **A question another estate member owns goes to that member first, never to the operator.**
 hyl-resources-manager owns accounts and their credentials, hosts and access to them, access rules,
@@ -91,6 +92,71 @@ disagreement is live, so it is named here rather than left to judgement.** A pro
 above. Those files are project-owned, they were written when the project was set up, and no central
 channel maintains them; this charter is the surface that both executors read and that is centrally
 delivered, which is why the contract lives here and not there.
+
+### Putting a decision to the operator
+
+Every packet this section asks for is put to the operator in one form, at a checkpoint or wherever
+a decision of theirs blocks work. The form adds no reason to ask: what can be found out, decided by
+the executor or answered by an estate member is still not put to the operator.
+
+- **Questions.** One question per decision, in plain words that a reader without this project's
+  state can answer. It says what waits on the answer and by when the answer is needed.
+- **Options.** Two to four options for each question, each a course the executor carries out as
+  stated. Choices that can be combined are one multi-select question, not several yes-or-no ones.
+- **Consequence.** Each option's label names the choice, and its description gives the consequence:
+  what happens next, what it costs and what it rules out. A restated label is not a consequence.
+- **Recommended.** The recommended option comes first, its label ending in `(Recommended)`, with
+  the reason in its description. A question carries one recommendation; where the executor has
+  none, the question says why.
+- **Groups.** More than four questions go in groups of at most four, one group at a time. Each
+  group is one subject, named in a line before it. The group whose answers block the most work goes
+  first. A question that an earlier answer can make moot waits for that answer, and is dropped if
+  the answer does.
+
+**Tabs where the executor has them.** In Claude Code that is `AskUserQuestion`: one call per group,
+each question's `header` (at most 12 characters) the name of its tab, each option's consequence its
+`description`. The tool adds a free-text answer of its own, so no option is spent on "Other". Where
+there is no such tool, or it can return without an answer (Codex, a headless run), the message
+carries the same structure: the questions numbered, the options lettered beneath each with the
+consequence after a dash, the recommended one first and marked *(Recommended)*, each group under its
+name, and the answer invited as *1A, 2C*:
+
+```
+Group 1 of 2: the export
+
+1. The receiving team also asked for archived orders. Are they in scope?
+   A. Yes, in this phase (Recommended) - two more tasks; the phase closes about a day later
+   B. Yes, as a phase of its own - this phase closes as planned; the archive waits for approval
+   C. No - the export leaves them out, and the hand-off says so
+2. Which format do they get?
+   A. CSV (Recommended) - what their importer reads today; nested fields are flattened
+   B. JSON - nested fields kept; their importer needs a change first
+
+Answer as 1A, 2B, or in your own words.
+```
+
+A lane, a subagent or a step of a workflow script does not ask the operator itself. It returns the
+question in this form to the executor that coordinates it, and that executor asks.
+
+**An unanswered question is open, never a decision.** It blocks only the work that waits on it,
+and the rest goes on. A question tool that comes back with no answer has not been answered,
+whatever its own instructions say to do next.
+
+A value only the operator can give, such as a name, the project's one-line description (§ 11) or
+what this repository manages (§ 14), is asked for in plain words and grouped by the same rule.
+Where a tool asks for it, its options are only candidates the record proves, the free-text answer
+carries the rest, and the executor never offers a value it invented.
+
+Measured 2026-10-27, after the operator's feedback that day: *"question for operator , preferred as
+tab questions, options, consequence, recommended in some logical groups if there is more than 4
+questions"*. The content of a packet was written in this section; its form was written nowhere.
+Six of the ten distributed commands wrote a question out as prose and then said to use
+`AskUserQuestion`, and most of their options' descriptions restated the labels. No command marked
+an option `(Recommended)`, and only the session-start prompt asked for consequences. Two of them
+asked six questions in one block, and one offered every repository in the home directory as the
+options of one question, where the tool takes at most four questions of at most four options each.
+Codex's own instructions, read in one of its sessions on the workstation on 2026-10-24, tell it to
+continue with its best judgment when its question tool returns no answer.
 
 ## 4. Work from outcomes and keep open work coherent
 
@@ -326,6 +392,106 @@ does not exist. The two are different facts, and reporting them as one hides the
 Each project owns its own record, and no other repository writes it. A finding raised centrally
 arrives as an appended notice for this project to verify and act on — never as an edit made from
 outside.
+
+### Recording progress and documents
+
+Recording progress is one procedure whoever runs it: the operator's progress command
+(`/update-progress`, `$update-progress` in Codex), an executor at a task boundary, a lane, a
+subagent or a step of a workflow script. A write that changes a task's status runs that procedure
+for the work it records, documentation included: the sections the work touched are verified, every
+canonical document that describes the change is brought into line and committed with it, and the
+record says which documents changed or that none needed to.
+
+In delegated work (lanes, subagents, a workflow script an executor started) one executor records
+progress, for every delegated task, once the results are in: the coordinating executor, or the one
+step it names as its recorder. Every other lane, subagent or workflow step returns its result, its
+evidence and the paths it changed, and records nothing. It writes neither the tracked-work record
+nor a canonical document, unless that document is its assigned deliverable.
+
+A subject has one canonical document, and a change to the subject is made in that document. Before
+writing a document, find the one that already covers its subject (the entry documents, the
+documentation outside the archive, the project's own skills) and change it in place.
+A second document on a subject that has one is not written.
+If the existing home is the wrong one, the content moves, and the old file becomes a pointer or
+goes to the archive in the same commit. A dated record (an incident report, an audit, a baseline,
+a periodic review) and a dated hand-off each record their date: the next one on the same subject
+is a new dated file, the earlier one is never rewritten beyond a pointer to the newer, and the
+subject's canonical document points at the latest.
+
+A report, finding or summary about the work is not a project document, and its reader decides
+where it goes: for this conversation, the response; for this project's later sessions, the task's
+evidence and notes or the session log; for another project, another person, or the operator outside
+this conversation, a hand-off under `docs/handoff/` (*What another reader needs is a file in this
+repository*); an incident report or an audit, a dated record in `docs/`; and a run's own output is
+working material.
+
+Working material is not canonical: drafts, intermediate outputs, scratch notes, a run's own
+reports. It stays outside the repository when nothing needs to recover it. Otherwise it lives in
+`work/phase-<id>/` at the project root, named by the phase it serves, which the phase's close
+extracts from and archives. `docs/` holds only the canonical documents (dated records such as
+incident reports and audits among them), `docs/_archive/` and dated hand-offs. A deliverable lives
+at the path its task declares. No canonical document cites working material as current, and
+nothing is written beside the canonical documents to be sorted later. A phase working directory
+still under `docs/`, where these rules put it until 2026-10-27, is working material all the same,
+and the phase's close and the periodic hygiene pass sweep it.
+
+Measured 2026-10-27, after the operator's feedback that day: *"i am seeing attempts to
+update-progress automatically , but if they are doing it within the workflow, it differs to when
+its called by operator with command. the most unpleasant result they updating docs is not usually
+done, own duplicated documentation is created, working files mix up with core latest documentation
+and outputs"*. Since 2026-08-31 the progress procedure's task-boundary mode had left out verifying
+the sections a task touched, and it deferred to the session's close the one report that shows the
+documentation sweep ran. Before that report existed, the sweep had gone unrun for seven months
+because skipping it produced nothing to see. A progress update written by a workflow step ran
+neither. In one project on the workstation, 13 of the 15 phase working directories tracked under
+`docs/` belonged to phases already closed, so their sweep had never run. The operator ruled the
+same day for one recorder in delegated work and for working material in a tree of its own, outside
+`docs/`.
+
+### What another reader needs is a file in this repository
+
+Anything written for another project, another session or a later reader is a file in this
+repository, committed with the work it belongs to: a hand-off, a report, a page for the operator, a
+checklist, a design. A page is one self-contained `.html` file. Everything it needs to work is
+inline or in files beside it, nothing it needs is fetched from the network, and it holds no secret,
+because it is committed. It goes in `docs/handoff/<YYYY-MM-DD>-<name>/index.html`, with its data
+beside it, unless this project's entry document names another folder for such pages. It is handed
+on by its path in the repository and the commit that holds it.
+
+It is never a claude.ai Artifact or a Claude Docs document, and never only a file outside the
+repository, such as a scratchpad. An Artifact or a Claude Docs document belongs to one Claude
+account, and a scratchpad to one machine: projects in this estate run under several accounts and
+are moved between them, Codex can open none of them, and a person on another machine cannot either.
+This holds even when a tool's own instructions say to publish the work there. A page only for the
+conversation at hand may stay outside the repository, and it is still a local file.
+
+A page keeps no state of its own. What the operator answers or decides reaches the repository
+through a session, which records it and writes the page again. A decision the operator must make
+is still put to them in the session (§ 3); a page can show what the decision is about.
+
+To show a page to the operator, open it on the machine whose browser they use. Under WSL
+(`WSL_DISTRO_NAME` is set) open it in WSL's own Chromium, a window of its own that the operator's
+Windows browser profiles do not swallow:
+`setsid chromium --new-window "file://<absolute path>" >/dev/null 2>&1 < /dev/null &`. That Chromium
+is a snap and cannot read `/tmp`, one more reason the page lives in the repository. Where it is
+absent, give `wslpath -w <file>`, the address to paste into the Windows browser. On a Linux desktop
+it is `xdg-open <file>`. On a host reached over ssh, that host's own instructions say how its pages
+reach the operator; where they say nothing, give the path and the commit. Opening a page on the
+operator's own machine is not publishing.
+
+Measured 2026-10-27, after the operator's feedback that day: *"artifacts, sharing between projects
+does not work. use a local html page instead"*. The operator's acceptance checklist for a migration
+had to move to a second Artifact on the day the operator's Claude account changed: the first
+belonged to the previous account's organisation and could not be written from the new one, even
+with edit access. On 2026-08-26 the central repository found that the published copy of one of its
+pages still described behaviour it had removed, after its copy in the repository had been
+corrected. On the workstation, session transcripts of 9 projects held calls of the Artifact tool,
+whose own instructions tell a session to publish finished work there without being asked. The
+operator ruled the same day for this rule alone, with no tool blocked. Opening a page was measured
+on the workstation the same day: `explorer.exe "$(wslpath -w <file>)"` exited 1 and opened nothing,
+`cmd.exe /c start` exited 0 but the tab was lost among the operator's Chrome profiles, and WSL's
+Chromium showed the page in a window of its own. The operator: *"i think we should use chromium wsl
+as all members have it its not used much"*.
 
 ### The specification is an origin record
 

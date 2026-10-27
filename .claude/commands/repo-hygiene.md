@@ -19,7 +19,11 @@ drifts far enough to need a crusade.
 
 **The standard this pass enforces:**
 - `docs/` contains **only canonical, current methods** (plus clearly-separated trail:
-  `_archive/`, incidents, audit records). A doc that describes yesterday's system is corrected or archived.
+  `_archive/`, incidents, audit records, and dated hand-offs in `handoff/`). A doc that describes
+  yesterday's system is corrected or archived. Working material is not canonical and lives outside
+  `docs/`, in `work/phase-<id>/` (`PROJECT_CHARTER.md` § 11, *Recording progress and documents*); a
+  `docs/phase-*`, `wip-*`, `tmp-*` or `scratch*` directory is the legacy place, moved there or
+  archived (quick check B).
 - **Skills** (`.claude/commands/`, `.claude/skills/`, `.agents/skills/`) are current: every
   referenced tool/path/procedure exists and matches reality; no two skills duplicate one capability.
 - **Indexes are true**: whatever index surfaces exist (CLAUDE.md pointers, a skill picker, an
@@ -81,10 +85,55 @@ if state_p.exists():
 else:
     findings.append("A: hygiene never recorded (.claude/hygiene-state.json absent)")
 
-# (B) stale working dirs under docs/
+# (B) working material (PROJECT_CHARTER.md § 11, *Recording progress and documents*). It lives in
+#     work/phase-<id>/ at the project root, and /update-progress Step 3a sweeps it when its phase
+#     closes. So a work/phase-<id>/ is a finding once its phase is terminal, or when no phase in
+#     progress.json carries that id; anything else directly under work/ is one at once. A working
+#     dir under docs/ is the legacy place (these defaults put it there until 2026-10-27) and is
+#     always a finding: docs/ holds the canonical documents, docs/_archive/ and dated hand-offs.
+#     Measured 2026-10-27: one project tracked 15 docs/phase-* dirs, 13 of them for closed phases.
+# DONE is the open-work renderer's terminal vocabulary (skills/open-work/open_work.py DONE), so a
+# phase is closed here exactly when it is closed there.
+DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
+        "cancelled", "canceled", "resolved", "obsolete", "abandoned")
+def _phase_states():   # phase id -> status, or None when progress.json cannot be read
+    try:
+        ph = json.loads((root/"progress.json").read_text()).get("phases")
+    except (OSError, ValueError, AttributeError):
+        return None
+    out = {}
+    for k, p in (ph.items() if isinstance(ph, dict) else enumerate(ph) if isinstance(ph, list) else []):
+        if not isinstance(p, dict): continue
+        st = str(p.get("status") or "pending").strip().lower()
+        for i in (p.get("phase"), p.get("id"), k if isinstance(k, str) else None):
+            if i is None: continue
+            m = re.match(r"^phase[_-]([^_]+)", str(i))   # phase_9_slug -> 9; a bare 9 stays 9
+            out.setdefault(m.group(1) if m else str(i), st)
+    return out
+def _phase_of(name):   # "phase-9" or "phase-9-notes" -> the id progress.json knows, else None
+    m = re.match(r"^phase-(.+)$", name)
+    return next((c for c in (m.group(1), m.group(1).split("-")[0]) if c in states), None) if m and states else None
+states = _phase_states()
+if (root/"work").is_dir():
+    if states is None:
+        print("   (B: work/ not judged — progress.json cannot be read, so no phase can be told closed)")
+    for d in sorted((root/"work").iterdir()) if states is not None else []:
+        if d.name.startswith("."): continue   # .gitkeep and the like hold no working material
+        if not (d.is_dir() and d.name.startswith("phase-")):
+            findings.append(f"B: work/{d.name} is not a phase working directory (work/phase-<id>/) — move it into its phase's, or out of the repository")
+            continue
+        pid = _phase_of(d.name)
+        if pid is None:
+            findings.append(f"B: work/{d.name}/ names no phase in progress.json — extract-then-archive it")
+        elif states[pid] in DONE:
+            findings.append(f"B: work/{d.name}/ belongs to phase {pid}, which is {states[pid]} — extract-then-archive it (/update-progress Step 3a)")
 for d in sorted((root/"docs").glob("*")) if (root/"docs").exists() else []:
     if d.is_dir() and re.match(r"^(phase-|wip-|tmp-|scratch)", d.name):
-        findings.append(f"B: working dir docs/{d.name}/ — extract-then-archive when its work closes")
+        pid = _phase_of(d.name)
+        if pid is not None and states[pid] in DONE:
+            findings.append(f"B: legacy working dir docs/{d.name}/ belongs to phase {pid}, which is {states[pid]} — extract-then-archive it (/update-progress Step 3a)")
+        else:
+            findings.append(f"B: legacy working dir docs/{d.name}/ — working material lives in work/phase-<id>/; move it there while its work is open, or extract-then-archive it")
 
 # (C) broken repo-relative doc refs from live surfaces (docs, ops, root, and the project's own
 #     commands, overlays and skills)
@@ -308,8 +357,8 @@ Go through **every file** in `docs/` (excluding `_archive/`) and **every skill**
 |---|---|---|
 | `current-canonical` | Describes today's system truthfully | none |
 | `needs-update` | Right home, stale substance (paths/tools/procedures drifted) | fix in place, verify claims against the live tree |
-| `stale-archive` | Superseded or dead | **extract-then-archive**: repoint/extract any live inbound refs FIRST, then move to `docs/_archive/` — never blind-move, never delete |
-| `trail-ok` | Record (incident, audit, dated memo with a defer-banner) | leave; ensure the banner/pointer is accurate |
+| `stale-archive` | Superseded or dead | **extract-then-archive**: repoint/extract any live inbound refs FIRST, then move it to `docs/_archive/` under its own name, the destination named in full (`mkdir -p docs/_archive && git mv <path> docs/_archive/<name>`; a dir with the block `/update-progress` Step 3a ships) — never blind-move, never delete |
+| `trail-ok` | Record (incident, audit, a dated hand-off under `docs/handoff/`, dated memo with a defer-banner) | leave; ensure the banner/pointer is accurate |
 | `duplicate-consolidate` | Same substance stated in ≥2 places | pick ONE canonical home, others become pointers |
 
 Verification discipline: a "current" verdict requires the claims to be **checked against the live
@@ -412,9 +461,9 @@ check like that is one agents learn to skip.
 > done.
 
 Phase/task/session numbering is never load-bearing content
-in a canonical surface; phase-scoped working material lives clearly separated (phase dirs /
-`_archive/`). Keep durable tokens (schema versions, § refs, regulation numbers, file names) and
-allow process metadata where the context is explicitly archival or changelog. Fix in place —
+in a canonical surface; phase-scoped working material lives clearly separated
+(`work/phase-<id>/`, then `docs/_archive/phase-<id>/`). Keep durable tokens (schema versions, § refs,
+regulation numbers, file names) and allow process metadata where the context is explicitly archival or changelog. Fix in place —
 statement stays, process token goes. If leakage is heavy (hundreds of refs), fix a bounded slice
 and defer the rest with the count — never let this step become a mass rewrite.
 
@@ -956,8 +1005,9 @@ extracted from this file, against fixtures.
   `.claude/skills/consult-codex/consult-log.py validate`), incident/audit trail, product/data
   records. Prefer mark-superseded or move-to-`_archive/`; when unsure, leave it and note it.
 - **Extract-then-archive** — a "closed" dir can hold live dependencies (a skill's default paths,
-  a test fixture, a cited rule). Repoint every live inbound reference first; a currency check run
-  after the move must show zero new broken refs.
+  a test fixture, a cited rule). Repoint every live inbound reference first, then move it to
+  `docs/_archive/<name>` with the destination named in full (Step 1's `stale-archive` row); a
+  currency check run after the move must show zero new broken refs.
 - If in-progress work owns files (an active phase's handoff, an engine mid-rebuild), leave that
   work's files alone and note the dependency.
 - **Bounded, never a crusade.** Steps 1a/3/3a run as bounded slices — small always-on consolidation

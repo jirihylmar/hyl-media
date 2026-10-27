@@ -99,26 +99,23 @@ building more inside one they ruled wrong does not answer that ruling.
 
 **Before choosing, settle whether the deliverable belongs to the product or is a one-off hand-off**
 (who it is for, and whether anything must keep producing it). A report, export or document made
-once for another team or project is a hand-off. It is written as files in a folder under `docs/`
-in this repository, never as a served page or a pipeline output. Finished in the session that
-asked for it, it is that request and needs no task; the session report says where the files are.
-Only a hand-off that outlives that session is tracked, as A or B, and its deliverable is still
-that folder.
+once for another team or project is a hand-off. It is written as files in its own folder under
+`docs/handoff/` in this repository, a page as a self-contained `index.html` there
+(`PROJECT_CHARTER.md` § 11, *What another reader needs is a file in this repository*), never as a
+served page, a claude.ai Artifact or a pipeline output. Finished in the session that asked for it,
+it is that request and needs no task; the session report gives its path and commit. Only a
+hand-off that outlives that session is tracked, as A or B, and its deliverable is still that folder.
 
-Use AskUserQuestion:
+Then ask one question, *"Where does this work go?"*, in the form `PROJECT_CHARTER.md` § 3
+*Putting a decision to the operator* gives (in Claude Code, `AskUserQuestion` with the header
+`Work type`). The option the request's own words point to goes first and is marked
+`(Recommended)`. A, B and C name the options in this file only; the operator sees the labels.
 
-```
-## Adding Work
-
-What type of work should I add?
-
-A) **New tasks** - Add to existing Phase X (current phase)        → destination 1
-B) **New phase** - Create a new phase for this feature set        → destination 1
-C) **Untracked observation** - No owner, no authorization: it goes in the session
-   report and session_notes.md, and does NOT enter progress.json  → destination 4
-
-Which applies?
-```
+| | Option (label) | Consequence (description) | Destination |
+|---|---|---|---|
+| A | **New tasks in phase X**, with X's goal in plain words | they serve X's goal and close with it; Step 5 shows them for approval | 1 |
+| B | **New phase** | a phase with a goal of its own, so phase X can still close; Step 5 shows it for approval | 1 |
+| C | **Untracked observation** | written to `session_notes.md` and the session report only; nothing enters `progress.json`, and it ends with the session | 4 |
 
 If the user's request already authorizes and classifies the work, do not ask again. Ask only when
 the destination or product outcome is genuinely ambiguous.
@@ -228,11 +225,14 @@ If you cannot restate it for a cold reader, that is evidence it should not be tr
 |----|------|------|-------------|-------------|--------|
 | X.Y | [description] | small | [author] | [executor/owner] | [check] |
 | ... | ... | ... | ... |
-
----
-
-Add these to progress.json?
 ```
+
+Then ask one question in the charter § 3 form, *"Add these N items to progress.json?"*:
+
+- **Add them (Recommended)** — appended under [phase] and committed (Steps 6-8)
+- **Change them first** — you say what; the table comes back before anything is written
+- **Don't add them** — nothing enters `progress.json`; they stay an untracked observation
+  (destination 4)
 
 **Wait for explicit approval.**
 

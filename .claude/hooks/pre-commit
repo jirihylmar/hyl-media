@@ -55,7 +55,7 @@ is_allowed() {
   while IFS= read -r line; do
     line="${line%$'\r'}"                      # tolerate CRLF allowlists
     case "$line" in ''|\#*) continue ;; esac
-    # In `case`, * matches across '/', so docs/phase-*/*.tsv works as intended.
+    # In `case`, * matches across '/', so work/phase-*/*.tsv works as intended.
     # shellcheck disable=SC2254
     case "$path" in
       $line) return 0 ;;

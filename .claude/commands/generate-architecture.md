@@ -82,18 +82,10 @@ mkdir -p docs/architecture
 
 ### 3. Check for generate.py
 
-If `docs/architecture/generate.py` does NOT exist:
-
-```
-## Architecture Script Missing
-
-No generate.py found at docs/architecture/generate.py
-
-Would you like me to create one from what this project has deployed?
-```
-
-Use AskUserQuestion. If yes, establish the architecture in this source order, stopping at the
-first that answers:
+If `docs/architecture/generate.py` does NOT exist, create one from what this project has deployed,
+and say so in the report: no generate.py was found, so one was written. Creating it is the work this
+command was run for, not a decision to put to the operator (`PROJECT_CHARTER.md` § 3). Establish the
+architecture in this source order, stopping at the first that answers:
 1. `resource_inventory` in progress.json, and the completed tasks that created the resources
 2. the project's own infrastructure-as-code — CDK, CloudFormation or Terraform under its declared path
 3. a live account inventory, where the account is reachable (`/check-aws` resolves the handle)

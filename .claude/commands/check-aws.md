@@ -140,6 +140,86 @@ the account. Do not fall back to the local `aws` CLI for Steps 2–9 (§ Notes).
 `progress.json` as it is: whether a host has a connection is a fact of the host, and the file
 travels.
 
+**A server declared here that did not start is still *no AWS connection*, and the report names it
+and why.** Claude Code starts every declared server at launch and gives the session no tool of one
+that failed, so a missing candidate can be a server this machine declares and could not start.
+Measured 2026-10-27 on an outside machine: an AWS server failed at every start, and the session
+could say only that it had. Before reporting, list the AWS servers declared for this session with
+the cause this machine shows for each, with this one local command. It prints a name, a scope (as
+`claude mcp` names them: `user`, `local`, `project`) and a cause, and never a server's environment
+or arguments, which can hold secrets:
+
+```bash
+python3 -I - <<'PY'
+import json, os, shutil, subprocess
+root, home = os.getcwd(), os.path.expanduser("~")
+def load(p):
+    # An absent file declares nothing. One that cannot be read is said in one line, and the other
+    # files are still listed: a traceback here used to end the listing with no line at all.
+    try:
+        with open(p) as fh: d = json.load(fh)
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        print("UNREAD %s: it could not be read as JSON (%s), so no server it declares is listed"
+              % (p, type(e).__name__))
+        return {}
+    if not isinstance(d, dict):
+        print("UNREAD %s: it holds no JSON object, so no server it declares is listed" % p)
+        return {}
+    return d
+def obj(v): return v if isinstance(v, dict) else {}
+def servers(v): return [(n, s) for n, s in obj(obj(v).get("mcpServers")).items() if isinstance(s, dict)]
+cj = load(os.path.join(home, ".claude.json"))
+decl = [("user", n, s) for n, s in servers(cj)]
+decl += [("local", n, s) for n, s in servers(obj(cj.get("projects")).get(root))]
+decl += [("project", n, s) for n, s in servers(load(".mcp.json"))]
+def answers(cmd):
+    try: return subprocess.run(cmd, capture_output=True, timeout=10).returncode == 0
+    except Exception: return False
+for scope, n, s in decl:
+    raw = s.get("args")
+    cmd = str(s.get("command") or "")
+    args = [str(a) for a in raw] if isinstance(raw, list) else []
+    if s.get("url") or "aws" not in " ".join([n, cmd] + args).lower(): continue
+    docker = os.path.basename(cmd) == "docker"
+    img = next((a for a in reversed(args) if a.startswith("sha256:") or "@sha256:" in a), "")
+    gone = [a.split(":")[0] for i, a in enumerate(args)
+            if i and args[i - 1] in ("-v", "--volume") and a.startswith("/") and not os.path.exists(a.split(":")[0])]
+    if not cmd: why = "it names no command to launch"
+    elif not shutil.which(cmd): why = cmd + " is not installed on this machine"
+    elif docker and not answers(["docker", "info"]): why = "Docker does not answer on this machine"
+    elif docker and img and not answers(["docker", "image", "inspect", img]):
+        why = ("its pinned image " + img[:19] + "... is not on this machine (the estate's MCP images"
+               " exist only on the operator's own hosts)")
+    elif gone: why = "it mounts " + ", ".join(gone) + ", which does not exist on this machine"
+    else: why = "the cause is not in its declaration (claude mcp list, in a terminal, says whether it connects)"
+    print("DECLARED %s (%s): %s" % (n, scope, why))
+PY
+```
+
+In Codex the servers are declared under `[mcp_servers.<name>]` in `~/.codex/config.toml`: read
+their `command` and `args` by eye, never their `env`, and apply the same causes. Each `DECLARED`
+line for a server this session has no tool of adds one line to the report above, under `Gap:`,
+and so does each `UNREAD` line, because a server the unread file declares may be the one that did
+not start:
+
+```
+  Declared:    {name} ({scope}) did not start — {cause}
+  Declared:    {file} not read — {cause}
+```
+
+A `user` or `local` declaration is this machine's configuration, and `/start-session` § Two
+Environments says what a host shares is never one project's to change: do not add, edit or remove
+it from the session. On an outside machine it is the person's own to keep or remove, in a
+terminal, by the scope in brackets on its `DECLARED` line: `claude mcp remove -s user <name>` for
+`user`, from any folder, and `cd <this project's folder> && claude mcp remove -s local <name>` for
+`local`, which belongs to that one folder and is not found from any other. On the operator's
+hosts, report it to the operator. A `project` one is in this project's own `.mcp.json`, which this
+project's own work may change (`claude mcp remove -s project <name>`, from this project's folder),
+never this check. No `UNREAD` line and no `DECLARED` line for a server without a tool: the report
+is the three lines alone.
+
 **Probe each candidate bare:**
 
 ```
