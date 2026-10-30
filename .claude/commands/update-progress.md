@@ -652,6 +652,10 @@ Then the sweeps:
    into an existing `docs/_archive/<dir>` git would nest it instead. Never blind-move, never
    delete. A reference check after the move must show zero new broken refs.
    `/repo-hygiene` quick check B lists the working dirs in both places whose phase has closed.
+   Phase documentation the phase left elsewhere under `docs/` (a file named for the phase or a
+   session, a hand-off outside `docs/handoff/`, notes of a discussion) is swept the same way: what
+   lasts into the canonical document, the rest archived (`PROJECT_CHARTER.md` § 11, *`docs/` holds
+   what persists*). `python3 .claude/skills/docs-check/docs_check.py` lists what it finds by name.
 2. **progress.json weight check.** If `progress.json` exceeds ~300KB, run the compaction step from
    `/repo-hygiene` (Step 4: dry-run, read the account, `--apply`) — verbose bodies of *finished*
    tasks in *finished* phases outside the newest two move to committed sidecars under
@@ -852,8 +856,9 @@ A project that registered nothing still has documentation that this session may 
 # Past 50 files the rest is counted, not listed: "(+N more)" says the list was cut.
 git diff --name-only HEAD~1 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
 ```
-Then: for each **canonical surface** (`README.md`, `CLAUDE.md`, `docs/**` outside `_archive/`)
-that describes something in that diff, bring it into line — the same *found it, then fix it*
+Then: for each **canonical surface** (`README.md`, `CLAUDE.md`, `docs/**` outside `_archive/`,
+`handoff/` and the dated records, which say in their first lines that they are records and are never
+kept current) that describes something in that diff, bring it into line — the same *found it, then fix it*
 rule as Step 2b. Do not open documents the session did not touch the subject of.
 
 **Project skills are swept too, registry or not.** A project's own skill
@@ -909,9 +914,13 @@ takes it in `notes`. A completion with no `docs:` is one this step did not run f
    If one does, change that one instead. A second document on a covered subject is not written,
    and working material is not a project document (`PROJECT_CHARTER.md` § 11, *Recording progress
    and documents*, says where it and deliverables go). A dated record (an incident report, an
-   audit, a baseline, a periodic review) or a dated hand-off that the search finds is not changed
-   instead: the next one on its subject is a new dated file, the earlier one is left as written,
-   and the subject's canonical document is changed to point at the latest.
+   audit, a baseline, a periodic review) or a dated hand-off that the search finds is not revised
+   instead: the next one on its subject is a new dated section or file, what is written takes at
+   most its record line and a pointer to the newer, and the subject's canonical document is changed
+   to point at the latest.
+   Under `docs/` it must persist (`PROJECT_CHARTER.md` § 11, *`docs/` holds what persists*): no
+   phase or session documentation, and a dated record opens with its record line. The commit guard
+   runs `docs-check` on what the commit adds and notes anything that does not fit.
 2. Create the document
 3. If it needs a per-session review trigger, add it to `.claude/local-overlays/update-progress.md`
 4. **Never edit this file to register it.** It is a distributed default; the next distribution

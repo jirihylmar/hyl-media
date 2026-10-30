@@ -195,7 +195,7 @@ done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
 # distribution preflight when they differ, so a new central skill can never be refused by the
 # guard it is delivered with. `syndicate-*` is the central namespace (docs/terminology.md).
 # ---------------------------------------------------------------------------
-DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults generate-architecture generate-phases naming-conventions open-work operational-mail overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-request syndicate-refresh-remote unattended-check update-progress "
+DISTRIBUTED_NAMES=" add-work central-sign-in check-aws consult-claude consult-codex distribute-defaults docs-check generate-architecture generate-phases naming-conventions open-work operational-mail overlay-check progress-check repo-hygiene server-report setup setup-workflow-only start-session syndicate-connect syndicate-request syndicate-refresh-remote unattended-check update-progress "
 
 project_code() {
   local raw=""
@@ -329,6 +329,38 @@ if [ -n "$frontmatter_notes" ]; then
       echo "A block scalar (description: | or >) is valid YAML and Claude Code lists such a skill;"
       echo "another executor may not, which is why the one-line form is the one that travels." ;;
     esac; } >&2
+fi
+
+# ---------------------------------------------------------------------------
+# docs/ holds what persists - a NOTE, never a refusal (PROJECT_CHARTER.md § 11, *`docs/` holds what
+# persists*). Runs only when the commit adds or changes something under docs/, and only through the
+# distributed checker, so this guard and /repo-hygiene apply one rule the same way. On what this
+# commit ADDS: a phase, session or working name, a hand-off outside docs/handoff/, a dated record
+# without its record line. On an added or changed architecture image: a size too large to read where
+# it is shown. Material already tracked is not noted again here; /repo-hygiene reports it.
+#
+# Why a note and not a refusal: a name is evidence, not proof, and a guard that refuses what an
+# executor meant gets switched off. What the note is for is the moment of writing: measured
+# 2026-10-30, three days after the rule moved working material out of docs/, one project still
+# tracked the same 15 docs/phase-* directories, and nothing had said so when any was written.
+# ---------------------------------------------------------------------------
+DOCS_CHECK=".claude/skills/docs-check/docs_check.py"
+if [ -f "$DOCS_CHECK" ] && command -v python3 >/dev/null 2>&1 \
+   && git diff --cached --no-renames --name-only --diff-filter=AMT "$BASE" -- docs 2>/dev/null | grep -q .; then
+  dc_out="$(python3 -I "$DOCS_CHECK" --staged 2>&1)"; dc_rc=$?
+  if [ "$dc_rc" = 1 ]; then
+    { echo "docs/ (staged) - docs-check notes; NOT blocking this commit:"
+      printf '%s\n' "$dc_out" | sed 's/^/  /'
+      echo "docs/ holds only what persists (PROJECT_CHARTER.md § 11, *docs/ holds what persists*):"
+      echo "working material goes to work/phase-<id>/, what lasts into the canonical document it"
+      echo "changes, a hand-off to docs/handoff/<YYYY-MM-DD>-<name>/, and a dated record opens with its"
+      echo "record line. A diagram too large to read is split into views (/generate-architecture)."; } >&2
+  elif [ "$dc_rc" != 0 ]; then
+    # Exit 2: some path could not be read (or the check could not run). Whatever it did read is
+    # still reported above that line, so the note says both, and the commit still goes ahead.
+    { echo "docs/ (staged) - docs-check could not read everything (exit $dc_rc); NOT blocking this commit:"
+      printf '%s\n' "$dc_out" | sed 's/^/  /'; } >&2
+  fi
 fi
 
 # ---------------------------------------------------------------------------

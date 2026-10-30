@@ -414,8 +414,9 @@ documentation outside the archive, the project's own skills) and change it in pl
 A second document on a subject that has one is not written.
 If the existing home is the wrong one, the content moves, and the old file becomes a pointer or
 goes to the archive in the same commit. A dated record (an incident report, an audit, a baseline,
-a periodic review) and a dated hand-off each record their date: the next one on the same subject
-is a new dated file, the earlier one is never rewritten beyond a pointer to the newer, and the
+a periodic review) and a dated hand-off each record their date and are never revised: a later
+measurement, ruling or review of the same subject is added as a new dated section or a new dated
+file, what is already written takes at most its record line and a pointer to the newer, and the
 subject's canonical document points at the latest.
 
 A report, finding or summary about the work is not a project document, and its reader decides
@@ -428,9 +429,8 @@ working material.
 Working material is not canonical: drafts, intermediate outputs, scratch notes, a run's own
 reports. It stays outside the repository when nothing needs to recover it. Otherwise it lives in
 `work/phase-<id>/` at the project root, named by the phase it serves, which the phase's close
-extracts from and archives. `docs/` holds only the canonical documents (dated records such as
-incident reports and audits among them), `docs/_archive/` and dated hand-offs. A deliverable lives
-at the path its task declares. No canonical document cites working material as current, and
+extracts from and archives. `docs/` holds only what persists (*`docs/` holds what persists*,
+below). A deliverable lives at the path its task declares. No canonical document cites working material as current, and
 nothing is written beside the canonical documents to be sorted later. A phase working directory
 still under `docs/`, where these rules put it until 2026-10-27, is working material all the same,
 and the phase's close and the periodic hygiene pass sweep it.
@@ -447,6 +447,52 @@ neither. In one project on the workstation, 13 of the 15 phase working directori
 `docs/` belonged to phases already closed, so their sweep had never run. The operator ruled the
 same day for one recorder in delegated work and for working material in a tree of its own, outside
 `docs/`.
+
+### `docs/` holds what persists
+
+The operator, developers and users read `docs/` as the account of what the project is now, so it
+holds only what persists:
+
+- **canonical documents**, each kept true for as long as what it describes stands: the
+  architecture, runbooks, conventions, terminology, policies, schemas;
+- **dated records**, each about one date or period and never revised: an incident report, an
+  audit, a measurement baseline, a periodic review (a later measurement is added beside it, never
+  merged into it);
+- `docs/_archive/`, and the dated hand-offs in `docs/handoff/`.
+
+Nothing that stops being true when a phase or a session ends is written there: not a phase's or a
+session's plan, notes, status, evidence or results, not a discussion of the next phase or the
+decisions taken in one, not a draft, scratch or a run's output. That is working material (above)
+or the task's own evidence. What a phase established that lasts is written into the canonical
+document it changes, at the latest when the phase closes (`/update-progress` Step 3a). Phase
+documentation is not kept in `docs/`, under a phase's name or any other: every progress update would
+then have to keep account of which file there is current and which records a moment, and that
+bookkeeping is what this rule removes.
+
+A dated record says that it is one, so that no reader and no progress update has to work out what
+it is. Its date is in its name, and its first lines say `> Dated record, <kind>, <date>: not kept
+current.`, naming the canonical document that carries the current state where there is one. A text
+file whose name carries a date and has no such line is not identified; a file that cannot carry a
+line (an image, a table, a PDF) is identified by the date in its name alone. A dated image under
+`docs/architecture/` is a snapshot of a past state, not a view, and goes to the archive. A
+document meant to be current carries no date in its name.
+
+`docs-check` (`.claude/skills/docs-check/`) reports what breaks these rules by its name or its
+size: a phase, session or working name (dated or not), a hand-off outside `docs/handoff/`, a dated
+record without its line, a dated architecture image, and an architecture diagram too large to read
+at the width it is shown (`/generate-architecture`). The commit guard notes it on the commit that adds it and never refuses
+that commit; `/repo-hygiene` reports it over the whole tree. Ad hoc content under a neutral name is
+not caught by any name, and finding it is the hygiene pass's judgement.
+
+Measured 2026-10-30, after the operator's feedback that day: *"docs folder this should hold only
+persistent things. sometimes it happens that they put some ad hoc things which get stale, in the
+worst case they use it as a scratch if they pt there some documentationof phases ag, it has to be
+clearly identified. but i am not for it as with update progres the then have to keep evidence what
+is what"*. Three days after the rule above had moved working material out of `docs/`, the project
+measured on 2026-10-27 still tracked the same 15 `docs/phase-*` directories (784 files, 13 of them
+for closed phases), beside a `SESSION-HANDOFF.md` and an operator packet. Another kept dated notes
+of a next-phase discussion and its decisions there. Nothing checked any of it at the moment it was
+written, and the hygiene pass's check looked only for a working directory's name.
 
 ### What another reader needs is a file in this repository
 

@@ -18,12 +18,16 @@ indexes go stale, and progress.json grows without bound. The fix is not a bigger
 drifts far enough to need a crusade.
 
 **The standard this pass enforces:**
-- `docs/` contains **only canonical, current methods** (plus clearly-separated trail:
-  `_archive/`, incidents, audit records, and dated hand-offs in `handoff/`). A doc that describes
-  yesterday's system is corrected or archived. Working material is not canonical and lives outside
-  `docs/`, in `work/phase-<id>/` (`PROJECT_CHARTER.md` § 11, *Recording progress and documents*); a
-  `docs/phase-*`, `wip-*`, `tmp-*` or `scratch*` directory is the legacy place, moved there or
-  archived (quick check B).
+- `docs/` holds **only what persists** (`PROJECT_CHARTER.md` § 11, *`docs/` holds what
+  persists*): canonical, current documents; dated records, each saying in its first lines that it
+  is one; `_archive/`; and dated hand-offs in `handoff/`. A doc that describes yesterday's system is
+  corrected or archived. Phase documentation and working material are not kept there: working
+  material lives in `work/phase-<id>/` (§ 11, *Recording progress and documents*), and what a phase
+  established that lasts goes into the canonical document it changes. A `docs/phase-*`, `wip-*`,
+  `tmp-*` or `scratch*` directory is the legacy place, moved there or archived (quick check B);
+  quick check H runs `docs-check` over the tracked tree for the rest (phase, session, working and
+  hand-off names, dated or not; dated records without their line; architecture diagrams too large
+  to read).
 - **Skills** (`.claude/commands/`, `.claude/skills/`, `.agents/skills/`) are current: every
   referenced tool/path/procedure exists and matches reality; no two skills duplicate one capability.
 - **Indexes are true**: whatever index surfaces exist (CLAUDE.md pointers, a skill picker, an
@@ -90,7 +94,8 @@ else:
 #     closes. So a work/phase-<id>/ is a finding once its phase is terminal, or when no phase in
 #     progress.json carries that id; anything else directly under work/ is one at once. A working
 #     dir under docs/ is the legacy place (these defaults put it there until 2026-10-27) and is
-#     always a finding: docs/ holds the canonical documents, docs/_archive/ and dated hand-offs.
+#     always a finding: what docs/ holds is § 11, *`docs/` holds what persists*, and working
+#     material is not among it.
 #     Measured 2026-10-27: one project tracked 15 docs/phase-* dirs, 13 of them for closed phases.
 # DONE is the open-work renderer's terminal vocabulary (skills/open-work/open_work.py DONE), so a
 # phase is closed here exactly when it is closed there.
@@ -265,7 +270,74 @@ if skipped_cmds: print(f"   (F: skipped {skipped_cmds} file(s) under .claude/com
 if (root/"docs").exists() and not list((root/"docs").rglob("terminology.md")):
     findings.append("G: no terminology registry under docs/ — bootstrap one (Step 3a)")
 
-for f in findings: print(" -", f)
+# (H) docs/ holds what persists (PROJECT_CHARTER.md § 11, *`docs/` holds what persists*). The
+#     distributed docs-check skill reads the TRACKED tree and reports a phase, session or working
+#     name (dated or not), a hand-off outside docs/handoff/, a dated record without its record
+#     line, and an architecture diagram too large to read where it is shown. One checker for its
+#     three callers (the commit guard, this pass, /generate-architecture), so the rule reads the
+#     same in each. A top-level docs/ dir that B already reports as legacy working material is left
+#     to B, which also says whether its phase has closed.
+#     GROUPED BY KIND: one line per kind with its count and what it means, at most H_PATHS paths,
+#     and how many more; docs_check.py lists every one with its remedy. Measured 2026-10-30: one
+#     line per finding, each with its remedy, printed 293 lines and 136,000 characters in the
+#     estate's largest docs/ tree, several times what an agent's tool output keeps, so the tail of
+#     the pass was cut off unseen.
+#     Exit 2 is never clean. With a findings list (some paths could not be read) the findings are
+#     reported AND the unread paths, so one unreadable image hides nothing else; without one (the
+#     check could not run at all) that is the one finding.
+import subprocess
+dc = root/".claude/skills/docs-check/docs_check.py"
+H_PATHS = 10
+H_ALL = "python3 .claude/skills/docs-check/docs_check.py lists all, with the remedy for each"
+H_MEANS = {"not-persistent": "a phase, session, working or hand-off name, or snapshot",
+           "record-unmarked": "dated, but not marked as a dated record",
+           "diagram-unreadable": "an architecture image too large to read where shown"}
+if not dc.exists():
+    print("   (H: docs/ not checked — .claude/skills/docs-check/ is absent; /distribute-defaults delivers it)")
+elif (root/"docs").is_dir():
+    r = subprocess.run([sys.executable, "-I", str(dc), "--json"], cwd=root, capture_output=True, text=True)
+    try:
+        out = json.loads(r.stdout)
+        hs = out["findings"] if r.returncode in (0, 1, 2) and isinstance(out["findings"], list) else None
+        unread = (out.get("unreadable") or []) if hs is not None else []
+    except (ValueError, KeyError, TypeError, AttributeError):
+        hs, unread = None, []
+    if hs is None:
+        findings.append(f"H: docs-check could not check the tracked tree (exit {r.returncode}): {(r.stderr or r.stdout).strip()[:300]}")
+    by_kind = {}
+    for h in hs or []:
+        p = str(h.get("path", ""))
+        seg = p.split("/")
+        if len(seg) >= 2 and re.match(r"^(phase-|wip-|tmp-|scratch)", seg[1]) and (root/"docs"/seg[1]).is_dir():
+            continue   # B's
+        by_kind.setdefault(str(h.get("kind")), []).append(p)
+    for k in sorted(by_kind, key=lambda k: (list(H_MEANS).index(k) if k in H_MEANS else len(H_MEANS), k)):
+        ps = by_kind[k]
+        lines = [f"H: {k}: {len(ps)} ({H_MEANS.get(k, 'see the docs-check skill')})"]
+        lines += [f"     {p}" for p in ps[:H_PATHS]]
+        if len(ps) > H_PATHS:
+            lines.append(f"     (+{len(ps) - H_PATHS} more: {H_ALL})")
+        findings.append("\n".join(lines))
+    if hs is not None and (unread or r.returncode == 2):
+        named = "; ".join(f"{u.get('path')} ({str(u.get('reason'))[:100]})" for u in unread[:5] if isinstance(u, dict))
+        more = f"; +{len(unread) - 5} more" if len(unread) > 5 else ""
+        findings.append(f"H: docs-check could not read {len(unread)} path(s): {named or (r.stderr or '').strip()[:300]}{more} — not checked, never clean")
+
+# The output is bounded, as H's is: at most CAP findings of one check are printed, then a count of
+# the rest. Run the block again with HYGIENE_ALL=1 in its environment to print every one; nothing is
+# written anywhere, so the step stays read-only. Measured 2026-10-30 in the estate's largest project:
+# check C alone printed 79 lines and 12,800 characters, and an agent's tool output keeps about
+# 30,000, so a long C pushed H and the summary out of sight.
+CAP = None if os.environ.get("HYGIENE_ALL") else 15
+per, seen = {}, {}
+for f in findings: per[f.split(":", 1)[0]] = per.get(f.split(":", 1)[0], 0) + 1
+for f in findings:
+    k = f.split(":", 1)[0]
+    seen[k] = seen.get(k, 0) + 1
+    if CAP is None or seen[k] <= CAP:
+        print(" -", f)
+    if CAP is not None and seen[k] == CAP and per[k] > CAP:
+        print(f" - {k}: (+{per[k] - CAP} more {k} findings; run this block with HYGIENE_ALL=1 to print every one)")
 print(f"\nHYGIENE-CHECK findings: {len(findings)}")
 PY
 ```
@@ -358,7 +430,7 @@ Go through **every file** in `docs/` (excluding `_archive/`) and **every skill**
 | `current-canonical` | Describes today's system truthfully | none |
 | `needs-update` | Right home, stale substance (paths/tools/procedures drifted) | fix in place, verify claims against the live tree |
 | `stale-archive` | Superseded or dead | **extract-then-archive**: repoint/extract any live inbound refs FIRST, then move it to `docs/_archive/` under its own name, the destination named in full (`mkdir -p docs/_archive && git mv <path> docs/_archive/<name>`; a dir with the block `/update-progress` Step 3a ships) — never blind-move, never delete |
-| `trail-ok` | Record (incident, audit, a dated hand-off under `docs/handoff/`, dated memo with a defer-banner) | leave; ensure the banner/pointer is accurate |
+| `trail-ok` | A dated record (§ 11, *`docs/` holds what persists*) carrying its record line, or a dated hand-off under `docs/handoff/` | leave; make sure its record line names where the current state is kept |
 | `duplicate-consolidate` | Same substance stated in ≥2 places | pick ONE canonical home, others become pointers |
 
 Verification discipline: a "current" verdict requires the claims to be **checked against the live
