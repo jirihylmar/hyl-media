@@ -151,7 +151,7 @@ longer label runs under its neighbour (the run warns about each one). Keep arrow
 titles: end one at the cluster's edge, title the cluster at its foot, or drop a cluster that only
 groups (the template's docstring shows how).
 
-### 4. Run the generator
+### 4. Run Generator
 
 ```bash
 python3 docs/architecture/generate.py
