@@ -3,7 +3,8 @@
 # any estate host, through ONE mailbox repository, and let the addressee list and close it.
 #
 #   request.sh send  --to <receiver> --title "<one line>"   < request text on stdin
-#   request.sh inbox [--quiet]                  # the receiver: open requests addressed to THIS project
+#   request.sh inbox [--quiet]                  # the receiver: open requests addressed to THIS project,
+#                                               # and the instant it checked them, recorded on this machine
 #   request.sh show  <branch>                   # print one request, marked as untrusted text
 #   request.sh close <branch> --outcome "<one line>"   # the addressee only: merge it with its outcome
 #
@@ -30,6 +31,17 @@
 # built from objects (hash-object, a private index, write-tree, commit-tree). A path in the mailbox is
 # never resolved on this machine's disk, so a symlink a key holder committed cannot make this tool
 # write outside its clone (found by review wf_b307b4ab-f84: close appended to ~/.bashrc).
+#
+# THE RECORD OF A CHECK. In a receiver, an inbox that read the mailbox (with open requests or none)
+# records the instant, one line YYYY-MM-DDTHH:MM:SSZ (UTC), in
+# ${SYNDICATE_REQUEST_STATE:-${XDG_STATE_HOME:-~/.local/state}/syndicate-request}/inbox-checked/<receiver>
+# (directory 700, file 600, replaced in one rename). scripts/mailbox-watch.sh --checks in
+# syndicate-playbooks-examples reads it from an hourly timer, because a support session's own cron
+# cannot report its own absence: measured by 2026-10-30, hyl-resources-manager's session could not
+# hear for 22 h in total behind open questions, and a usage limit stopped both receivers' sessions for
+# about 11 h. NOT CHECKED records nothing, a project that receives nothing writes nothing, and a record
+# that cannot be written changes neither the output nor the exit code (the watch reports it missing).
+# SYNDICATE_REQUEST_NOW (an ISO UTC instant) pins the recorded instant for tests.
 #
 # This project's IDENTITY is its origin's repository name (PROJECT_CHARTER.md: the display name in
 # progress.json is a label, not an identity); with no origin, the display name made into a slug;
@@ -213,6 +225,42 @@ mailbox_refs() { timeout "$NET_TIMEOUT" git ls-remote "$MAILBOX_URL" 2>/dev/null
 NO_ROUTE="This machine has no access to it yet: on an outside person's computer, accept the mailbox invitation, or give git a GitHub login it keeps (syndicate-join --check says which); anywhere else, tell the operator."
 ref_sha() { printf '%s\n' "$1" | awk -F'\t' -v r="$2" '$2 == r { print $1; exit }'; }
 
+# record_check <receiver>: the instant this receiver read the mailbox, for mailbox-watch.sh --checks.
+# A temporary file in the same directory renamed over the record, so a reader never meets half a line;
+# os.replace never follows the name into a directory. Silent and never fatal: the inbox's output and
+# exit code are the same whether or not the record could be written.
+record_check() {
+  python3 - "$1" "${SYNDICATE_REQUEST_NOW:-}" >/dev/null 2>&1 <<'PY' || true
+import datetime, os, re, sys, tempfile
+receiver, now = sys.argv[1], sys.argv[2]
+try:   # the pin is used only when it is exactly the form the watch accepts (strptime alone takes 2026-1-5)
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", now):
+        raise ValueError(now)
+    datetime.datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ")
+except ValueError:
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+e = os.environ
+base = e.get("XDG_STATE_HOME") or (os.path.join(e["HOME"], ".local", "state") if e.get("HOME") else "")
+root = e.get("SYNDICATE_REQUEST_STATE") or (os.path.join(base, "syndicate-request") if base else "")
+if not root:
+    sys.exit(1)
+os.umask(0o077)
+d = os.path.join(root, "inbox-checked")
+os.makedirs(d, exist_ok=True)
+os.chmod(d, 0o700)
+fd, tmp = tempfile.mkstemp(dir=d, prefix="." + receiver + ".")   # mode 600
+try:
+    with os.fdopen(fd, "w") as f:
+        f.write(now + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, os.path.join(d, receiver))
+except BaseException:
+    os.unlink(tmp)
+    raise
+PY
+}
+
 # The plumbing every write uses: a clone with no working tree and no symlinks, hooks off.
 clone_bare_tree() {   # [--depth 1 --branch main --single-branch]
   timeout "$NET_TIMEOUT" git -c core.symlinks=false clone -q --no-checkout --no-tags "$@" "$MAILBOX_URL" "$TMP/m" 2>/dev/null
@@ -366,6 +414,7 @@ if len(open_) > CAP:
 if ignored:
     print("IGNORED\t%d malformed ref(s) under request/%s/ - names withheld, tell the operator" % (ignored, me))
 ' "$PROJECT")" || die 1 "could not read the mailbox's refs"
+  record_check "$PROJECT"   # the mailbox was read and its listing parsed: this receiver checked, now
   local n; n="$(printf '%s\n' "$listing" | sed -n 's/^COUNT\t//p')"
   listing="$(printf '%s\n' "$listing" | grep -v '^COUNT' || true)"
   if [ -n "$listing" ]; then

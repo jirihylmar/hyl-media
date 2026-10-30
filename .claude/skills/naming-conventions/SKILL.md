@@ -52,9 +52,10 @@ enything"*; and, asked how far the rule reaches: *"New names + tag all"*).
    view for the account. A resource the stack's tags do not reach (an IAM managed policy, a budget) and one made
    outside the infrastructure code are tagged with their service's own tag call and recorded.
 4. **When rebuilding an existing resource anyway:** rename it to this form in the same change, with every coupling.
-5. **On a host:** a unit, timer or container is `<project>-<what>`, and it is asked for first under the project's
-   `CLAUDE.md` rule *Ask First: Credentials, Standing Processes and Steps for the Operator* (found by its title: its
-   number differs between projects).
+5. **On a host:** a unit, timer or container is `<project>-<what>`. Whether it is decided and registered or asked
+   for first follows the project's `CLAUDE.md` rule *Ask First Where Security Is at Stake; Otherwise Decide and
+   Record* (found by its title: its number differs between projects; a project still carrying the earlier *Ask
+   First: Credentials, Standing Processes and Steps for the Operator* replaces it with this one).
 
 ## Why it exists
 
