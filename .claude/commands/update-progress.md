@@ -360,11 +360,17 @@ cite flags that don't exist.
    Files Step 2a fully verified this session count as grounded — stamp them in the map rather than
    re-picking them.
 
-   **An open `partial` comes first.** If `hygiene-state.json` holds any `partial` entry, the pick
-   is the first one listed, resumed where it stopped, and no file outside `partial` is started
-   while one is open: a second bookmark leaves both unclosed. When it is finished, stamp it and
-   delete its entry. An entry for `IMPLEMENTATION_PLAN.md` is closed by item 3's two checks for
-   the specification, never resumed claim by claim.
+   **An open `partial` comes first.** If `hygiene-state.json` holds a `partial` entry this host
+   can resume, the pick is the first such one listed, resumed where it stopped, and no file outside
+   `partial` is started while one is open: a second bookmark leaves both unclosed. When it is
+   finished, stamp it and delete its entry. An entry for `IMPLEMENTATION_PLAN.md` is closed by
+   item 3's two checks for the specification, never resumed claim by claim.
+
+   **A `partial` only another host can resume is host-bound, and blocks nothing here.** Mark it
+   beside its entry: `"host_bound": {"<file>": {"needs": "<host or host kind, e.g. workstation>",
+   "why": "<what only that host has>"}}`. On every other host, pick from the rest of the rotation
+   as if the file were not in it; on the host it names, it comes first like any `partial`. It keeps
+   both entries and no stamp until a session there finishes it and deletes them.
 
    **The rotation set is every file a reader would take as current** — not just the ones under
    `docs/`:
@@ -415,6 +421,14 @@ cite flags that don't exist.
    the file as changed-since-delivery, which **blocks distribution** — potentially for every project
    on the host, not just yours. Either way you have made things worse than reporting would have.
 
+   **A default that is local-only by policy is grounded off the workstation only as far as its
+   text can be.** `/syndicate-refresh-remote` and its Codex adapter run on the workstation alone, so
+   on any other host check their references and their own statement that they are local-only, name
+   their runtime claims in session_notes as the workstation's to ground, and stamp the file. Never
+   leave it `partial` or host-bound for those claims: a project that lives off the workstation
+   would never close that bookmark. Measured 2026-10-30: a member host's project held such a
+   `partial`, and its rotation had not moved since 2026-10-27.
+
    **Grounding the specification is a different check, and the difference is the whole point.**
    `IMPLEMENTATION_PLAN.md` is the origin record: what was intended and what was approved before
    implementation opened (`PROJECT_CHARTER.md` § *The specification is an origin record*).
@@ -442,7 +456,8 @@ cite flags that don't exist.
    Date or rewrite any undated count of something that grows (Step 2a).
 5. **Stamp the map**: `"<file>": "<today>"` for the sliced file and any 2a-verified files. If the
    file was too large to finish, record `"partial": {"<file>": "<where you stopped>"}` in
-   `hygiene-state.json` and stamp the map only when the file completes.
+   `hygiene-state.json` and stamp the map only when the file completes. If only another host can
+   verify what is left, mark it host-bound as item 2 says.
 
    **A `partial` entry and a `grounded` stamp for the same file are contradictory, and the
    contradiction is self-concealing.** A stamp means "verified on this date"; the rotation sorts
@@ -469,7 +484,9 @@ being repeatedly noticed and never owned.
 **Bounds and skips** (the bound is the point — this must stay cheap enough to never be worth
 skipping): one file per session, roughly small-task effort. Skip ONLY when context is already
 >60% at session close or the session is an emergency hotfix — record the skip + reason in
-session_notes. Two consecutive skips make the slice MANDATORY at the next session close.
+session_notes. Two consecutive skips make the slice MANDATORY at the next session close. A skip
+whose only cause is a host-bound `partial` does not count toward the two: the mandate must be one
+every host this command is distributed to can meet.
 
 ### 3. Update progress.json (Conservative)
 

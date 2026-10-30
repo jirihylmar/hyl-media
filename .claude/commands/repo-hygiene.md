@@ -456,7 +456,8 @@ nothing is double-verified.
    files per the `grounded` map in `.claude/hygiene-state.json` (never-grounded first). Bound the
    slice — 3–5 files, or roughly what one pass can verify properly. The bound is the point.
 
-   Open `partial` entries come first, as `/update-progress` Step 2b item 2 says. An entry for
+   Open `partial` entries come first, as `/update-progress` Step 2b item 2 says, except a
+   host-bound one on any host but the one it names. An entry for
    `IMPLEMENTATION_PLAN.md` is closed only by that step's two checks for the specification,
    never against the implementation and never by editing it.
 2. **Extract the claims.** For each file in the slice, list every operational claim: cited file
@@ -485,7 +486,9 @@ nothing is double-verified.
 5. **Advance the cursor.** Update the `grounded` map in Step 5 so the next pass picks the next slice.
 
 Claims that cannot be verified this pass (resource offline, tool unavailable) are deferred with a
-named reason — an unverifiable claim is a finding, not a pass.
+named reason — an unverifiable claim is a finding, not a pass. A file only another host can finish
+is marked host-bound (`/update-progress` Step 2b item 2); a local-only default off the workstation
+is stamped, its runtime claims named as the workstation's (item 3).
 
 ## Step 2 — Index + knowledge-surface reconciliation
 
@@ -1056,11 +1059,13 @@ extracted from this file, against fixtures.
 1. Write `.claude/hygiene-state.json`:
    `{"last_pass": "<today YYYY-MM-DD>", "findings_fixed": N, "deferred": ["<item — named reason>"],
    "grounded": {"<file>": "<YYYY-MM-DD grounded>", ...},
-   "partial": {"<file>": "<where you stopped>"}}`
+   "partial": {"<file>": "<where you stopped>"},
+   "host_bound": {"<file>": {"needs": "<host or host kind>", "why": "<what only that host has>"}}}`
    — merge this pass's Step 1a slice into the existing `grounded` map (never drop prior entries);
    the map is what makes the rotation converge to full coverage.
 
-   Keep every open `partial` entry; delete one only when its file is finished and stamped.
+   Keep every open `partial` entry and its `host_bound` mark; delete them only when the file is
+   finished and stamped.
    Stamp only the slice files this pass finished. A file it could not finish keeps (or gains) its
    `partial` entry and gets no stamp: `/update-progress` Step 2b item 5 voids a stamp that sits
    beside a `partial`.
