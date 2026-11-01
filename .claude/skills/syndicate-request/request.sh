@@ -7,6 +7,13 @@
 #                                               # and the instant it checked them, recorded on this machine
 #   request.sh show  <branch>                   # print one request, marked as untrusted text
 #   request.sh close <branch> --outcome "<one line>"   # the addressee only: merge it with its outcome
+#   request.sh outcome <branch>                 # the sender (anyone): OPEN, or CLOSED and its outcome
+#
+# THE ANSWER is the outcome close merges into main. outcome reads it and writes nothing: no push, no
+# file in the project. Measured 2026-10-31: hyl-resources-manager answered nutritech-pdsm-orchestrator
+# only in the close outcome, and pdsm's session, watching only its own session_notes.md, waited 12 h
+# while the answer sat on main. It takes the branch SENT printed, not the commit: the branch names the
+# file on main directly from a one-commit clone, where a commit would need the mailbox's whole history.
 #
 # THE MAILBOX. hub440-syndicate/syndicate-requests (SYNDICATE_REQUESTS_URL overrides it; tests use a
 # file:// URL). A member host is given a write deploy key to the mailbox alone, with
@@ -54,8 +61,10 @@
 #       found); 4 the mailbox has no main yet; 5 refused: the text looks like it holds a credential
 #       (the pattern is named, the value never printed); 6 the push was refused or is not on the
 #       mailbox afterwards (a branch of that name already exists, for one); 7 an IRREGULAR request
-#       branch (not exactly one commit adding one regular file on top of main): refused, nothing
-#       merged; tell the operator.
+#       branch (not exactly one commit adding one regular file on top of main), or a request on main
+#       that is not a regular file or has no outcome section: refused, nothing merged; tell the
+#       operator. outcome exits 0 for OPEN and for CLOSED (the first word of its first line says
+#       which), and 2 when the request is neither open nor on main.
 # Every run works in a transient clone under ${XDG_CACHE_HOME:-~/.cache}/syndicate-request/ that is
 # removed on every exit (a tool clone, PROJECT_CHARTER.md section 8).
 set -uo pipefail
@@ -76,6 +85,7 @@ usage: request.sh send  --to <syndicate-playbooks-examples|hyl-resources-manager
        request.sh inbox [--quiet]
        request.sh show  <branch>
        request.sh close <branch> --outcome "<one line>"
+       request.sh outcome <branch>
 U
   exit 2
 }
@@ -353,7 +363,8 @@ cmd_send() {
   printf 'SENT request to %s: %s\n' "$to" "$branch"
   printf '  file    %s\n  commit  %s\n' "$file" "$commit"
   printf '  %s lists it at its next session start; record the branch and commit in session_notes.\n' "$to"
-  printf '  The answer comes back to %s as an estate notice, or from the operator.\n' "$PROJECT"
+  printf "  It is answered when %s closes it. Read the answer at each session start until CLOSED:\n" "$to"
+  printf "    request.sh outcome '%s'\n" "$branch"
 }
 
 # ==== inbox ======================================================================================
@@ -446,10 +457,60 @@ cmd_show() {
   printf '%s\n' "$UNTRUSTED"
   printf 'branch %s  commit %s\n' "$branch" "$tip"
   printf -- '-----\n'
-  G cat-file blob "$tip:$RQ_FILE" | python3 -c '
+  G cat-file blob "$tip:$RQ_FILE" | untrusted_text
+}
+
+# untrusted_text [outcome]: stdin -> stdout as UTF-8, every control character but tab and newline
+# replaced by '?'. With "outcome", only the section close appended: from the LAST line that is exactly
+# "## Outcome" (a request's own text may carry one before it) to the end; exit 1 when there is none.
+untrusted_text() {
+  python3 -c '
 import sys, unicodedata
 t = sys.stdin.buffer.read().decode("utf-8", "replace")
-sys.stdout.write("".join(c if (c in "\t\n" or not unicodedata.category(c).startswith("C")) else "?" for c in t))'
+if len(sys.argv) > 1:
+    lines = t.split("\n")
+    at = [i for i, l in enumerate(lines) if l == "## Outcome"]
+    if not at:
+        sys.exit(1)
+    t = "\n".join(lines[at[-1]:])
+    t = t if t.endswith("\n") else t + "\n"
+sys.stdout.write("".join(c if (c in "\t\n" or not unicodedata.category(c).startswith("C")) else "?" for c in t))' "$@"
+}
+
+# ==== outcome ====================================================================================
+# The sender's read of the answer. Main first: a request closed while its branch's deletion failed is
+# answered, and main is the archive. Read only: one-commit clone of main, removed on exit, no push.
+cmd_outcome() {
+  [ $# = 1 ] || usage
+  local branch="$1"
+  [[ "$branch" =~ ^[0-9a-f]{40}$ ]] && die 2 "pass the request's branch, not its commit: the SENT line before the commit names it"
+  request_file "$branch"
+  PROJECT=syndicate-request
+  workdir
+  local refs rc tip entry
+  refs="$(mailbox_refs)"; rc=$?
+  [ "$rc" = 0 ] || die 3 "no route to the mailbox $MAILBOX_URL (ls-remote rc=$rc); the answer is unknown. $NO_ROUTE"
+  [ -n "$(ref_sha "$refs" refs/heads/main)" ] || die 4 "the mailbox $MAILBOX_URL has no main yet; tell the operator"
+  tip="$(ref_sha "$refs" "refs/heads/$branch")"
+  clone_bare_tree --depth 1 --branch main --single-branch || die 3 "could not clone the mailbox $MAILBOX_URL; the answer is unknown"
+  entry="$(G ls-tree HEAD -- "$RQ_FILE")" || die 3 "could not read the mailbox's main; the answer is unknown"
+  if [ -n "$entry" ]; then
+    [[ "$entry" =~ ^100644\ blob\ [0-9a-f]{40}$'\t' ]] \
+      || die 7 "IRREGULAR: main holds $RQ_FILE but not as a regular file. Tell the operator."
+    G cat-file blob "HEAD:$RQ_FILE" > "$TMP/request" || die 3 "could not read $RQ_FILE from the mailbox's main; the answer is unknown"
+    untrusted_text outcome < "$TMP/request" > "$TMP/outcome" \
+      || die 7 "IRREGULAR: main holds $RQ_FILE with no '## Outcome' section. Tell the operator."
+    printf 'CLOSED %s  main %s\n' "$branch" "$(G rev-parse HEAD)"
+    printf '%s\n' "$UNTRUSTED"
+    printf 'file %s\n' "$RQ_FILE"
+    printf -- '-----\n'
+    cat "$TMP/outcome"
+  elif [ -n "$tip" ]; then
+    printf 'OPEN %s  commit %s\n' "$branch" "$tip"
+    printf 'not answered yet: %s answers it by closing it; read it again at the next session start\n' "$RQ_TO"
+  else
+    die 2 "no request $branch in the mailbox: it is not open, and main does not hold $RQ_FILE (pass the branch exactly as SENT printed it)"
+  fi
 }
 
 # ==== close ======================================================================================
@@ -512,5 +573,6 @@ case "${1:-}" in
   inbox) shift; cmd_inbox "$@" ;;
   show)  shift; cmd_show "$@" ;;
   close) shift; cmd_close "$@" ;;
+  outcome) shift; cmd_outcome "$@" ;;
   *) usage ;;
 esac
