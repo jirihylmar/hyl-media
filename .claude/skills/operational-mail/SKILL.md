@@ -59,9 +59,10 @@ project that manages it.
 ## The steps
 
 1. **Before the change.** Give the stack (or script) a parameter for the address, for example
-   `AlarmEmail`, set to the central address of the account it deploys into (the rule above), with no default
-   of the project's own. Name the topic, its `DisplayName`, every alarm and every `Subject` in the forms
-   the rule gives, from this project's origin repository name and the account read live.
+   `AlarmEmail`, set to the central address (aws@hub440.cz or aws@hylmar.eu, as the rule above says; never
+   the account's root address aws-<nnn>@), with no default of the project's own. Name the topic, its
+   `DisplayName`, every alarm and every `Subject` in the forms the rule gives, from this project's
+   origin repository name and the account read live.
 2. **Deploy as the project always does.** The subscription is created pending; the confirmation mail
    goes to the central address, where the administrator side reads it. Do not open, forward or ask
    anyone to click its link.

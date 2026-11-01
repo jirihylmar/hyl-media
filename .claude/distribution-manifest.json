@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-11-01T11:17:55Z",
-  "canonical_commit": "afe2c9f69d78fa69e28b9f89096fc4e9a93cda1f",
+  "written_at": "2026-11-01T12:12:16Z",
+  "canonical_commit": "bacb690e59b0287d22ce8476f927003e3d8c40d0",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "4479b705fcfc8a0f993245010f6b0dd38f45f2eaf429dbfb21b46e72810ea011", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "5ea937f700a28e58a60dbf2d87f999f0a764ec4c120c4f43fb3ca01f742302f5", "source": "canonical" },
@@ -38,7 +38,7 @@
     ".claude/skills/consult-codex/consult-log.py": { "sha256": "0aba318a449e47b8d55597f1ad274c339e746ca372f6f6a9d7e1018a08948a32", "source": "canonical" },
     ".claude/skills/open-work/SKILL.md": { "sha256": "1c1444696f65aca0e35eb437b77091e0330da3a789ef50ac5d45ac1fd9cbbeb2", "source": "canonical" },
     ".claude/skills/open-work/open_work.py": { "sha256": "7d71d25461fed5b7929438be84fa5c99fcc69b2b2e00c1cf3633972ef081a7f9", "source": "canonical" },
-    ".claude/skills/operational-mail/SKILL.md": { "sha256": "dc1100a513bb473d758093765fcac21977a939f23af3d3ea10d27471fbe7c644", "source": "canonical" },
+    ".claude/skills/operational-mail/SKILL.md": { "sha256": "f64fbc23f78698108f8167ebbe6a30481d77e7a1e2135bf1ffe97e50bd6c9215", "source": "canonical" },
     ".claude/skills/naming-conventions/SKILL.md": { "sha256": "3c42951f86a92cd8f21529d3bd70eb5de5cca240445b4872c92651afc55b9beb", "source": "canonical" },
     ".agents/skills/generate-architecture/SKILL.md": { "sha256": "4934fb313a12a3c476618933062c83fc4d044f1623b19c3beebd363a312277d3", "source": "canonical" },
     ".agents/skills/server-report/SKILL.md": { "sha256": "78f9c8954068cab76b618e53c0ec556241478c5be963d473b6a32211c1d89b92", "source": "canonical" },
