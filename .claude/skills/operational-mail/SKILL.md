@@ -1,6 +1,6 @@
 ---
 name: operational-mail
-description: Where a project's operational mail goes (CloudWatch alarms through SNS email, notifications, reports) and how its SNS email subscriptions get confirmed - the one central address of the project's AWS account, never a new address, group or alias; a sender name and subject that say which project and account; confirmation by the administrator side through the mailbox, never by the link. Invoke before creating or changing a CloudWatch alarm, an SNS topic or email subscription, or any mail a project sends to the operator, and when a subscription disappears or reads pending or not authenticated.
+description: Where a project's operational mail goes (CloudWatch alarms through SNS email, notifications, reports, mail it sends through SES) and how its SNS email subscriptions get confirmed - the one central address for the project's AWS account (aws@hub440.cz or aws@hylmar.eu, never the account's root address aws-<nnn>@), never a new address, group or alias; a sender name and subject that say which project and account; confirmation by the administrator side through the mailbox, never by the link. Invoke before creating or changing a CloudWatch alarm, an SNS topic or email subscription, mail sent through SES, or any mail a project sends to the operator, and when a subscription disappears or reads pending or not authenticated.
 ---
 
 # operational-mail
@@ -32,8 +32,12 @@ project that manages it.
 - **One address.** Every operational mail a project sends goes to the central address of your account's organisation (below). That covers a CloudWatch alarm through an SNS email subscription, a notification it publishes, and a report.
   - aws@hylmar.eu if the account you deploy into is 287773673380, 299025166536, 126697143436 or 911926883318; otherwise aws@hub440.cz.
   - The list changes rarely. As a backstop, the mailbox request for a confirmation names the address used, and the administrator side corrects it before confirming.
+  - Two kinds of address, not to be confused:
+    - **Central addresses**, aws@hub440.cz and aws@hylmar.eu: the groups that receive every project's operational mail. hyl-resources-manager reads them, confirms their SNS subscriptions with a signed call and checks that mail arrives. Use only these.
+    - **Root addresses**, aws-<first three digits of the account id>@hub440.cz or @hylmar.eu (aws-030@hub440.cz, aws-911@hylmar.eu): each is one account's root email, where AWS itself writes to the account's owner (billing, security notices, root sign-in and recovery). hyl-resources-manager sets and keeps them; not every account follows the form, and its record is the list. A project never sends to one, subscribes one or names one.
   - Take the address as a parameter set to that value (for example AlarmEmail), never as a default of the project's own.
   - Never create or ask for a new address, group or alias for it.
+  - Mail the project sends itself through SES (SendEmail, SendRawEmail) goes to the central address too. Its From may be a sending-only address with no mailbox on the project's verified domain (audit-noreply@hub440.cz); that is not a new address under this rule. Its display name is `<project> <account name> <account id>`, as for SNS, and its subject `<project>: <what>`; a subject the project already uses may stay whole as `<what>`.
 
 - **Names say which project and which account, in one form, never abbreviated.**
   - `<project>` is this project's estate identity: the name of its origin repository (the repository whose progress.json manages the code), lowercased, with `.` turned into `-`, the identity /syndicate-request uses. Never a resource prefix, a project code, a product or a family name. Code in a repository nested inside the project that manages it is named for the managing project; the nested repository may appear inside `<what>`.
