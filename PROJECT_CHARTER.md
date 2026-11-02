@@ -552,7 +552,8 @@ changed it, and a specification quietly rewritten to today's shape reads exactly
 right all along, so the reader loses both facts at once. A session establishing current truth —
 what exists, what the architecture is, what remains — reads the tracked record and the live
 system, never the specification. Amending an approved specification is an operator decision, not
-ordinary work.
+ordinary work, and the operator has ruled that it is not done: after approval the specification is
+never touched, not its content and not a label at its head (the operator, 2026-11-02).
 
 Measured across the estate, 2026-09-20: 21 of the 34 projects reached carry such a specification
 (22 checkouts — one project is held on both hosts), and the widest gap between its last change and
@@ -560,13 +561,15 @@ the tracked record's was 254 days. Of seven examined closely, three carried an e
 banner, one carried an approval line alone and three carried nothing about their own standing — so
 in four cases a reader could not tell from the file which kind of document it was holding.
 
-What the banner is worth, and what it is not, was measured in the same pass. One of the three
-labelled specifications still gives, in the present tense and deep in the document, the resizing
-and stopping of a compute instance that the same project's tracked record shows deleted a phase
-earlier — instance identifier included. Its head matter is the only thing standing between a
-reader and a command issued against a machine that no longer exists. That is the rule working, not
-an argument against it: a specification is not kept true by editing it, so what a project owes its
-readers is the label, and what an executor owes the project is to read the tracked record instead.
+The answer is not a label in each file. This rule, delivered to every project, is the label: every
+implementation plan is the origin record, and the tracked record governs. Nothing is added to a
+specification to say so, and no project is asked to (the operator, 2026-11-02: *"implmentaion plan
+was the initial document and its outlived with the implmention. its not updated , should not
+be"*). A label a project already wrote stays as it is and is not removed. A label does not keep a
+reader away from a stale line either: one labelled specification still gives, in the present tense
+and deep in the document, the resizing and stopping of a compute instance its own tracked record
+shows deleted. What an executor owes the project is to read the tracked record and the live system,
+never the specification, for what exists.
 
 ### Unattended operations
 

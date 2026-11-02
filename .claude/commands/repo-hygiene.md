@@ -458,8 +458,9 @@ nothing is double-verified.
 
    Open `partial` entries come first, as `/update-progress` Step 2b item 2 says, except a
    host-bound one on any host but the one it names. An entry for
-   `IMPLEMENTATION_PLAN.md` is closed only by that step's two checks for the specification,
-   never against the implementation and never by editing it.
+   `IMPLEMENTATION_PLAN.md` is closed only by that step's one check for the specification (no live
+   surface cites it as current), never against the implementation and never by editing it, a label
+   included.
 2. **Extract the claims.** For each file in the slice, list every operational claim: cited file
    paths, CLI flags, deployed-resource names, payload/query shapes, commands presented as runnable.
 3. **Verify each claim against the implementation**, not against other docs: the path resolves;

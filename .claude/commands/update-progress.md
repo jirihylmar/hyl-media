@@ -364,7 +364,8 @@ cite flags that don't exist.
    can resume, the pick is the first such one listed, resumed where it stopped, and no file outside
    `partial` is started while one is open: a second bookmark leaves both unclosed. When it is
    finished, stamp it and delete its entry. An entry for `IMPLEMENTATION_PLAN.md` is closed by
-   item 3's two checks for the specification, never resumed claim by claim.
+   item 3's one check for the specification (no live surface cites it as current), never resumed
+   claim by claim.
 
    **A `partial` only another host can resume is host-bound, and blocks nothing here.** Mark it
    beside its entry: `"host_bound": {"<file>": {"needs": "<host or host kind, e.g. workstation>",
@@ -432,23 +433,26 @@ cite flags that don't exist.
    **Grounding the specification is a different check, and the difference is the whole point.**
    `IMPLEMENTATION_PLAN.md` is the origin record: what was intended and what was approved before
    implementation opened (`PROJECT_CHARTER.md` § *The specification is an origin record*).
-   Grounding it means exactly two things — that it is **labelled** as the origin record rather than
-   reading as a description of the running system, and that **no live surface cites it as current**
-   (a README, a runbook, a skill, a task that says "see the implementation plan" for what exists
-   today). It never means checking its claims against today's implementation, and it never means
-   editing it to match. Content that has diverged is the history, not rot: the gap between what was
-   agreed and what was built is the only evidence that the change happened, and closing the gap
-   silently destroys it.
+   Grounding it means exactly one thing — that **no live surface cites it as current** (a README, a
+   runbook, a skill, a task that says "see the implementation plan" for what exists today), and the
+   remedy goes to the surface that cites it. It never means checking its claims against today's
+   implementation, and it never means touching the specification: not editing it to match, and not
+   adding a label to its head either (the operator, 2026-11-02). The charter's rule, delivered to
+   every project, is the label. A label a project already wrote stays: never add one, never remove
+   one. Content that has diverged is the history, not rot: the gap between what was agreed and what
+   was built is the only evidence that the change happened, and closing the gap silently destroys
+   it.
 
    **What the table above would otherwise do is worth naming, because it is the collision this row
    removes.** The specification is project-owned, so the first row routes it to *fix it in place* —
    which executed literally rewrites an approved specification to match today's build. That is the
-   exact edit `/start-session`'s authorization table gates behind the operator (*Modifying
-   IMPLEMENTATION_PLAN.md — discuss first — user approval*). A remedy one default prescribes and
-   another forbids is not a remedy; it is a session that does the wrong thing confidently. Measured
-   across the estate, 2026-09-20: 21 of the 34 projects reached carry a specification, the widest gap
-   between its last change and progress.json's was 254 days, and of seven examined closely three
-   carried no lifecycle marker at all — so the label is the check that was missing, not the content.
+   exact edit `/start-session`'s authorization table rules out (*Modifying IMPLEMENTATION_PLAN.md
+   after its approval — not proposed*). A remedy one default prescribes and another forbids is not
+   a remedy; it is a session that does the wrong thing confidently. Measured across the estate,
+   2026-09-20: 21 of the 34 projects reached carry a specification, the widest gap between its last
+   change and progress.json's was 254 days, and of seven examined closely three carried nothing at
+   their head about their own standing. On 2026-11-02 the operator ruled that the charter's rule
+   answers this, not a label in each file, so a missing label is not a finding.
 4. **Same file, naming + de-phasing**: flag synonyms against the terminology registry (registry
    name wins); strip leaked phase/session/task numbers (statement stays, process token goes).
    If NO registry exists yet, seed a minimal `terminology.md` under `docs/` from this file's

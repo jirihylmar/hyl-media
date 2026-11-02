@@ -1928,7 +1928,7 @@ Work on **existing tasks** in progress.json.
 |--------|---------|----------|
 | Add phases/tasks | `/add-work` | User approval |
 | Major scope changes | Discuss first | User approval |
-| Modifying IMPLEMENTATION_PLAN.md | Discuss first | User approval |
+| Modifying IMPLEMENTATION_PLAN.md after its approval, a label at its head included | Not proposed: the operator ruled 2026-11-02 it is never touched | The operator's own word |
 
 ### Discussion ≠ Authorization
 
