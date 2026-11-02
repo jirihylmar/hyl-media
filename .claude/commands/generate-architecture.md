@@ -76,7 +76,7 @@ lane use the `graphviz` package that `diagrams` installs with it. Work through t
 3. **Install what is missing as `/start-session` § Two Environments says** (*Installing: one rule,
    every host*). This step does not restate that rule; in practice it means:
    - **`diagrams`** (which brings `graphviz` with it) goes into a virtual environment of the
-     project's own, kept outside anything the project deploys, for example
+     project's own, kept outside the project's directory, for example
      `python3 -m venv ~/.cache/<project>-architecture` and then
      `~/.cache/<project>-architecture/bin/pip install diagrams`; Step 4 then runs `generate.py`
      with `~/.cache/<project>-architecture/bin/python` instead of `python3`. Where the project's

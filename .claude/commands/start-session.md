@@ -209,9 +209,9 @@ your statement of which reading would mean which cause, so running it is their o
 
 > **Installing: one rule, every host.** Installing for the project itself is ordinary work and needs
 > no question: into a project container, into a virtual environment of the project's own where its
-> own rules allow one (kept outside anything the project deploys), or a tool under your own home.
-> So are the host setup your `CLAUDE.md` authorises and the per-machine steps a distributed default
-> names (`prepare-host.sh`, and `connect.sh`, which the operator runs outside the session,
+> own rules allow one (kept outside the project's directory, never inside it), or a tool under your
+> own home. So are the host setup your `CLAUDE.md` authorises and the per-machine steps a distributed
+> default names (`prepare-host.sh`, and `connect.sh`, which the operator runs outside the session,
 > `PROJECT_CHARTER.md` § 8). A Python package is not a tool under your home: `pip3 install --user`
 > and `--break-system-packages` put it in the user site, which every Python on the host reads
 > (`PROJECT_CHARTER.md` § 9). Anything else that needs `sudo` or root, or changes what the whole
