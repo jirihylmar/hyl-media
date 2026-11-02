@@ -42,6 +42,37 @@ is corrected here rather than quietly dropped.
 syndicate-playbooks-examples isn't on this host. The format follows the spec, but it's untested
 until a distribution runs."*
 
+## The overlay format
+
+Every distributed command's header points here for this. To add to a default command, write
+`.claude/local-overlays/<command>.md` (the same file name as the command, e.g.
+`.claude/local-overlays/start-session.md`). It holds one or more blocks. Each block opens with a
+directive line, alone on its line:
+
+```
+<!-- splice-before: "EXACT CANONICAL LINE" -->
+<!-- splice-after: "EXACT CANONICAL LINE" -->
+<!-- splice-append -->
+```
+
+Everything after a directive, up to the next directive or the end of the file, is that block's
+content: `splice-before` inserts it just above the anchor line, `splice-after` just below it, and
+`splice-append` at the end of the command. Lines before the first directive are ignored, so the
+file may open with a note of your own.
+
+- **The anchor is a whole line of the delivered command, matched exactly** (byte for byte, without
+  its line ending), never a substring. A line that contains a double quote cannot be an anchor:
+  choose another.
+- **Blocks apply in order**, each against the result of the ones before it.
+- **Every distribution replays the overlay on top of the new canonical**, so your additions survive
+  central updates. A directive that does not parse, or an anchor that matches no line, stops the
+  distribution for every project on this host (below); run this check after every edit.
+- **To fork a default entirely**, when adding is not enough, list its file name (e.g.
+  `start-session.md`) on a line of `.claude/local-overlays/.skip`. That command is then yours, is
+  never overwritten, and gets no central updates.
+- Editing a delivered command in place, with no overlay and no `.skip` entry, is reported
+  `divergent` at the next distribution and blocks it, like a broken overlay.
+
 ## Run it
 
 ```bash

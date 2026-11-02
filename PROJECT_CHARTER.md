@@ -75,9 +75,10 @@ Pause and wait for the operator at these points, and at no others:
 | Irreversible or outward-facing | Deleting data, publishing, anything a third party outside the operator's estate will see |
 
 **This list is closed.** If a pause is not architectural, not a scope change and not irreversible,
-it is not a checkpoint. Reading, searching, editing, building, testing, linting, installing,
-creating directories, committing, pushing, deploying and recording tracked progress are ordinary
-work — and so is **finishing a task and starting the next one**.
+it is not a checkpoint. Reading, searching, editing, building, testing, linting, installing for
+the project itself (`/start-session` § Two Environments; root is asked first), creating
+directories, committing, pushing, deploying and recording tracked progress are ordinary work —
+and so is **finishing a task and starting the next one**.
 Completion is announced, not asked about: state the task, its verified outcome and the next task,
 then continue in the same turn. Being unsure of something you can find out is not a checkpoint
 either; choose, say what you chose and what you assumed, and keep going.

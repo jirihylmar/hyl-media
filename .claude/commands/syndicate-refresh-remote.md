@@ -5,7 +5,7 @@ description: Interactively sync git repos between local WSL and a configured rem
 <!--
   Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
   Project-specific additions go in .claude/local-overlays/<this-filename> as
-  splice fragments (see /distribute-defaults for the overlay format).
+  splice fragments (see the overlay-check skill, .claude/skills/overlay-check/SKILL.md, for the overlay format).
   Direct edits to this file will be flagged on the next distribution.
 -->
 

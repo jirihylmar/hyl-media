@@ -391,8 +391,8 @@ PY
   put sha "$(git -C "$CL" rev-parse HEAD)"; "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null
   # identity, in aws mode: the reviewer's own server must answer with the declared account.
   #
-  # TWO failures look identical here and are not the same thing. This is rule 1 of the estate's own
-  # probe design — absence and ignorance are different, and both look empty — applied to the loop:
+  # TWO failures look identical here and are not the same thing. This is the estate's own probe-design
+  # rule — absence and ignorance are different, and both look empty — applied to the loop:
   #   the server never REGISTERED  -> Codex answers prose ("MCP tool unavailable") and EXITS 0.
   #                                   Nothing whatever is known about the account. A host fault.
   #   the server answered ANOTHER account -> the binding is wrong. That is the real ACCOUNT-MISMATCH.

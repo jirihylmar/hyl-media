@@ -16,9 +16,9 @@ This skill is information, not an order: it binds nothing until this project nee
 
 ## The rule
 
-The words below are the rule as agreed with central access. They equal Critical Rule 11 of the
-playbook's `CLAUDE.md` template and the text of the estate notice `access-rules-2026-10-19`; the
-three are kept equal by a test in the central repository.
+The words below are the rule as agreed with central access. They equal the Critical Rule *Sign-in
+Comes From Central Access* of the playbook's `CLAUDE.md` template and the text of the estate notice
+`access-rules-2026-10-19`; the three are kept equal by a test in the central repository.
 
 <!-- RULE BEGIN -->
 ### 11. Sign-in Comes From Central Access

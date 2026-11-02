@@ -11,7 +11,7 @@ allowed-tools:
 <!--
   Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
   Project-specific additions go in .claude/local-overlays/<this-filename> as
-  splice fragments (see /distribute-defaults for the overlay format).
+  splice fragments (see the overlay-check skill, .claude/skills/overlay-check/SKILL.md, for the overlay format).
   Direct edits to this file will be flagged on the next distribution.
 -->
 
@@ -73,16 +73,18 @@ lane use the `graphviz` package that `diagrams` installs with it. Work through t
    rewritten as views (Step 3), whatever runs it.
 2. **Check what is already there:** `python3 -c 'import diagrams, graphviz'` and `command -v dot`.
    If both succeed, install nothing.
-3. **Install only where the host's rules allow it.** On a shared or administered host, never
-   install packages. That means a member host, a machine whose administrator is someone else, or
-   any project whose `CLAUDE.md` forbids host changes. Report the missing dependency instead, so
-   the project or the operator can provide it. Installing is fine on a host you administer alone,
-   such as your own workstation, and there these two commands do it:
-
-```bash
-pip3 install --break-system-packages diagrams
-sudo apt-get install -y graphviz
-```
+3. **Install what is missing as `/start-session` § Two Environments says** (*Installing: one rule,
+   every host*). This step does not restate that rule; in practice it means:
+   - **`diagrams`** (which brings `graphviz` with it) goes into a virtual environment of the
+     project's own, kept outside anything the project deploys, for example
+     `python3 -m venv ~/.cache/<project>-architecture` and then
+     `~/.cache/<project>-architecture/bin/pip install diagrams`; Step 4 then runs `generate.py`
+     with `~/.cache/<project>-architecture/bin/python` instead of `python3`. Where the project's
+     own rules allow no virtual environment, use a project container. Never
+     `pip3 install --user` or `--break-system-packages`.
+   - **Graphviz (`dot`)** is a system package and needs root. If `dot` is missing, run the
+     generator in a project container whose image carries Graphviz and `diagrams`, or ask for the
+     package first, as that rule says, and carry on with other work until it is there.
 
 ---
 

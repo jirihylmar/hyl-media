@@ -12,7 +12,7 @@ allowed-tools:
 <!--
   Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
   Project-specific additions go in .claude/local-overlays/<this-filename> as
-  splice fragments (see /distribute-defaults for the overlay format).
+  splice fragments (see the overlay-check skill, .claude/skills/overlay-check/SKILL.md, for the overlay format).
   Direct edits to this file will be flagged on the next distribution.
 -->
 
@@ -1586,8 +1586,8 @@ for key, p in (ph.items() if isinstance(ph, dict) else enumerate(ph)):
 PY
 ```
 
-Rule 6 (*"Verify Against Real Data Before Completion"*) has existed in prose for months and is
-violated at a flat rate; **53.3% of terminal tasks estate-wide (1,538 of 2,884) carry no
+The Critical Rule *Verify Against Real Data* ("Verify Against Real Data Before Completion") has
+existed in prose for months and is violated at a flat rate; **53.3% of terminal tasks estate-wide (1,538 of 2,884) carry no
 `verify_result` at all**, five projects at 100%. Prose did not move that number because nothing
 ever printed it. This section prints it for recent completions: those whose `completed_at` falls
 on today's or yesterday's UTC date, or on the dates listed in `SESSION_DATE` (comma-separated

@@ -14,7 +14,8 @@ What it does, in order:
      Candidates are the entries that LAUNCH the awslabs aws-api MCP server: a container
      named by content address (the shape policy section 9 mandates), or the legacy pipx
      console script / `uvx` package it replaced.
-     By what it runs, never by name: server names encode no account (rule 4 of the estate).
+     By what it runs, never by name: server names encode no account (the estate's rule: a rule
+     must name what it governs, in code).
   2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary) and
      context_hints.aws_region. A declared region is the region, on every path. Without one
      (a declared value that is not a region name counts as none, and is named as ignored),

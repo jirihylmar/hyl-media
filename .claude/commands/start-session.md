@@ -12,7 +12,7 @@ allowed-tools:
 <!--
   Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
   Project-specific additions go in .claude/local-overlays/<this-filename> as
-  splice fragments (see /distribute-defaults for the overlay format).
+  splice fragments (see the overlay-check skill, .claude/skills/overlay-check/SKILL.md, for the overlay format).
   Direct edits to this file will be flagged on the next distribution.
 -->
 
@@ -197,11 +197,8 @@ your statement of which reading would mean which cause, so running it is their o
 > firewall and network. Do not upgrade or remove a package, change the timezone, edit or restart the
 > Docker daemon, restart the user's systemd manager, edit the firewall, or prune Docker
 > (`docker image prune -a` deletes the pinned MCP images sessions start from, and
-> `docker system prune` other projects' stopped containers). Installing what a check reports missing
-> is ordinary work, as are the host setup your `CLAUDE.md` authorises and the per-machine steps a
-> distributed default names (`prepare-host.sh`, and `connect.sh`, which the operator runs outside
-> the session, `PROJECT_CHARTER.md` § 8); none of them covers changing what other projects already
-> use. Ask for anything else host-wide as
+> `docker system prune` other projects' stopped containers). Install as *Installing: one rule, every
+> host* below says, and ask for any other host-wide change as
 > § *Blocked on another owner's change* says. A project's own setup script keeps the same boundary:
 > it prints a host-wide step as a note and does not let it hold back ready when the project can run
 > without it; otherwise it reports the step as waiting on the host's owner. Publish a database or
@@ -209,6 +206,20 @@ your statement of which reading would mean which cause, so running it is their o
 > host firewall; a container allow-list admits only its network's gateway (`/32`, the
 > published-port proxy's source), not the bridge range other projects' containers share. None of
 > this binds the repository whose work is running the host; its `CLAUDE.md` says so.
+
+> **Installing: one rule, every host.** Installing for the project itself is ordinary work and needs
+> no question: into a project container, into a virtual environment of the project's own where its
+> own rules allow one (kept outside anything the project deploys), or a tool under your own home.
+> So are the host setup your `CLAUDE.md` authorises and the per-machine steps a distributed default
+> names (`prepare-host.sh`, and `connect.sh`, which the operator runs outside the session,
+> `PROJECT_CHARTER.md` § 8). A Python package is not a tool under your home: `pip3 install --user`
+> and `--break-system-packages` put it in the user site, which every Python on the host reads
+> (`PROJECT_CHARTER.md` § 9). Anything else that needs `sudo` or root, or changes what the whole
+> host or other projects use (a system package or its sources, a shared runtime or daemon), is asked
+> first, as the rule *Ask First Where Security Is at Stake; Otherwise Decide and Record* in your
+> `CLAUDE.md` says (the estate notice `ask-first-narrowed-2026-10-29` carries it where your
+> `CLAUDE.md` does not yet): through the request mailbox, installing nothing until the answer, and
+> carrying on with other work. Other defaults point here rather than restate this.
 
 **Which machine you are running on is not knowable from this file.** Every default command ships
 unchanged to every host — the local workstation, the remote dev box and any member host (above) — and
