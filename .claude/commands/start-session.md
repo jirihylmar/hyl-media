@@ -41,6 +41,9 @@ When multiple agents work in the same repo simultaneously, each agent is assigne
 - **Your task comes from the user, not from `current_task` in progress.json** — in multi-agent setups, `current_task` may belong to another agent
 - If the user specifies a task (e.g., "work on 2.3"), that is YOUR task for this session
 - If no task is specified and you are the only agent, use `current_task` as normal
+- **Where phases carry a theme** (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*),
+  your work is in your theme's phases: Option 1 offers the next ready task of your theme's open
+  phase, not `current_task`. Step 4.1 records which theme this session is
 
 ### Reading Shared State
 
@@ -110,8 +113,10 @@ implemented*). Ask the owner instead:
 
 A repository this one declares as a member in its `relations` block (`PROJECT_CHARTER.md` § 14) is
 not another owner: it is directed from here, so change its files as this project's procedures say.
-Its `progress.json` is still its own, and no other repository writes it (`PROJECT_CHARTER.md`
-§ 11, *The record of identity and current work*).
+It gets no session of its own. A `progress.json` it keeps is still its own (`PROJECT_CHARTER.md`
+§ 11, *The record of identity and current work*): this project's sessions keep it, in the member's
+checkout, by the member's procedures (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*).
 
 ---
 
@@ -555,6 +560,9 @@ whose bytes have since changed on this host.**
 - Read `CLAUDE.md` for project context, rules, and conventions
 - Read `progress.json` to identify current state and context hints
 - Read last entry in `session_notes.md` for recent context
+- Where phases carry a theme, also read, once this session's theme is known (Step 4.1), every
+  `### For the <theme> session` section addressed to it in the entries newer than its own last
+  entry: another theme's session left that work for this one (`/update-progress` Step 5)
 
 ### 2. Build Capability Inventory (before you build anything)
 
@@ -1672,6 +1680,11 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  (omit ONLY if there are no non-current-phase pending tasks). Do not summarise them into prose,
  and do not drop rows.]
 
+### This session's theme  (omit when § 4.0 printed no "Open phases by theme" line)
+[One line: the theme, where it came from, and its open phases, e.g. "Theme: web ux, from the
+ session's name 'orch classic web ux'; its open phases: 13". From `--show-theme` (below). A
+ phase without a theme is this session's only when the operator names it.]
+
 ### ⚠ Unattended operations  (omit ONLY if § 4.0b found none)
 
 {{UNATTENDED_OPERATIONS}}
@@ -1752,6 +1765,25 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 *Putting a decision to the operator* gives. Continue comes first and is the recommended one, unless
 a ⚠ section above says Task X.Y cannot start as it stands. Then the option that deals with it comes
 first and is the recommended one, with the ⚠ line as its reason.
+
+**This session's theme** (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Only when
+§ 4.0 printed an "Open phases by theme" line or the operator's words name a theme; otherwise none of
+this runs and nothing is asked. Run
+`python3 .claude/skills/progress-check/progress_check.py --show-theme`:
+
+- **`declared`**: this session's theme is recorded already.
+- **`declare it`**, or the operator's words in this session name the theme: run
+  `python3 .claude/skills/progress-check/progress_check.py --declare-theme "<theme>"`.
+- **`ask`**: put a second question, header `Theme`, in the same `AskUserQuestion` call as the one
+  above, so no checkpoint is added. Its options are the open phases' themes, at most four; with one,
+  the other option is *No theme*, which leaves this session only a phase without one that the
+  operator names. It carries no recommendation and says why: the session's name names no theme. A
+  new theme comes through the free-text answer. Continue then names the next ready task of each
+  offered theme, and the chosen theme's task starts. Record the answer with `--declare-theme`.
+
+The declaration is per session and never tracked, and the commit guard warns when this session
+writes tasks into another theme's phase. With a theme, Option 1 is the next ready task of this
+theme's open phase.
 
 > **Option 1 must say what the task IS — the bare ID is not an option, it is a lookup.** This is the
 > one line the operator has to act on, and they are running several projects with none of this one's

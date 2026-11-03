@@ -46,6 +46,9 @@ Preserve these boundaries:
 - Complete a task only after its concrete verification passes; record the actual result.
 - Never delete tasks. Follow the established started/unstarted mutability rule.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
+- Where phases carry a `theme`, add, edit or close tasks only in this session's theme's phases;
+  work for another theme's goal goes to that theme's session (`PROJECT_CHARTER.md` § 6, *Sessions
+  are told apart by theme*).
 - Stage and commit only work in scope; the shipped Git hook is the mechanical integrity backstop.
 - Push only at the project's defined boundary and never force a remote branch.
 - Task 0.5 cannot complete without explicit operator approval of the implementation specification.

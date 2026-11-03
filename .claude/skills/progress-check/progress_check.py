@@ -31,7 +31,9 @@ be complete, while historical terminal records receive a warning rather than a s
 """
 import argparse
 import datetime
+import glob
 import json
+import os
 import re
 import subprocess
 import sys
@@ -882,9 +884,292 @@ def git_refs_findings(doc):
     return warn
 
 
+# --- the session theme (PROJECT_CHARTER.md § 6, *Sessions are told apart by theme*, 2026-11-03) -
+#: Where the executor's session id is read, in this order. Claude Code exports the first to every
+#: command it runs, and git passes it on to the commit guard; a subagent or workflow step carries
+#: its parent's id, so delegated work is judged by its coordinator's theme (charter § 11, one
+#: recorder). The second is Codex's thread id, which codex-cli 0.165.0 exports to the commands it
+#: runs (checked 2026-11-03).
+#: Neither is a documented contract, so every reader here fails open: no id means no warning.
+SESSION_ID_VARS = ("CLAUDE_CODE_SESSION_ID", "CODEX_THREAD_ID")
+_SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+#: The declarations live under the git common directory, one file per session id: never tracked,
+#: one per clone, shared by the clone's worktrees, and safe for sessions that share one checkout.
+#: A single file in the work tree would be overwritten by whichever concurrent session wrote last.
+THEME_DIR = "session-theme"
+THEME_KEEP_DAYS = 30
+THEME_SHOWN = 6
+
+
+def norm_theme(v):
+    """A theme as a topic is compared: casefolded, whitespace collapsed. None unless non-empty."""
+    if not isinstance(v, str):
+        return None
+    t = " ".join(v.split()).casefold()
+    return t or None
+
+
+def phase_theme(phase_obj):
+    """The phase's `theme` as written (whitespace collapsed), or None."""
+    if not isinstance(phase_obj, dict):
+        return None
+    v = phase_obj.get("theme")
+    return " ".join(v.split()) if isinstance(v, str) and v.strip() else None
+
+
+def theme_findings(doc, base_doc, session_theme):
+    """Warnings for tasks a session wrote into a phase another theme owns. NEVER a failure.
+
+    The phase's owner is its `theme` in the base commit, or in this one when the base had none. For
+    each phase whose owner differs from the session's declared theme it names the tasks this commit
+    adds there, the tasks open in the base that it changes (closing one included), and the phase
+    itself when this commit creates it. Left out: a task carrying `estate_notice` (any session may
+    close a notice, charter § 6), a task already terminal in the base (compaction; terminal drift
+    has its own warning) and every phase-level field (/update-progress Step 3b reconciles status).
+
+    Silent with no declared theme, no readable base, or a phase without a theme: an unthemed phase
+    belongs to whichever session the operator names, and a project with one session needs no theme.
+    A `theme` that is not a non-empty string is named whatever the session, since no theme matches it.
+    """
+    warn = []
+    for pk, po in iter_phases(doc):
+        if isinstance(po, dict) and "theme" in po and phase_theme(po) is None:
+            warn.append(f"phase {pk}: theme {po['theme']!r} is not a non-empty string, so no "
+                        f"session's theme matches it. Not blocking - write the topic that owns "
+                        f"this phase, such as \"web ux\" (PROJECT_CHARTER.md § 6, *Sessions are "
+                        f"told apart by theme*).")
+    mine = norm_theme(session_theme)
+    if mine is None or base_doc is None:
+        return warn
+    base_phases = dict(iter_phases(base_doc))
+    bt = tasks_by_key(base_doc)
+    hits = []
+    for pk, po in iter_phases(doc):
+        if not isinstance(po, dict):
+            continue
+        before = base_phases.get(pk)
+        owner = phase_theme(before) or phase_theme(po)
+        if owner is None or norm_theme(owner) == mine:
+            continue
+        added, edited = [], []
+        for k, t in iter_tasks_keyed(po):
+            tid = task_id_of(k, t)
+            if tid is None:
+                continue
+            b = bt.get((pk, tid))
+            if t.get("estate_notice") is not None or (isinstance(b, dict) and b.get("estate_notice") is not None):
+                continue
+            if b is None:
+                added.append(tid)
+            elif not is_terminal(b) and b != t:
+                edited.append(tid)
+        created = before is None
+        if added or edited or created:
+            hits.append((pk, owner, created, added, edited))
+
+    def ids(xs):
+        shown = ", ".join(xs[:THEME_SHOWN])
+        return shown + (f" (+{len(xs) - THEME_SHOWN} more)" if len(xs) > THEME_SHOWN else "")
+
+    for pk, owner, created, added, edited in hits[:DRIFT_SHOWN]:
+        what = (["creates it"] if created else []) \
+            + ([f"adds task(s) {ids(added)}"] if added else []) \
+            + ([f"changes open task(s) {ids(edited)}"] if edited else [])
+        warn.append(
+            f"phase {pk} belongs to theme {owner!r} and this session declared "
+            f"{' '.join(session_theme.split())!r}; this commit {', '.join(what)}. Not blocking - only "
+            f"a session of a phase's theme adds, edits or closes tasks in it; work for another "
+            f"theme's goal goes to that theme's session, and work with a new goal opens a phase of "
+            f"this session's theme (PROJECT_CHARTER.md § 6, *Sessions are told apart by theme*). A "
+            f"wrong declaration is corrected with progress_check.py --declare-theme \"<theme>\".")
+    if len(hits) > DRIFT_SHOWN:
+        rest = "; ".join(f"{pk} ({owner})" for pk, owner, _c, _a, _e in hits[DRIFT_SHOWN:])
+        warn.append(f"+{len(hits) - DRIFT_SHOWN} more phase(s) of another theme written, same rule: {rest}")
+    return warn
+
+
+def session_id():
+    """(variable, id) for this executor's session, or (None, None). An id that could not name a
+    file safely is treated as no id, because it is used as one."""
+    for var in SESSION_ID_VARS:
+        v = os.environ.get(var, "").strip()
+        if v:
+            return (var, v) if _SESSION_ID.match(v) else (var, None)
+    return None, None
+
+
+def git_common_dir(start):
+    """The absolute git common directory of the repository holding `start`, or None."""
+    try:
+        r = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=start,
+                           capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = r.stdout.strip()
+    if r.returncode != 0 or not out:
+        return None
+    return os.path.normpath(os.path.join(start, out))
+
+
+def theme_file(start):
+    """(path of this session's declaration, session id) or (None, reason)."""
+    var, sid = session_id()
+    if sid is None:
+        return None, ("%s holds no id that can name a file" % var if var else
+                      "no session id in the environment (%s)" % ", ".join(SESSION_ID_VARS))
+    common = git_common_dir(start)
+    if common is None:
+        return None, "not inside a git repository"
+    return os.path.join(common, THEME_DIR, sid), sid
+
+
+def declared_theme(start):
+    """This session's declared theme, or None. Never raises: a declaration that cannot be read is
+    no declaration, and the warning it would feed stays silent."""
+    path, _sid = theme_file(start)
+    if path is None:
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            first = fh.readline()
+    except OSError:
+        return None
+    return " ".join(first.split()) or None
+
+
+def declare_theme(theme, start):
+    """Record (or, with an empty theme, clear) this session's theme. Returns the exit code."""
+    path, sid = theme_file(start)
+    if path is None:
+        print(f"progress-check: session theme NOT recorded - {sid}. The commit guard therefore warns "
+              f"about nothing for this session; state the theme in the session's notes instead.",
+              file=sys.stderr)
+        return 2
+    theme = " ".join((theme or "").split())
+    try:
+        if not theme:
+            if os.path.exists(path):
+                os.remove(path)
+            print(f"progress-check: session theme cleared for session {sid[:8]}")
+            return 0
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = f"{path}.{os.getpid()}.tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(theme + "\n")
+        os.replace(tmp, path)
+    except OSError as e:
+        print(f"progress-check: session theme NOT recorded - cannot write {path}: {e}", file=sys.stderr)
+        return 2
+    cutoff = datetime.datetime.now().timestamp() - THEME_KEEP_DAYS * 86400
+    for other in glob.glob(os.path.join(os.path.dirname(path), "*")):
+        try:
+            if other != path and os.path.getmtime(other) < cutoff:
+                os.remove(other)
+        except OSError:
+            pass
+    print(f"progress-check: session theme \"{theme}\" declared for session {sid[:8]} ({path})")
+    return 0
+
+
+def session_name():
+    """The operator's name for this session when a local file says it, else None.
+
+    Claude Code keeps the latest rename in <config dir>/projects/*/<id>/custom-title.json
+    ({"customTitle": ...}); Codex keeps {id, thread_name} lines in <codex home>/session_index.jsonl.
+    Both are internal files, so the name only PROPOSES a theme, and a change of format costs one
+    question at session start, never a wrong warning."""
+    var, sid = session_id()
+    if sid is None:
+        return None
+    try:
+        if var == "CLAUDE_CODE_SESSION_ID":
+            cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+            for p in glob.glob(os.path.join(cfg, "projects", "*", sid, "custom-title.json")):
+                with open(p, encoding="utf-8") as fh:
+                    name = json.load(fh).get("customTitle")
+                if isinstance(name, str) and name.strip():
+                    return " ".join(name.split())
+        else:
+            home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+            name = None
+            with open(os.path.join(home, "session_index.jsonl"), encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue
+                    if isinstance(row, dict) and row.get("id") == sid and isinstance(row.get("thread_name"), str):
+                        name = row["thread_name"]
+            if name and name.strip():
+                return " ".join(name.split())
+    except (OSError, ValueError, AttributeError):
+        return None
+    return None
+
+
+def open_phase_themes(doc):
+    """The themes of phases that are not terminal or still hold an open task, in file order."""
+    out = []
+    for _pk, po in iter_phases(doc):
+        if not isinstance(po, dict):
+            continue
+        is_open = not is_terminal(po) or any(not is_terminal(t) for t in iter_tasks(po))
+        th = phase_theme(po)
+        if is_open and th and norm_theme(th) not in [norm_theme(x) for x in out]:
+            out.append(th)
+    return out
+
+
+def theme_in_name(name, themes):
+    """The one theme the session's name contains as whole words, or None (none, or more than one
+    after a theme that is part of a longer matching one is set aside)."""
+    if not name:
+        return None
+    padded = " %s " % " ".join(re.split(r"[\s_\-/:]+", name.casefold())).strip()
+    found = [t for t in themes
+             if " %s " % " ".join(re.split(r"[\s_\-/:]+", t.casefold())).strip() in padded]
+    found = [t for t in found if not any(t != o and norm_theme(t) in norm_theme(o) for o in found)]
+    return found[0] if len(found) == 1 else None
+
+
+def show_theme(doc, start):
+    """The one line /start-session reads: is a theme declared, and if not, what to declare or ask."""
+    themes = open_phase_themes(doc)
+    declared = declared_theme(start)
+    _var, sid = session_id()
+    if declared:
+        tail = "" if themes else "; no open phase carries a theme yet"
+        print(f"session theme: declared \"{declared}\" (session {sid[:8]}){tail}")
+        return 0
+    if not themes:
+        print("session theme: no open phase carries a theme")
+        return 0
+    listed = ", ".join(themes)
+    if sid is None:
+        print(f"session theme: no session id in the environment, so a theme cannot be declared and "
+              f"the commit guard warns about nothing; open phases' themes: {listed}")
+        return 0
+    name = session_name()
+    hit = theme_in_name(name, themes)
+    if hit:
+        print(f"session theme: not declared; the session's name \"{name}\" names the open phases' "
+              f"theme \"{hit}\": declare it")
+    elif name:
+        print(f"session theme: not declared; the session's name \"{name}\" names none of the open "
+              f"phases' themes ({listed}): ask")
+    else:
+        print(f"session theme: not declared; the session's name is not readable; open phases' "
+              f"themes: {listed}: ask")
+    return 0
+
+
 # --- the four checks --------------------------------------------------------
-def check(text, base_text=None):
-    """Return (failures, warnings). Empty failures == safe to commit."""
+def check(text, base_text=None, session_theme=None):
+    """Return (failures, warnings). Empty failures == safe to commit.
+
+    `session_theme` is the committing session's declared theme, resolved by main(); this function
+    reads nothing but its arguments."""
     fail, warn = [], []
 
     # 1. Parses at all — catches the missing comma AND the trailing phase.
@@ -1042,6 +1327,12 @@ def check(text, base_text=None):
     # 3c. git_refs on tasks and base_branches (root and member), the refs-check skill's two keys.
     #     Warnings only; see git_refs_findings().
     warn.extend(git_refs_findings(doc))
+
+    # 3d. Tasks written into a phase another theme owns (charter § 6, *Sessions are told apart by
+    #     theme*). Warnings only; see theme_findings(). The base is parsed only when a theme is
+    #     declared, so a project that never declares one pays nothing.
+    warn.extend(theme_findings(doc, parse_base(base_text) if norm_theme(session_theme) else None,
+                               session_theme))
 
     # 4. Append-only: nothing that existed before may vanish. This is the framework's
     #    oldest written rule ("NEVER remove tasks — mark superseded instead"), and until now
@@ -1361,7 +1652,19 @@ def main():
                     help="ref to enforce append-only against ('' or 'none' to skip)")
     ap.add_argument("--quiet", action="store_true",
                     help="suppress the all-clear line; failures and warnings are still reported")
+    ap.add_argument("--session-theme", default=None, metavar="THEME",
+                    help="judge the commit as a session of THEME (default: the theme this "
+                         "session declared, when the environment names the session)")
+    ap.add_argument("--declare-theme", default=None, metavar="THEME",
+                    help="record THEME as this session's theme and exit ('' clears it)")
+    ap.add_argument("--show-theme", action="store_true",
+                    help="print whether this session declared a theme, or what to declare or ask, and exit")
     a = ap.parse_args()
+
+    # Where the declaration is looked up: the repository the checked file belongs to.
+    start = os.getcwd() if a.staged else (os.path.dirname(os.path.abspath(a.file)) or os.getcwd())
+    if a.declare_theme is not None:
+        return declare_theme(a.declare_theme, start)
 
     if a.staged:
         text = read_staged(a.file)
@@ -1376,11 +1679,20 @@ def main():
             return 2
         src = a.file
 
+    if a.show_theme:
+        try:
+            doc, _ = parse_strict(text)
+        except ValueError as e:
+            print(f"progress-check: cannot read {src}: {e}", file=sys.stderr)
+            return 2
+        return show_theme(doc if isinstance(doc, dict) else {}, start)
+
     base_text = None
     if a.base and a.base.lower() != "none":
         base_text = read_ref(a.base, a.file)   # None on first commit / untracked → skipped
 
-    fail, warn = check(text, base_text)
+    theme = a.session_theme if a.session_theme is not None else declared_theme(start)
+    fail, warn = check(text, base_text, theme)
 
     if fail:
         print(f"progress-check: FAIL — {src}", file=sys.stderr)

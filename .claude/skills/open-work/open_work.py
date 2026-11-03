@@ -243,6 +243,40 @@ def waits_on(task, open_ids):
     return found
 
 
+def themes_line(phases):
+    """-> str or None: which theme owns each open phase, when any open phase carries a `theme`.
+
+    PROJECT_CHARTER.md § 6, *Sessions are told apart by theme*: concurrent sessions are told apart
+    by theme, and only a session of a phase's theme writes its tasks. The tables below still follow
+    the one shared current_phase pointer, so another theme's in-progress tasks show as "Stuck
+    elsewhere"; this line says whose they are. None for a project without themes, whose output
+    stays exactly what it was."""
+    groups, order, plain = {}, [], []
+    for key, phase in phases.items():
+        tasks = tasks_of(phase)[0]
+        if is_terminal(phase) and all(is_terminal(t) for t in tasks):
+            continue
+        label = phase_label(key)
+        label = label[len("Phase "):] if label.startswith("Phase ") else label
+        theme = phase.get("theme")
+        theme = " ".join(theme.split()) if isinstance(theme, str) and theme.strip() else None
+        if theme is None:
+            plain.append(label)
+            continue
+        fold = theme.casefold()
+        if fold not in groups:
+            groups[fold] = (theme, [])
+            order.append(fold)
+        groups[fold][1].append(label)
+    if not order:
+        return None
+    parts = ["%s: %s" % (cell(groups[f][0], 40), ", ".join(cell(x, 40) for x in groups[f][1]))
+             for f in order]
+    if plain:
+        parts.append("no theme: %s" % ", ".join(cell(x, 40) for x in plain))
+    return "**Open phases by theme:** %s" % "; ".join(parts)
+
+
 def stuck_since(task, phase):
     for key in ("started_at", "added_at", "added_on"):
         if task.get(key):
@@ -344,6 +378,11 @@ def main():
     if notes:
         out.append("> **progress.json pointer check — report these, do not silently fix them:**")
         out.extend("> - %s" % n for n in notes)
+        out.append("")
+
+    by_theme = themes_line(phases)
+    if by_theme:
+        out.append(by_theme)
         out.append("")
 
     rendered_rows = 0

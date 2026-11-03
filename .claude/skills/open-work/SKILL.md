@@ -40,6 +40,12 @@ now" — deferred work being invisible is the condition this exists to end.
 
 The script reads **one file**: `progress.json`. No dependencies, no network, no writes.
 
+**Where an open phase carries a `theme`** (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*), one line comes before the tables: `**Open phases by theme:** web tech: 13; booking: 14; no
+theme: 2, 5`. The tables still follow the one shared `current_phase`, so another theme's
+`in_progress` tasks show under *Stuck elsewhere*; the line says whose they are. A project without
+themes gets exactly the output it always did.
+
 **It used to read a second, and that was the mistake.** Until 2026-08-26 it also read
 `consult_notes.md` beside it and rendered an **Open consult cycles** table, reasoning that a cycle
 closed `agreed-proposed` or `disputed` exists nowhere else. What that actually created was a second

@@ -117,6 +117,11 @@ Then ask one question, *"Where does this work go?"*, in the form `PROJECT_CHARTE
 | B | **New phase** | a phase with a goal of its own, so phase X can still close; Step 5 shows it for approval | 1 |
 | C | **Untracked observation** | written to `session_notes.md` and the session report only; nothing enters `progress.json`, and it ends with the session | 4 |
 
+Where sessions are told apart by theme (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*), A offers only a phase of this session's theme, or a phase without one that the operator
+gave this session, and B creates a phase with this session's `theme`. Work that serves another
+theme's goal is not proposed here at all: it goes to that theme's session.
+
 If the user's request already authorizes and classifies the work, do not ask again. Ask only when
 the destination or product outcome is genuinely ambiguous.
 
@@ -185,6 +190,7 @@ Work that does not serve it does not belong in it, however it was discovered.
 | is needed to finish task 3.4 itself | `3.4a`, `3.4b` | It *is* the current work. |
 | serves phase 3's goal, own deliverable | `3.5`, `3.6` | Same goal, new task. |
 | **does NOT serve phase 3's goal** | **new phase `4.1`, `4.2`** | Different work. Filing it under 3 is what makes phase 3 uncloseable. |
+| serves the goal of a phase another theme owns | **no id here** | That theme's session's work: a message to it, or a note it reads (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
 
 **"I found it while doing 3.4" is not a reason to number it 3.x.** Where work was *discovered* says
 nothing about which goal it *serves* — conflating the two is exactly how a phase becomes a drawer
@@ -261,6 +267,7 @@ Then ask one question in the charter § 3 form, *"Add these N items to progress.
 "phase_4_featurename": {
   "name": "Feature Name",
   "status": "pending",
+  "theme": "web ux",   // only where sessions are told apart by theme: this session's theme
   "authored_by": "Claude|Codex|person",
   "assigned_to": "Claude|Codex|person",
   "tasks": [

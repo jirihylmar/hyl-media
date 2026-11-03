@@ -38,6 +38,11 @@ Preserve these boundaries:
 - The session-start status is a checkpoint. Continue immediately only when the user's current
   request already authorized that work.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
+- Sessions on one project are told apart by theme (`PROJECT_CHARTER.md` § 6, *Sessions are told
+  apart by theme*). In Codex, `progress_check.py --declare-theme` records the theme under
+  `CODEX_THREAD_ID`; where that is not in the environment nothing is recorded, the commit guard
+  warns about nothing, and the theme goes in the session's notes. The `Theme` question takes the
+  charter § 3 numbered form, in the same message as the session-start question.
 - § 3.5's metadata report never writes `description`, `description_reviewed` or `relations`, and
   adds no stop. Its `REVIEW description (…)` line comes from the project's own
   `.claude/skills/progress-check/progress_check.py` (`description_review_state`), imported and never

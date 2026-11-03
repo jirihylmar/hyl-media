@@ -308,6 +308,38 @@ every session start and close. Neither key existed in the estate before 2026-11-
 
 Pinned by `scripts/test-refs-check.sh` in the central repo.
 
+## A task written into another theme's phase: warned about, never refused
+
+Where concurrent sessions are told apart by theme (`PROJECT_CHARTER.md` § 6, *Sessions are told
+apart by theme*), a phase names its owner in an optional `theme` field and only a session of that
+theme writes its tasks. A session records its theme once, at start:
+
+```bash
+python3 .claude/skills/progress-check/progress_check.py --show-theme             # declared, or what to declare or ask
+python3 .claude/skills/progress-check/progress_check.py --declare-theme "web ux"  # '' clears it
+```
+
+The declaration is a file named by the session id under the git common directory
+(`<git rev-parse --git-common-dir>/session-theme/<id>`): never tracked, one per clone, shared by its
+worktrees, and one per session, so concurrent sessions in one checkout do not overwrite each other.
+The id is `CLAUDE_CODE_SESSION_ID`, which Claude Code exports and git passes to the commit guard (a
+subagent or workflow step carries its coordinator's), else Codex's `CODEX_THREAD_ID` (exported to
+its commands by codex-cli 0.165.0, checked 2026-11-03). `--show-theme` proposes a theme from the
+session's name when the name contains exactly one open phase's theme, read from Claude Code's
+`custom-title.json` or Codex's `session_index.jsonl`; both are internal files, so a change there
+costs one question, never a wrong warning.
+
+The checker then **warns** when a commit, against the previous one, adds tasks to a phase another
+theme owns, changes a task open there (closing it included), or creates a phase with another theme.
+The owner is the phase's `theme` in the previous commit, or in this one when it had none. Not
+counted: a task carrying `estate_notice`, which any session may close; a task already terminal in
+the previous commit (compaction); and phase-level fields (`/update-progress` Step 3b). A `theme`
+that is not a non-empty string is named whatever the session. Exit stays `0`. It is silent with no
+session id, no declaration, no readable previous commit, or a phase without a theme, and for the
+operator's own terminal. `--session-theme <theme>` judges a run as that theme instead.
+
+Pinned by `scripts/test-session-theme.sh` in the central repo.
+
 ## What it deliberately does NOT enforce
 
 No retrospective schema migration, no status vocabulary and no style policing. Measured across 34 real projects: `phases` is a dict in 30 and a

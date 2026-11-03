@@ -202,6 +202,37 @@ executor owns the combined result; delegation never delegates system consistency
 Reduce parallelism only for a named constraint such as dependency, unsafe shared state, production
 migration risk or resource quota. Complexity alone is not a reason to serialise independent work.
 
+### Sessions are told apart by theme
+
+Work on a managed group runs from its manager's sessions. A repository the manager declares as a
+member (§ 14) gets no session of its own, and a task may touch any member. A member that keeps a
+record of its own still owns it (§ 11): the manager's sessions keep it, in the member's checkout,
+by the member's procedures.
+
+Sessions working on one project at once are told apart by theme: a stable topic such as *web tech*,
+*web ux* or *booking*, never a session's full name. The operator names each session, its theme is
+that name's topic, and the session states its theme when it starts. Each phase records the theme
+that owns it in its `theme` field, and only a session of that theme adds, edits or closes tasks in
+it.
+
+Work that serves another theme's goal goes to that theme's session: a message while it is live,
+otherwise a note it reads at its next start. It never goes into that theme's phase. Work with a goal
+that no open phase of the session's theme serves opens a new phase owned by that theme. A phase
+still carries one goal (§ 4), and § 5 incorporates related work only into a phase of the session's
+own theme.
+
+A phase without `theme` belongs to whichever session the operator names, until a theme is set.
+Existing phases are not back-filled, and a terminal task stays in the phase that closed it.
+Whichever phase an estate notice lands in, any session may act on it and close it. A project with
+one session at a time needs no theme.
+
+Measured 2026-11-03 in orchestrator-classic: the *web ux* session added 13.77-13.83 to phase 13,
+which the *web tech* session drives, while a *booking* session ran as well. The operator: *"i dont
+like that the session web ux writter into you phase"*; asked whether that holds for every project:
+*"yes its one. we dont open sessions in managed repos directly anymore. task can come accross them,
+here and there. but we need to distinguish sessions under orchestrator , ussually by theme, topic
+eg"*.
+
 ## 7. Prefer one product repository
 
 A cohesive product defaults to one repository containing application code, infrastructure,
@@ -710,7 +741,8 @@ the member lives.
 
 Declare downward only. A manager names its members; a member never names its manager. Exactly one
 repository writes each edge, so two repositories cannot contradict each other about who directs
-whom, and a correction has exactly one place to be made.
+whom, and a correction has exactly one place to be made. A member is worked on from its manager's
+sessions and gets none of its own (§ 6, *Sessions are told apart by theme*).
 
 The relation word is the operator's own. `nested`, `governed` and `metadata-governed` are already in
 use, a better word for a real relationship is legal, and what you write is carried through as

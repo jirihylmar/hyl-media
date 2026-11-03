@@ -184,6 +184,7 @@ finish line, therefore never closes — and everything parked in it is never for
 | **is needed to finish 2.3 itself** | `2.3a`, `2.3b` — sub-ID, as below | It *is* the current work. Same goal. |
 | **serves this phase's goal**, but is its own deliverable | `2.7` — next free ID in the phase | Same goal, new task. |
 | **does NOT serve this phase's goal** | **`3.1` — a NEW phase** | However it was found, it is different work. Putting it here is what makes a phase uncloseable. |
+| serves the goal of a phase another theme owns | **no number here** — that theme's session | A message to it, or a note it reads (Step 5); never a task in its phase (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
 
 **"But I found it while doing 2.3" is not a reason to number it 2.x.** Where work was *discovered*
 says nothing about which goal it *serves*. That single confusion is what turns a focused phase into a
@@ -222,6 +223,9 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
   coordinating executor may reconcile any non-terminal task after re-reading the whole open-work
   landscape; never rewrite terminal history
 - **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
+- **Add, edit or close tasks only in a phase of your session's theme** where phases carry one
+  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*); an estate notice is the exception,
+  and the commit guard warns about any other
 - **One Edit call per field change** — smaller edits reduce the collision window
 
 ### session_notes.md: Append-Only
@@ -805,6 +809,12 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 ---
 ```
+
+Where sessions are told apart by theme (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*), the heading names this session's theme:
+`## Session: YYYY-MM-DD - Task X.Y (theme "web ux")`. Work for another theme's goal that its
+session could not be messaged about goes under `### For the <theme> session` in this entry; that
+session reads it at its next start (`/start-session` Step 1).
 
 ### 6. Sync Repository Meta-Docs (CRITICAL)
 

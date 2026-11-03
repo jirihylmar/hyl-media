@@ -308,6 +308,10 @@ Add all generated tasks to progress.json:
 }
 ```
 
+A phase carries `"theme"` only where sessions are told apart by theme, naming the theme whose
+session owns it (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*); a project with one
+session at a time leaves it out.
+
 ### 9. Verify Task Count and Coverage
 
 Check:
