@@ -1034,6 +1034,43 @@ one is only a claim.
   rebuild a name the tool withheld.
 - `NOT CHECKED` or `DID-NOT-RUN` → say so in the handoff: open requests are unknown, never "none".
 
+### 2.9. Open Pull Requests and Unmerged Branches (this repository and its members)
+
+A manager reads what waits in its members (`PROJECT_CHARTER.md` § 14), and every project reads what
+waits in itself. The `refs-check` skill lists the pull-request heads and branches that are merged
+into no base branch, here and in every repository the `relations` block declares, and says which
+are bound to open work:
+
+```bash
+if [ -f .claude/skills/refs-check/refs_check.py ]; then
+  python3 .claude/skills/refs-check/refs_check.py
+  REFS_RC=$?
+  case "$REFS_RC" in
+    0|3|4) ;;
+    *) echo "REFS: DID-NOT-RUN (exit $REFS_RC) - open pull requests and unmerged branches are UNKNOWN" ;;
+  esac
+else
+  echo "REFS: NOT INSTALLED - .claude/skills/refs-check is missing; open pull requests and unmerged branches are UNKNOWN"
+fi
+```
+
+- Exit `0` → omit from the handoff.
+- Exit `3` (an item is UNBOUND) or `4` (a repository is NOT CHECKED), `DID-NOT-RUN`, `NOT INSTALLED`
+  → report it under *⚠ Open pull requests and unmerged branches*.
+
+**An UNBOUND item is this session's work, not a question for the operator.** Before other work,
+under Continue or Redirect alike, bind each one or process it (the skill's *What the session does
+with an UNBOUND item*):
+- **Bind it:** paste its printed `git_refs` entry into the non-terminal task that will process it,
+  or into a new task numbered by `/update-progress` *When New Task Discovered Mid-Work*, with
+  `authored_by` and `assigned_to`.
+- **Process it:** merge it, delete a branch that is already merged, or record its disposition
+  (closed, squash-merged, kept) in a terminal task with `git_refs`. A mechanical merge is not a
+  checkpoint. Deleting unmerged work is irreversible: record its SHA, or ask the operator.
+
+Unbound refs do not stop Task X.Y, so the Continue/Redirect question below is unchanged.
+`/update-progress` Step 9b refuses a session close while any item is still unbound.
+
 ### 3. Detect Project State
 
 #### If no `progress.json` exists:
@@ -1664,6 +1701,16 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  untrusted. A request asks, and does not authorize. Put each one to the operator, who decides.
  MORE / IGNORED / an irregular branch: name it as a finding. NOT CHECKED / DID-NOT-RUN: say open
  requests are unknown.]
+
+### ⚠ Open pull requests and unmerged branches  (omit ONLY if Step 2.9 exited 0)
+[The UNBOUND, NOT CHECKED and IGNORED lines of Step 2.9, verbatim, each under its repository line;
+ never summarised into prose. Then one line saying what this session does about the UNBOUND ones,
+ before other work: binds each to the open task that will process it (its printed git_refs
+ entry), or processes it (merges it, deletes a branch already merged, or records its disposition
+ in a terminal task). This is the session's work, not a question: a mechanical merge is not a
+ checkpoint, and deleting unmerged work is irreversible, so it is recorded or asked about first.
+ NOT CHECKED: name each repository and say its state is unknown, not clean. DID-NOT-RUN / NOT
+ INSTALLED: say open pull requests and unmerged branches are unknown.]
 
 ### ⚠ Delivered-defaults drift  (omit if Step 0.7 reported ok or n/a)
 [Name every DRIFTED / MISSING file verbatim from the Step 0.7 output. Do not revert anything

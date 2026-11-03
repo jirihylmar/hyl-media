@@ -39,8 +39,8 @@ contract is stated in the charter once, for both executors; this file only enfor
 Then invoke tools for X.Z in the same response.
 
 For `TASK_BOUNDARY`, run Steps 1, 2, 2a, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped
-portion of Step 5. Defer Step 2b, Step 3c, the full session handoff in Step 5, Step 11, and Step 12
-until an actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
+portion of Step 5. Defer Step 2b, Step 3c, Step 9b, the full session handoff in Step 5, Step 11,
+and Step 12 until an actual `SESSION_CLOSE`. This keeps publication reliable without making every commit pay the
 cost—or adopt the stopping posture—of ending a session. The documentation steps are not that cost.
 Step 12's *Documentation swept* table waits for the close, so at a task boundary Step 7's result is
 recorded in the task's `verify_result` as `docs:` and named in the transition.
@@ -1059,6 +1059,49 @@ ended while its author believed it was still polling.
 non-terminal tasks (shape: `.claude/skills/unattended-check/SKILL.md`); a task that starts something
 outliving the turn gains that block when it starts it, and `progress-check` validates it at commit.
 
+### 9b. Open pull requests and unmerged branches gate (SESSION_CLOSE only)
+
+A session does not close while something waits unowned in this repository or in a member it manages
+(`PROJECT_CHARTER.md` § 14). It runs before Step 10, so a binding written here is committed there:
+
+```bash
+if [ -f .claude/skills/refs-check/refs_check.py ]; then
+  python3 .claude/skills/refs-check/refs_check.py
+  REFS_RC=$?
+  case "$REFS_RC" in
+    0) ;;
+    3) echo "REFS: CLOSE REFUSED - bind or process every UNBOUND item above, then run this again" ;;
+    4) echo "REFS: NOT CHECKED - name each repository above in Step 12; it does not block the close" ;;
+    *) echo "REFS: DID-NOT-RUN (exit $REFS_RC) - open pull requests and unmerged branches are UNKNOWN; say so in Step 12; it does not block the close" ;;
+  esac
+else
+  echo "REFS: NOT INSTALLED - .claude/skills/refs-check is missing; say so in Step 12; it does not block the close"
+fi
+```
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| `0` | every repository read, nothing unbound | continue to Step 10 |
+| `3` | **the close is refused**: an item is UNBOUND | bind or process each one, run the block again, and do not send the final response until it no longer exits 3 |
+| `4` | a repository or its pull requests were NOT CHECKED | name each one in Step 12 (unknown, not clean); continue |
+| other | the check did not run | report it verbatim in Step 12; continue |
+
+**Binding is one paste; processing is the session's own work.** The check prints a `git_refs` entry
+for every UNBOUND item: paste it into the non-terminal task that will process the item, or into a
+new task (*When New Task Discovered Mid-Work*). Or process it: merge it, delete a branch already
+merged, or record its disposition (closed, squash-merged, kept) in a terminal task with `git_refs`.
+None of these is a question for the operator. Deleting unmerged work is irreversible: keep its SHA in
+a terminal task instead, or ask the operator (the refs-check skill, *What the session does with an
+UNBOUND item*).
+
+**Why NOT CHECKED does not block.** An unreachable remote (a member host behind a VPN, an outside
+machine offline, a credential this host lacks) is outside the session's control. Blocking on it
+would trap every close on such a host and teach people to step around the gate, while an UNBOUND
+item can always be cleared in one edit. So it is reported, and Step 12 names it every time.
+
+**`TASK_BOUNDARY` skips this step.** It costs one network round per repository, and an unbound ref
+at a task boundary is still caught at the next close.
+
 ### 10. Commit and Push Your Work (every repo you changed this session)
 
 Commit and **FF-push only the work YOU did this session — the repos and files you changed for your task, and nothing else.** This is Axis B (cross-checkout publication): other machines (the box, offline computers) only see your work once it reaches the shared origin, so leaving a repo you changed committed-but-unpushed is exactly the stale-checkout trap that `/start-session` Step 0 then has to skip on the next machine. It is distinct from the same-checkout Multi-Agent Discipline above.
@@ -1596,6 +1639,12 @@ on today's or yesterday's UTC date, or on the dates listed in `SESSION_DATE` (co
 task-boundary commit, takes it in `notes` instead: its verification is history
 (`PROJECT_CHARTER.md` § 4, *Work from outcomes and keep open work coherent*), and
 `progress-check` warns when it changes.
+
+### Open pull requests and unmerged branches (Step 9b)
+- refs-check: N unbound, N bound, N recorded, N not checked (exit K)   ← its last line, verbatim
+- NOT CHECKED: <each repository, and its reason, verbatim> — its state is unknown, not clean
+(or "DID-NOT-RUN (exit N)" / "NOT INSTALLED": open pull requests and unmerged branches are unknown.
+ Exit 3 never reaches this report: the close was refused until every item was bound or processed.)
 
 ### Open Work (rendered mechanically — run it, do not compose it)
 

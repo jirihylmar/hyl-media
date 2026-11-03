@@ -724,3 +724,9 @@ Nothing about a relation is taken from anywhere else. `git_repos` records where 
 whether it arrived; a directory inside this checkout records where files happen to sit. Neither is a
 statement of governance, and neither is read as one. If this repository directs another, the
 `relations` block says so, or nothing does.
+
+A manager reads what waits in its members. At every session start and close it lists the open pull
+requests and the branches not merged into a base branch, in this repository and in every member this
+block declares, with the `refs-check` skill. Before a session closes, each one is bound to open work
+by its ref and SHA, or processed. A member that cannot be read is reported as not checked, never as
+clean.

@@ -282,8 +282,11 @@ when semantic fields change on such work.
 Closure is the immutability boundary. When a task was already terminal in the previous commit —
 `complete`, `completed`, `superseded`, `done`, `closed`, `dropped`, `cancelled`, `canceled`,
 `resolved`, `obsolete` or `abandoned` — the checker **warns** if its `name`, `description`, `verify`,
-`verify_result`, `dependencies` or `depends_on` changes. These fields state what the historical
-record meant and what evidence closed it. Later work belongs in a non-terminal task that links back.
+`verify_result`, `dependencies`, `depends_on` or `git_refs` changes. These fields state what the
+historical record meant and what evidence closed it. Later work belongs in a non-terminal task that
+links back. `git_refs` joined the list on 2026-11-03: on a closed task it records that a pull request
+or branch was dealt with, so one added there after the fact silences the `refs-check` skill, and the
+warning is what shows that at review.
 
 Candidate-only terminal status does not warn: the same commit may legitimately refine open work and
 then close it. The next commit sees it as history. The warning never blocks because Git still holds
@@ -291,6 +294,19 @@ the previous bytes and historical projects use varied schemas; it makes the rete
 review instead of pretending it did not happen. Warnings are capped after three full entries.
 
 Pinned by `scripts/test-progress-check-mutability.sh` in the central repo.
+
+## `git_refs` and `base_branches`: warned about, never refused
+
+The `refs-check` skill reads two optional keys (its SKILL.md holds the form): `git_refs` on a task,
+a list of `{"repo", "ref", "sha"}` entries that bind a pull request or branch to that task, and
+`base_branches`, a list of branch names at the root or on a `relations` member. The checker
+**warns** when a `git_refs` is not a list, or an entry is not an object, has no non-empty `repo` or
+`ref`, a `ref` not starting with `refs/`, or a `sha` that is not 7 to 40 hex characters; and when a
+`base_branches` is not a list of non-empty branch names. Exit stays `0`. A malformed binding is
+never silent: `refs-check` reports the entry as IGNORED and the item it meant to bind as UNBOUND at
+every session start and close. Neither key existed in the estate before 2026-11-03.
+
+Pinned by `scripts/test-refs-check.sh` in the central repo.
 
 ## What it deliberately does NOT enforce
 

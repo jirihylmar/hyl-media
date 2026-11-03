@@ -489,7 +489,8 @@ def norm_status(st):
 #: Semantic fields frozen once the BASE commit records a terminal task. Lifecycle/archival fields
 #: may still change mechanically (for example compaction pointers), but the declared outcome and
 #: evidence may not be retold after closure.
-DRIFT_FIELDS = ("name", "description", "verify", "verify_result", "dependencies", "depends_on")
+DRIFT_FIELDS = ("name", "description", "verify", "verify_result", "dependencies", "depends_on",
+                "git_refs")
 
 #: How many drift warnings are printed in full before the rest are named in one line. Matches the
 #: cap the malformed-date warning uses, for the same reason: the hook prints these into a commit.
@@ -799,6 +800,88 @@ def relations_findings(doc):
     return fail, warn
 
 
+# --- git_refs and base_branches, read by the refs-check skill (2026-11-03) --------------------
+#: A sha in a git_refs entry: a prefix of the ref's tip, 7 to 40 hex characters.
+_GIT_REF_SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")
+
+
+def git_ref_entry_problem(entry):
+    """Why one git_refs entry cannot bind anything, or None. refs_check.py reads the same rules."""
+    if not isinstance(entry, dict):
+        return "is not an object"
+    repo, ref, sha = entry.get("repo"), entry.get("ref"), entry.get("sha")
+    if not isinstance(repo, str) or not repo.strip():
+        return "has no non-empty 'repo' string ('.' for this repository, else the member's origin)"
+    if not isinstance(ref, str) or not ref.strip():
+        return "has no non-empty 'ref' string"
+    if not ref.strip().startswith("refs/"):
+        return f"ref {ref!r} does not start with 'refs/'"
+    if not isinstance(sha, str) or not _GIT_REF_SHA.match(sha.strip()):
+        return f"sha {sha!r} is not 7 to 40 hex characters"
+    return None
+
+
+def base_branches_problem(value):
+    """Why a base_branches value cannot be read, or None."""
+    if not isinstance(value, list):
+        return f"is {_typename(value)}, not a list of branch names"
+    for b in value:
+        if not isinstance(b, str) or not b.strip():
+            return f"holds {b!r}, which is not a non-empty branch name"
+        if b.strip().startswith("refs/"):
+            return f"holds {b!r}: give the branch name, not the ref"
+    return None
+
+
+def git_refs_findings(doc):
+    """Warnings for a malformed `git_refs` on a task and a malformed `base_branches`.
+
+    WARNINGS ONLY, and by this file's DESIGN RULE rather than by taste. A malformed binding is never
+    silent: refs-check names it IGNORED and the item it meant to bind stays UNBOUND at every session
+    start and close, so nothing is lost without a word. Neither key existed anywhere in the estate
+    before 2026-11-03 (measured on the workstation and the box), so there is no history to
+    tolerate, but a commit guard armed in every project still has no business refusing a commit
+    over a field whose only reader reports it loudly.
+    """
+    warn = []
+    shown = []
+    for pk, po in iter_phases(doc):
+        for tk, task in iter_tasks_keyed(po):
+            refs = task.get("git_refs")
+            if refs is None:
+                continue
+            tid = task_id_of(tk, task)
+            if not isinstance(refs, list):
+                shown.append(f"task {tid!r}: git_refs is {_typename(refs)}, not a list")
+                continue
+            for i, entry in enumerate(refs):
+                why = git_ref_entry_problem(entry)
+                if why:
+                    shown.append(f"task {tid!r}: git_refs[{i}] {why}")
+    for line in shown[:DRIFT_SHOWN + 3]:
+        warn.append(f"{line}. Not blocking - refs-check ignores it, and the item it meant to bind "
+                    f"stays UNBOUND; the form is {{\"repo\": \".\" or the member's origin, \"ref\": "
+                    f"\"refs/...\", \"sha\": \"<7-40 hex>\"}} (.claude/skills/refs-check/SKILL.md).")
+    if len(shown) > DRIFT_SHOWN + 3:
+        warn.append(f"+{len(shown) - DRIFT_SHOWN - 3} more malformed git_refs entr(y/ies), same rule")
+    if "base_branches" in doc:
+        why = base_branches_problem(doc["base_branches"])
+        if why:
+            warn.append(f"root base_branches {why}. Not blocking - refs-check ignores it and reads "
+                        f"only the remote HEAD branch as this repository's base.")
+    rel = doc.get("relations")
+    members = rel.get("members") if isinstance(rel, dict) else None
+    for i, member in enumerate(members if isinstance(members, list) else []):
+        if isinstance(member, dict) and "base_branches" in member:
+            why = base_branches_problem(member["base_branches"])
+            if why:
+                where = member.get("origin") or member.get("path")
+                at = f"relations.members[{i}]" + (f" ({where})" if isinstance(where, str) and where.strip() else "")
+                warn.append(f"{at}: base_branches {why}. Not blocking - refs-check ignores it and "
+                            f"reads only that member's remote HEAD branch as its base.")
+    return warn
+
+
 # --- the four checks --------------------------------------------------------
 def check(text, base_text=None):
     """Return (failures, warnings). Empty failures == safe to commit."""
@@ -955,6 +1038,10 @@ def check(text, base_text=None):
     rfail, rwarn = relations_findings(doc)
     fail.extend(rfail)
     warn.extend(rwarn)
+
+    # 3c. git_refs on tasks and base_branches (root and member), the refs-check skill's two keys.
+    #     Warnings only; see git_refs_findings().
+    warn.extend(git_refs_findings(doc))
 
     # 4. Append-only: nothing that existed before may vanish. This is the framework's
     #    oldest written rule ("NEVER remove tasks — mark superseded instead"), and until now

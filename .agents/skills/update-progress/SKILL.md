@@ -54,6 +54,10 @@ Preserve these boundaries:
   unfilled or absent (`PROJECT_CHARTER.md` § 11): confirm or rewrite it from the tracked record,
   set `description_reviewed` in the same commit, and never invent a purpose the record does not
   support. It does nothing when the state is `reviewed`.
+- At `SESSION_CLOSE`, Step 9b runs `.claude/skills/refs-check/refs_check.py`. Exit 3 refuses the
+  close until each UNBOUND pull request or branch, here or in a member `relations` declares, is
+  bound to open work by its printed `git_refs` entry or processed (`PROJECT_CHARTER.md` § 14).
+  Exit 4 (NOT CHECKED) is reported in Step 12 and does not block. `TASK_BOUNDARY` skips it.
 - An operation that outlives this turn is governed by `PROJECT_CHARTER.md` section 11,
   *Unattended operations*: every such operation is session-watched, durably-supervised or
   unmonitored; a final response requires the supervisor proof recorded there; process exit status

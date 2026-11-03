@@ -617,6 +617,9 @@ DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
 # it exists so that a reader of progress.json alone does not take a superseded task for abandoned
 # work, and behind a pointer it took a second hop to read (2026-10-07, two tasks in one project
 # whose reasons were written for exactly that reader). It is often long; it is kept anyway.
+# `git_refs` is kept because the refs-check skill reads it on TERMINAL tasks too: an entry there is
+# the record that a pull request or branch was dealt with (RECORDED), and behind a pointer the item
+# would come back UNBOUND and refuse the next session close (2026-11-03).
 # Everything else that is long prose in a FINISHED task moves.
 #
 # This is a DENY-list, and that IS the fix. The old rule named the three fields it WOULD move
@@ -628,7 +631,8 @@ KEEP_TASK = {"id", "name", "title", "description", "status", "size", "priority",
              "depends_on", "depends_on_shipped", "dependencies", "blocked_by", "blocked_on", "blocks",
              "superseded_by", "superseded_reason", "parent_task", "subtasks", "decomposed_into",
              "added_by", "added_at", "added_on", "started_at", "completed_at", "superseded_at",
-             "deferred_at", "verified_at", "filed_at", "approval_gate", "approval_status"}
+             "deferred_at", "verified_at", "filed_at", "approval_gate", "approval_status",
+             "git_refs"}
 KEEP_PHASE = {"id", "key", "name", "title", "status", "goal", "description", "objective",
               "tasks", "started_at", "completed_at", "superseded_at", "depends_on"}
 SIDE_PHASE_KEY = "__phase__"          # sidecar slot for the phase's own bodies
