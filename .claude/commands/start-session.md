@@ -115,14 +115,19 @@ A repository this one declares as a member in its `relations` block (`PROJECT_CH
 directed from here, in one of two ways (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
 theme*):
 
-- **A nested member**, whose checkout sits inside this one on this host, is not another owner:
-  change its files as this project's procedures say. It gets no session of its own. A
-  `progress.json` it keeps is still its own (`PROJECT_CHARTER.md` § 11, *The record of identity and
-  current work*): this project's sessions keep it, in the member's checkout, by the member's
-  procedures.
-- **A member with a working checkout of its own**, beside this one or on another host, keeps its
-  own sessions, whatever its relation word. Direct it through notices and requests, by the steps
+- **A nested member**, whose checkout lies inside this one, is not another owner: change its files
+  as this project's procedures say. It gets no session of its own. A `progress.json` it keeps is
+  still its own (`PROJECT_CHARTER.md` § 11, *The record of identity and current work*): this
+  project's sessions keep it, in the member's checkout, by the member's procedures.
+- **A member whose checkout is not inside this one**, beside it or on another host, keeps its own
+  sessions, whatever its relation word. Direct it through notices and requests, by the steps
   above: its own sessions change its files and its record.
+- **Unless the operator has ruled that this project's sessions do that member's work.** Then this
+  project's session works in the member's checkout, by the member's procedures and under the
+  safeguards the ruling names, and keeps the member's record there. Only a ruling that names the
+  member does this; none is assumed from the relation word or from where the checkout lies. The
+  first: mitt-sparks-gateway's work by mitt-sparks-orchestrator's sessions (the operator,
+  2026-11-04, hyl-resources-manager's task 53.2).
 
 ---
 
@@ -286,21 +291,26 @@ are in its callout above, so neither column below is a member host):
 > account on every call meanwhile (`/check-aws` Step 2 finds the value that reaches it).
 
 > **What the AWS connection can read of this machine depends on how its server is launched, so read
-> the launch before concluding.** Launches differ by host, and since 2026-11-03 none mounts a home
-> folder. A container that mounts only `~/.aws` sees no local path: the workstation's at `/aws`, the
-> box's and a member host's at `/tmp/.aws`, run as the session's own uid with an empty home
-> (measured 2026-11-04). There `aws-docs` and `aws-iac` mount nothing at all, and the box's Codex
-> `aws_api` also mounts one working folder, `~/aws-mcp-work`, at its own path, and reads local files
-> there and nowhere else. A server that runs your code in AWS's own sandbox sees none. So before
-> passing a local path, or explaining an error by what the connection can or cannot see, read this
-> session's own server's launch, its `command` and `args` only: in `~/.claude.json` under
-> `mcpServers` (top level, or this project's entry) or in this project's `.mcp.json`, and for Codex
-> under `[mcp_servers.<name>]` in `~/.codex/config.toml`. Where it sees no local path, a `file://`
-> or `fileb://` argument fails when the call runs; a pipe, a redirect or a `$VARIABLE` fails on
-> every launch, because no shell runs the call. Pass the content inline (a JSON argument, or
-> `params` through `call_boto3`), or an `s3://` URI where the operation takes one. Otherwise use the
-> local `aws` CLI with `--region` and a profile that `aws sts get-caller-identity --profile <p>`
-> proves is this project's account (names from the `/check-aws` Step 2 listing command).
+> the launch before concluding.** Launches differ by host. Since 2026-11-03 no MCP definition on the
+> estate's hosts mounts a home folder, but a container keeps the mounts it was started with: one
+> started before then can still mount the whole home folder until its session restarts. A container
+> that mounts only `~/.aws`, read-only, at the path its binding names (`/aws` or `/tmp/.aws`; under
+> `--user`, run as the session's own uid with an empty home), sees no other local path. `aws-docs`
+> and `aws-iac` mount nothing at all, and the box's Codex `aws_api` also mounts one working folder,
+> `~/aws-mcp-work`, at its own path, and reads local files there and nowhere else. A server that
+> runs your code in AWS's own sandbox sees none. So before passing a local path, or explaining an
+> error by what the connection can or cannot see, read this session's own server's launch, its
+> `command` and `args` only: in `~/.claude.json` under `mcpServers` (top level, or this project's
+> entry) or in this project's `.mcp.json`, and for Codex under `[mcp_servers.<name>]` in
+> `~/.codex/config.toml`. Then read what this session's own containers mount, with `docker inspect`
+> and names and paths only, by the command in `/check-aws` Step 2: a container marked as mounting a
+> home folder can read the whole home, whatever its definition says now. Where it sees no local
+> path, a `file://` or `fileb://` argument fails when the call runs; a pipe, a redirect or a
+> `$VARIABLE` fails on every launch, because no shell runs the call. Pass the content inline (a JSON
+> argument, or `params` through `call_boto3`), or an `s3://` URI where the operation takes one.
+> Otherwise use the local `aws` CLI with `--region` and a profile that `aws sts get-caller-identity
+> --profile <p>` proves is this project's account (names from the `/check-aws` Step 2 listing
+> command).
 
 > **A session should cost memory only for the AWS access it actually needs.** Servers belong in the
 > projects that use them, not in a global block every project inherits. Measured on the workstation

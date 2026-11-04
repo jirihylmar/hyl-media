@@ -266,25 +266,27 @@ either launch below; a shell variable such as `AWS_CONFIG_FILE` in this session 
 what the connection sees, so do not follow one.
 
 > **What the connection sees of this host depends on how it was launched, so read the launch rather
-> than assume one.** This estate's AWS servers are containers, none of which mounts a home folder
-> (since 2026-11-03), launched in one of two ways:
+> than assume one.** This estate's AWS servers are containers. Since 2026-11-03 no MCP definition on
+> the estate's hosts mounts a home folder, but a container keeps the mounts it was started with: one
+> started before then can still mount the whole home folder until its session restarts. A server
+> that signs AWS calls gets only `~/.aws`, read-only, at the path its binding's `-v` names (`/aws`
+> or `/tmp/.aws` in today's bindings), launched in one of two ways:
 >
-> - **`~/.aws` mounted alone at `/aws`** (`-v <home>/.aws:/aws:ro`, no `--user`, the workstation's
->   shape): the server runs as the image's root and sees only that directory, at `/aws`. A file
->   the listing cannot read may still be readable to it, a symlink pointing outside `~/.aws` does
->   not resolve, and its errors name `/aws/config`.
-> - **`~/.aws` mounted alone in an empty home** (`--user <uid>:<gid>`, `--tmpfs /tmp`,
->   `-e HOME=/tmp` and `-v <home>/.aws:/tmp/.aws:ro`, the shape of the box's bindings and of a
->   member host's tooling servers): the server runs as this session's user and sees only that
+> - **`~/.aws` alone, no `--user`** (for example `-v <home>/.aws:/aws:ro`): the server runs as the
+>   image's root and sees only that directory, at that path. A file the listing cannot read may
+>   still be readable to it, a symlink pointing outside `~/.aws` does not resolve, and its errors
+>   name that path's `config`, `/aws/config` for `/aws`.
+> - **`~/.aws` alone in an empty home** (`--user <uid>:<gid>`, `--tmpfs /tmp`, `-e HOME=/tmp` and
+>   `-v <home>/.aws:/tmp/.aws:ro`): the server runs as this session's user and sees only that
 >   directory, at `/tmp/.aws`. A file the listing cannot read is unreadable to it too, a symlink
 >   pointing outside `~/.aws` does not resolve, and its errors name `/tmp/.aws/config`. The box's
 >   Codex `aws_api` also mounts one working folder, `<home>/aws-mcp-work`, at its own path, for the
 >   local files a call reads; nothing else of the home.
 >
-> Before concluding from an error that depends on which, print that server's two flags from its
-> entry in `~/.claude.json` (`mcpServers`, at the top level or under this project) and nothing else
-> of it, with this one local command. Never print its `env`, or another server's entry, which may
-> hold a token:
+> `aws-docs` and `aws-iac` mount nothing of the host. Before concluding from an error that depends
+> on which, print that server's two flags from its entry in `~/.claude.json` (`mcpServers`, at the
+> top level or under this project) and nothing else of it, with this one local command. Never print
+> its `env`, or another server's entry, which may hold a token:
 >
 > ```bash
 > python3 -I -c 'import json, os
@@ -301,6 +303,61 @@ what the connection sees, so do not follow one.
 > Read the line of the server whose tool you resolved (`mcp__<server>__…`). In Codex, read the same
 > two flags in that server's `args` in `~/.codex/config.toml`. A launch of neither shape is taken at
 > what its own flags show.
+>
+> That is the definition. What this session's server runs with is its container's mounts, which
+> differ from the definition when the container started before the definition changed: on the
+> morning of 2026-11-04, 31 MCP containers on three hosts still mounted the whole home, their
+> definitions narrowed the evening before. So also read the mounts of the containers this session
+> started, with this local command. It prints each container's name, start time and mount paths,
+> and nothing of its environment or arguments:
+>
+> ```bash
+> python3 -I - <<'PY'
+> import calendar, json, os, subprocess, time
+> def stat(pid):
+>     s = open("/proc/%d/stat" % pid).read()
+>     f = s[s.rindex(")") + 2:].split()
+>     return s[s.index("(") + 1:s.rindex(")")], int(f[1]), int(f[19])
+> agent = os.getppid()                     # climb to this session's own claude or codex process
+> while agent > 1 and stat(agent)[0] not in ("claude", "codex"):
+>     agent = stat(agent)[1]
+> kids, procs = {}, {}
+> for d in filter(str.isdigit, os.listdir("/proc")):
+>     try:
+>         comm, ppid, start = stat(int(d))
+>     except (OSError, ValueError):
+>         continue
+>     kids.setdefault(ppid, []).append(int(d)); procs[int(d)] = (comm, start)
+> boot = int(next(l.split()[1] for l in open("/proc/stat") if l.startswith("btime")))
+> todo, clients = [agent], []
+> while todo:
+>     for c in kids.get(todo.pop(), []):
+>         todo.append(c)
+>         if procs[c][0] == "docker":
+>             clients.append(boot + procs[c][1] / os.sysconf("SC_CLK_TCK"))
+> ids = subprocess.run(["docker", "ps", "-q"], capture_output=True, text=True).stdout.split()
+> fmt = "{{json .Name}}\t{{json .State.StartedAt}}\t{{json .Mounts}}"
+> out = subprocess.run(["docker", "inspect", "--format", fmt] + ids, capture_output=True, text=True).stdout if ids else ""
+> home, mine = os.path.expanduser("~"), 0
+> for line in out.splitlines():
+>     name, started, mounts = (json.loads(x) for x in line.split("\t"))
+>     t = calendar.timegm(time.strptime(started[:19], "%Y-%m-%dT%H:%M:%S"))
+>     if not any(-5 <= t - c <= 60 for c in clients):
+>         continue
+>     mine += 1
+>     m = mounts or []
+>     print(name.lstrip("/"), "started", started[:19] + "Z:", "; ".join("%s -> %s %s" % (x.get("Source"), x.get("Destination"),
+>           "rw" if x.get("RW") else "ro") for x in m) or "no mounts",
+>           "<- MOUNTS A HOME FOLDER" if any(x.get("Source") in (home, "/", "/home") for x in m) else "")
+> print("%d running container(s) of this session (pid %d)" % (mine, agent))
+> PY
+> ```
+>
+> A container is this session's when the session started its `docker` client within a minute of the
+> container's start. A line marked `MOUNTS A HOME FOLDER` is a server that can read the whole home
+> until this session restarts, whatever its definition says now; say so in the report rather than
+> concluding from the definition. `0 running container(s)` means none of this session's servers runs
+> in a container (an HTTP server, or none started).
 
 > **This command is the only way this step touches either file.** Do not view, page, print, parse or
 > copy them any other way — not with Read, `cat`, `less`, `head`, `tail`, `sed`, `awk`, `rg`, `nl`, a

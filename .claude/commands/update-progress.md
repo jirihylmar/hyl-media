@@ -150,7 +150,10 @@ exactly as they stand.
 ### When Task Scope Changes During Work
 
 If the task is non-terminal, edit it in place or reshape the surrounding open work. If it is
-terminal, leave it as history and represent later action in a new or existing open task.
+terminal, leave it as history and represent later action in a new or existing open task. Where
+sessions are told apart by theme, the open work you reshape and the existing task you use are only
+in your theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart
+by theme*).
 ```json
 // Open: reshape in place because the plan changed before closure
 {"id": "2.1", "name": "Revised task description", "status": "in_progress", "notes": "Scope reconciled after..."}
@@ -167,6 +170,9 @@ otherwise in its `notes`). If the original is already terminal, leave it as it i
 `references` is the only link. A "folded into X" note that leaves X's wording unchanged is not a
 disposition: X then closes on its old wording, and the work belongs to nobody. If the receiving
 task is in progress under another agent, put the work in a new task that references both instead.
+Where sessions are told apart by theme, the receiving task is one in your theme's phases, estate
+notices excepted: an open task in another theme's phase is not amended, and the work goes to that
+theme's session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*).
 
 **A decision task closes on the decision.** A task phrased as a decision, such as *decide whether
 to X*, is complete when the decision is made. Its `verify_result` is the decision and its
@@ -622,8 +628,9 @@ explicit disposition. None may be left `pending` in a closed phase.**
 | Disposition | When | What it takes |
 |---|---|---|
 | **Finished** | It's done | Normal completion + `verify_result`. |
-| **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
-| **Re-homed** into an existing open task | The same, and an open task in another phase already serves that work's goal | Amend that task first, as § When Task Scope Changes During Work says, then mark the original `superseded` with `superseded_by` naming it. |
+| **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work); where sessions are told apart by theme, a new phase of your theme (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
+| **Re-homed** into an existing open task | The same, and an open task in another phase already serves that work's goal; where sessions are told apart by theme, a phase of your theme, estate notices excepted | Amend that task first, as § When Task Scope Changes During Work says, then mark the original `superseded` with `superseded_by` naming it. An open task in another theme's phase is not amended: the work goes to that theme's session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
+| **Handed to another theme** | Where sessions are told apart by theme: the work serves the goal of a phase another theme owns | No task in its phase: a message to that theme's session while it is live, otherwise a note under `### For the <theme> session` (Step 5). Mark the original `superseded`, its reason naming that theme and where the note is (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
 | **Dropped** | Speculative, overtaken, or no longer justified | `superseded` with a **reason someone can disagree with**. "Not needed" is not a reason. "No measured problem; re-raise with a benchmark" is. |
 
 **A guess that a task is stale is a claim to measure** (`PROJECT_CHARTER.md` § 10, *Verify
@@ -708,12 +715,12 @@ This is the incremental half of repo hygiene; the periodic full pass is `/repo-h
 
 ### 3c. Review the project's one sentence when it is due (`SESSION_CLOSE`, after 3b and 3a)
 
-`PROJECT_CHARTER.md` § 11: *"The sentence is the project's own, and its own sessions keep it true;
-a nested member's is kept by its manager's sessions"* (§ 6). *"It is written from the tracked
-record: the approved specification, the entry document's opening and the last phase closed. When
-the project is closed, archived or parked, the sentence says so. The operator's word overrides
-it."* And: *"The session that closes such work reviews the sentence,
-rewrites or confirms it, and sets the date."* This step is that session. It runs after 3b and 3a,
+`PROJECT_CHARTER.md` § 11: *"The sentence is the project's own, and the sessions that do its work
+keep it true: its own, or its manager's for a nested member and for a member whose work the operator
+has ruled to them"* (§ 6). *"It is written from the tracked record: the approved specification, the
+entry document's opening and the last phase closed. When the project is closed, archived or parked,
+the sentence says so. The operator's word overrides it."* And: *"The session that closes such work
+reviews the sentence, rewrites or confirms it, and sets the date."* This step is that session. It runs after 3b and 3a,
 so a phase this close completed already counts. Whether a review is due is read from this
 project's own checker, never judged here:
 
@@ -752,7 +759,7 @@ When it says `due`, `unfilled` or `absent`, the coordinating executor (never a l
    with the line below and add the file to Step 10's pathspec:
 
    ```
-   What this project is for: `description` in `progress.json` (kept true by its own sessions, or by its manager's for a nested member — PROJECT_CHARTER.md § 11).
+   What this project is for: `description` in `progress.json` (kept true by its own sessions, or by its manager's when they do its work — PROJECT_CHARTER.md § 11).
    ```
 5. **Never invent a purpose the record does not support.** If it cannot support a sentence, leave
    both fields as they are and say so in the Step 12 report, for the operator.

@@ -206,12 +206,16 @@ migration risk or resource quota. Complexity alone is not a reason to serialise 
 
 ### Sessions are told apart by theme
 
-Work on a managed group runs from its manager's sessions. A nested member (§ 14), one whose checkout
-sits inside the manager's on the manager's host, gets no session of its own, and a task may touch
-any nested member. A nested member that keeps a record of its own still owns it (§ 11): the
-manager's sessions keep it, in the member's checkout, by the member's procedures. A member with a
-working checkout of its own (§ 8), whatever its relation word, keeps its own sessions: the manager
-directs it through notices and requests, and its own sessions do the work.
+Work on a managed group runs from its manager's sessions, and where a member's checkout lies
+decides who works in it, whatever its relation word. A nested member (§ 14), one whose checkout lies
+inside the manager's checkout, gets no session of its own: its work runs from the manager's sessions
+by theme, and a task may touch any nested member. A nested member that keeps a record of its own
+still owns it (§ 11): the manager's sessions keep it, in the member's checkout, by the member's
+procedures. A member whose checkout is not inside the manager's, whether beside it or on another
+host, keeps its own sessions: the manager directs it through notices and requests, and its own
+sessions do the work. That changes only when the operator rules that the manager's sessions do that
+member's work. The manager's session then works in the member's checkout, by the member's procedures
+and under the safeguards the ruling names, and keeps the member's record there.
 
 Sessions working on one project at once are told apart by theme: a stable topic such as *web tech*,
 *web ux* or *booking*, never a session's full name. The operator names each session, its theme is
@@ -237,8 +241,13 @@ like that the session web ux writter into you phase"*; asked whether that holds 
 here and there. but we need to distinguish sessions under orchestrator , ussually by theme, topic
 eg"*. Asked whether that reaches every declared member, the operator left it to the engine (*"you
 have to know what the bast for management and sustainability"*), which ruled the same day that it
-binds nested members only: a session works in a checkout, and a member with a working checkout of
-its own, often on another host, is worked on there.
+binds nested members only: a session works in a checkout, and a member whose checkout lies outside
+the manager's, often on another host, is worked on there. The first ruling that a manager's sessions
+do such a member's work came the next day: mitt-sparks-orchestrator's session does the work of
+mitt-sparks-gateway, whose checkout lies beside the orchestrator's on the same host, with the
+gateway's own guard running too and each change to its tunnel tool read by hyl-resources-manager
+before use (the operator in hyl-resources-manager's session, 2026-11-04: *"Yes, with safeguards
+(Recommended)"*; hyl-resources-manager's task 53.2, answering request 70eee574).
 
 ## 7. Prefer one product repository
 
@@ -403,15 +412,15 @@ appears to a reader. Where there is no origin, the display name is the only thin
 the project from another checkout, and the record states that condition deliberately rather than
 leaving it to be inferred.
 
-The sentence is the project's own, and its own sessions keep it true; a nested member's is kept by
-its manager's sessions (§ 6, *Sessions are told apart by theme*). It is written from the
-tracked record: the approved specification, the entry document's opening and the last phase
-closed. When the project is closed, archived or parked, the sentence says so. The operator's word
-overrides it. Beside it, the record carries the date the sentence was last reviewed,
-`description_reviewed`. A review is due when that date is absent, or when a phase reached a
-terminal or deferred status after it. The session that closes such work reviews the sentence,
-rewrites or confirms it, and sets the date. Entry documents point at the sentence instead of
-copying it, so it has one place to be corrected.
+The sentence is the project's own, and the sessions that do its work keep it true: its own, or its
+manager's for a nested member and for a member whose work the operator has ruled to them (§ 6,
+*Sessions are told apart by theme*). It is written from the tracked record: the approved
+specification, the entry document's opening and the last phase closed. When the project is closed,
+archived or parked, the sentence says so. The operator's word overrides it. Beside it, the record
+carries the date the sentence was last reviewed, `description_reviewed`. A review is due when that
+date is absent, or when a phase reached a terminal or deferred status after it. The session that
+closes such work reviews the sentence, rewrites or confirms it, and sets the date. Entry documents
+point at the sentence instead of copying it, so it has one place to be corrected.
 
 Measured 2026-10-22, by reading every reachable record: of 40 sentences, 27 were good, 7 stale, 2
 thin, 3 still the placeholder and 1 missing, while the presence check passed most of them. Four of
@@ -749,9 +758,11 @@ the member lives.
 
 Declare downward only. A manager names its members; a member never names its manager. Exactly one
 repository writes each edge, so two repositories cannot contradict each other about who directs
-whom, and a correction has exactly one place to be made. A nested member is worked on from its
-manager's sessions and gets none of its own; a member with a working checkout of its own keeps its
-sessions and is directed through notices and requests (§ 6, *Sessions are told apart by theme*).
+whom, and a correction has exactly one place to be made. A nested member, whose checkout lies
+inside the manager's, is worked on from its manager's sessions and gets none of its own; a member
+whose checkout is not inside the manager's keeps its own sessions and is directed through notices
+and requests, unless the operator rules that the manager's sessions do its work (§ 6, *Sessions are
+told apart by theme*).
 
 The relation word is the operator's own. `nested`, `governed` and `metadata-governed` are already in
 use, a better word for a real relationship is legal, and what you write is carried through as
