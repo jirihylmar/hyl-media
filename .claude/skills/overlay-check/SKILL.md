@@ -80,7 +80,8 @@ file may open with a note of your own.
 - **Blocks apply in order**, each against the result of the ones before it.
 - **Every distribution replays the overlay on top of the new canonical**, so your additions survive
   central updates. A directive that does not parse, or an anchor that matches no line, stops the
-  distribution for every project on this host (below); run this check after every edit.
+  operator's distribution for every project on this host (below), and on an outside machine
+  `syndicate-join` leaves this project out; run this check after every edit.
 - **To fork a default entirely**, when adding is not enough, list its file name (e.g.
   `start-session.md`) on a line of `.claude/local-overlays/.skip`. That command is then yours, is
   never overwritten, and gets no central updates.

@@ -20,7 +20,7 @@ outside machine or the operator's workstation, run
 from the project root instead. On a box or a member host there is no canonical: change the anchor to
 the line the distribution named, or ask the operator for the line the canonical now has.
 
-An anchor that matches zero lines blocks the next distribution for **every project on this host**,
-not just this one. An anchor that matches more than one line is resolved first-match-wins and
+An anchor that matches zero lines blocks the operator's next distribution for **every project on
+this host**, not just this one; on an outside machine, `syndicate-join` leaves only this project out. An anchor that matches more than one line is resolved first-match-wins and
 reports nothing, so the overlay lands somewhere the author did not choose. Do not reproduce or
 weaken the checks in Codex prose; this adapter and Claude run the same executable checker.
