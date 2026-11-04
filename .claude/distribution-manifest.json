@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-11-04T09:05:54Z",
-  "canonical_commit": "247cf77fea46fb82d190a4ac524466a5b5feb271",
+  "written_at": "2026-11-04T12:35:28Z",
+  "canonical_commit": "2960fe0ed0182ef25652cd0e0cb1059864d81ed9",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "30d35f0771cb65e659c5da619d53ff77cc52c61c2675c9313231bf7b579506ab", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "995e08edeb24e667da70f4964657cb7d493de367cc6c5f6319ca406fb52c7498", "source": "canonical" },
@@ -17,8 +17,8 @@
     ".claude/skills/refs-check/refs_check.py": { "sha256": "46faf7e3c78512cb83c9bf8fabcbe41fe875d52c41184a2c4aa7f94c0664de94", "source": "canonical" },
     ".claude/skills/server-report/report.py": { "sha256": "1556b3bb39dcd168462dea6c7acf5b60a356153bb316e6f631fff64101912bb4", "source": "canonical" },
     ".claude/skills/server-report/SKILL.md": { "sha256": "80cfaa9a3211f29e28833d52f8484c7f05b8f5e457761f76c8828b7d22807ef5", "source": "canonical" },
-    ".claude/skills/syndicate-connect/connect.sh": { "sha256": "da39d931c67f2f8dca68f5101cf3f191cac885c21a6674b92d5815046bba0c46", "source": "canonical" },
-    ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "092d92f7d4de947d901e18dbd89de0a98e905897019cf351f7f0e79f840acc0b", "source": "canonical" },
+    ".claude/skills/syndicate-connect/connect.sh": { "sha256": "681a4a1e5f4b85746f68a489f934473479081f9ea7a5b4abd78919afb5c82f71", "source": "canonical" },
+    ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "d2b92c5f0757050a4a49f8b4718eb2ee826a6edf17f0e3a6dd04442edf193db4", "source": "canonical" },
     ".claude/skills/syndicate-request/request.sh": { "sha256": "57b473fdf8f3647ba4d7129a140ef4eeeed6218b42b456bf1396df5e349df7e9", "source": "canonical" },
     ".claude/skills/syndicate-request/SKILL.md": { "sha256": "7f85d5823588f868b21a76460f421f4404445ac10d3b691a59936605cf9f2a75", "source": "canonical" },
     ".claude/skills/docs-check/docs_check.py": { "sha256": "961776ae86262f38f340cb7d37e7bf7ed895c4ca30bcb396b91453df5e2ab19a", "source": "canonical" },

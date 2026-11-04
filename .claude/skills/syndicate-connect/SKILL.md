@@ -38,10 +38,12 @@ is all — outbound HTTPS is the only requirement, so it works behind any firewa
 1. **Refuses `$HOME` on a Windows mount** (`/mnt/...`) — the token file would be world-readable there.
 2. **Refuses sudo/root** — `ingest.json` would land in `/root`, where the session resolver never looks.
 3. **Proves the token before writing anything.** It POSTs an *empty body*: the endpoint checks auth
-   first, so `401` means the token is bad and `400` (empty body refused) means the token is **good** —
-   this validates the credential without delivering a file. `000`/`5xx` means the endpoint is
-   unreachable. On any failure it writes nothing and the host stays on `spool` (loud), never `ingest`
-   (confident, and wrong).
+   first, so `400` (empty body refused) means the token is **good**, and `400` is the only answer
+   that proves it. This validates the credential without delivering a file. `401` or `403` means the
+   token is bad; `000`/`5xx` means the endpoint is unreachable or erroring. Any code other than `400`
+   writes nothing: a `404` (wrong path), a `301`/`302` (a redirect, which it does not follow) or a
+   `200` (something that is not the endpoint) is refused too, exit `3`, with the code named. On any
+   failure the host stays on `spool` (loud), never `ingest` (confident, and wrong).
 4. **Writes** `~/.syndicate-remote-secrets/ingest.json` = `{url, token}`, mode 600.
 5. **Resolves the route** as § 11.0 does and prints it. Must be `ingest`, on the box too: a checkout
    of the inbox in `$HOME` is not a route. The retired `direct` route wrote into the box's, and the
@@ -53,7 +55,7 @@ is all — outbound HTTPS is the only requirement, so it works behind any firewa
 |---|---|
 | `0` | route proven and recorded |
 | `1` | usage error, or an environment that cannot work (`$HOME` on a Windows mount, sudo, no `curl`, no/`http` URL) |
-| `3` | token rejected, or endpoint unreachable — **nothing written** |
+| `3` | token not proven: rejected (`401`/`403`), endpoint unreachable (`000`/`5xx`), or any other answer than `400` — **nothing written** |
 
 ## If this machine is outside the syndicate
 

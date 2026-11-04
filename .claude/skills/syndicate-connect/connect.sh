@@ -24,8 +24,8 @@
 # value given there sits in the process list, the shell history and any session transcript.
 #
 # Exit codes:
-#   0 route proven and recorded        3 token rejected, or endpoint unreachable (nothing written)
-#   1 usage / unsupported environment
+#   0 route proven and recorded        3 token not proven (nothing written): rejected (401/403),
+#   1 usage / unsupported environment    unreachable (000/5xx), or any other answer than 400
 
 set -uo pipefail
 
@@ -78,10 +78,15 @@ TOKEN="$(printf '%s' "$TOKEN" | tr -d '\r\n ')"   # a pasted token often carries
 [ -n "$TOKEN" ] || fail "empty token" 1
 
 # --- PROVE the token before recording it ------------------------------------------------------
-# Probe = POST an EMPTY body. The endpoint checks auth FIRST, so:
-#   401 -> token rejected            400 -> token ACCEPTED (auth passed, empty body refused)
-#   000/5xx -> endpoint unreachable/erroring
+# Probe = POST an EMPTY body. The endpoint checks auth FIRST, so ONE answer proves the token:
+#   400 -> token ACCEPTED (auth passed, empty body refused)
+#   401/403 -> token rejected        000/5xx -> endpoint unreachable/erroring
+#   any other code -> proves nothing: refused like the rest
 # This validates the token WITHOUT delivering a file (no extraction is created by an empty body).
+# Every code but 400 came from something other than the endpoint's auth check: a 404 is a wrong
+# path, a 301/302 a URL in front of something else (curl follows no redirect), a 200 to an empty
+# body is not the endpoint at all. Until 2026-11-04 those fell to "treating auth as accepted" and
+# wrote ingest.json, an unproven route (procurement-hub440's report).
 # curl reads the header from a config on stdin (-K -), so the token is on no argv; printf is a
 # builtin, and a token is hex, so it needs no quoting inside the config's double quotes.
 # When nothing answers, curl prints 000 through -w AND exits nonzero, so a `|| echo 000` fallback
@@ -99,7 +104,10 @@ case "$code" in
         loud, not silent. Check the URL and this machine's outbound HTTPS." 3 ;;
   5*)  fail "endpoint returned HTTP $code (server-side). Nothing written; retry later or tell the
         operator." 3 ;;
-  *)   say "endpoint returned HTTP $code — treating auth as accepted" ;;
+  *)   fail "endpoint returned HTTP $code, which does not prove the token: only 400 (auth passed,
+        empty probe body refused) does. Nothing written — this host stays on 'spool'. A 404, a
+        redirect or a 200 means the URL reaches something other than the ingest endpoint; check the
+        URL with the operator." 3 ;;
 esac
 
 # --- record -----------------------------------------------------------------------------------
