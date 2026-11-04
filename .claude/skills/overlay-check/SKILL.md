@@ -1,14 +1,14 @@
 ---
 name: overlay-check
-description: Validate this project's local-overlay splice anchors against its own delivered commands, before a distribution does it for you. Invoke after writing or editing anything in .claude/local-overlays/, when a distribution reported broken-overlay, or when adding project-specific content to a distributed default.
+description: Validate this project's local-overlay splice anchors against the canonical the next distribution splices onto (or, where this machine has none, its own delivered commands), before a distribution does it for you. Invoke after writing or editing anything in .claude/local-overlays/, when a distribution reported broken-overlay, or when adding project-specific content to a distributed default.
 ---
 
 # overlay-check
 
 A project adds its own content to a distributed default by writing
 `.claude/local-overlays/<command>.md` — a splice fragment anchored to an exact line of the
-canonical. This checks that those anchors actually bind, **here, now**, without needing anything
-this project does not already have.
+canonical. This checks that those anchors actually bind, **here, now**, against the canonical
+wherever this machine has one, and against what this project already has where it does not.
 
 ## Why it exists
 
@@ -25,18 +25,32 @@ radius is the **host**, not the file:
 So one untested overlay can freeze distribution for every project on the box, and the symptom
 surfaces somewhere else entirely — as a project quietly running month-old defaults.
 
-**The engine is not needed to check this — with one honest limit.** The engine splices
-`_project-template`'s canonical, which this project does not have. What it has is the delivered
-`.claude/commands/<command>.md`, and that is:
+**What it checks against, and its one honest limit.** The engine splices `_project-template`'s
+canonical, so the check uses that wherever this machine has it, the first of:
+
+1. `--canonical <folder>`;
+2. the commands beside the checker, when it is run from a `_project-template` tree itself;
+3. `~/syndicate-playbooks-examples/_project-template/.claude/commands`. That folder has two homes
+   (`PROJECT_CHARTER.md` § 8): the engine itself on the operator's workstation, and the copy that
+   `syndicate-join` brings up to date at the start of every run on an outside machine.
+
+Its first line says which, with the canonical's commit. Where there is none (a box, a member host)
+it reads the delivered `.claude/commands/<command>.md`, which is:
 
 - **byte-identical to the canonical** if this project's overlay has not been baked yet — the
   normal case when you have just written one, and the case this skill exists for; or
-- the **baked result** (canonical + overlay) if it has.
+- the **baked result** (the canonical of the last delivery, plus the overlay) if it has.
 
 In the second case the check is approximate and says so: an anchor may appear to bind to a line
-the overlay itself inserted on an earlier distribution. An earlier draft of this skill asserted
-flatly that "the canonical is already here". That is false for any already-baked project, and it
-is corrected here rather than quietly dropped.
+the overlay itself inserted, or to a line the canonical has since renamed. An earlier draft of
+this skill asserted flatly that "the canonical is already here". That is false for any
+already-baked project, and it is corrected here rather than quietly dropped.
+
+*Measured 2026-11-04, which is why the canonical now comes first.* An outside machine's
+`syndicate-join` refused cad-designer's overlay because it anchored on `### 6. Update README.md`,
+which the canonical had renumbered `### 7.` five days before. The join said "run /overlay-check",
+and the check, reading the delivered copy that still held the old line, said ok. No join updated
+any of that person's projects in those five days.
 
 *Reported by a project on 2026-09-07: "I could not validate the overlay splice:
 syndicate-playbooks-examples isn't on this host. The format follows the spec, but it's untested
@@ -60,7 +74,7 @@ content: `splice-before` inserts it just above the anchor line, `splice-after` j
 `splice-append` at the end of the command. Lines before the first directive are ignored, so the
 file may open with a note of your own.
 
-- **The anchor is a whole line of the delivered command, matched exactly** (byte for byte, without
+- **The anchor is a whole line of the canonical command, matched exactly** (byte for byte, without
   its line ending), never a substring. A line that contains a double quote cannot be an anchor:
   choose another.
 - **Blocks apply in order**, each against the result of the ones before it.
@@ -78,12 +92,30 @@ file may open with a note of your own.
 ```bash
 python3 .claude/skills/overlay-check/overlay_check.py          # this project
 python3 .claude/skills/overlay-check/overlay_check.py <path>   # another checkout
+python3 .claude/skills/overlay-check/overlay_check.py --canonical <folder> [<path>]
 ```
+
+**When a distribution or `syndicate-join` called an overlay broken and this says ok**, it read a
+delivered copy that still holds the old line. Check against the canonical instead: on an outside
+machine, and on the operator's workstation, run the checker from the canonical's own tree, which
+`syndicate-join` names when it refuses one:
+
+```bash
+python3 ~/syndicate-playbooks-examples/_project-template/.claude/skills/overlay-check/overlay_check.py
+```
+
+On a box or a member host there is no canonical: change the anchor to the line the distribution
+named, or ask the operator (`/syndicate-request`) for the line the canonical now has.
+
+A lost anchor is reported with up to three `nearest lines now`, whole and quoted, those at its
+heading level first. They are suggestions and nothing is changed for you: similar is not the same
+section (a renamed step can be nearest to another step), so take one only if it starts the section
+your content belongs to.
 
 | Exit | Meaning |
 |---|---|
 | `0` | every anchor binds to exactly one line |
-| `1` | at least one problem — a distribution would refuse |
+| `1` | at least one problem: NOT FOUND, MALFORMED, BAD ENCODING or NO CANONICAL, which a distribution refuses; or only warnings, AMBIGUOUS or a `.skip` CONTRADICTION, which it accepts but which may not do what was meant |
 | `2` | no overlays here; nothing to check |
 
 ## What it checks, and why each one blocks a distribution
