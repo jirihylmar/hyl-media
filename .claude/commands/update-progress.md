@@ -152,8 +152,10 @@ exactly as they stand.
 If the task is non-terminal, edit it in place or reshape the surrounding open work. If it is
 terminal, leave it as history and represent later action in a new or existing open task. Where
 sessions are told apart by theme, the open work you reshape and the existing task you use are only
-in your theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart
-by theme*).
+in your theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). An estate
+notice is neither, in any phase: any session may act on it and close it, but no session amends its
+name, `verify` or `detail`, because the centre corrects those in place and `estate-align` would
+revert such an edit.
 ```json
 // Open: reshape in place because the plan changed before closure
 {"id": "2.1", "name": "Revised task description", "status": "in_progress", "notes": "Scope reconciled after..."}
@@ -170,9 +172,12 @@ otherwise in its `notes`). If the original is already terminal, leave it as it i
 `references` is the only link. A "folded into X" note that leaves X's wording unchanged is not a
 disposition: X then closes on its old wording, and the work belongs to nobody. If the receiving
 task is in progress under another agent, put the work in a new task that references both instead.
-Where sessions are told apart by theme, the receiving task is one in your theme's phases, estate
-notices excepted: an open task in another theme's phase is not amended, and the work goes to that
-theme's session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*).
+Where sessions are told apart by theme, the receiving task is one in your theme's phases: an open
+task in another theme's phase is not amended, and the work goes to that theme's session
+(`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). An estate notice never receives the
+work, in any phase: any session may act on it and close it, but no session amends its name, `verify`
+or `detail`, because the centre corrects those in place and `estate-align` would revert such an edit,
+and the work with it. Put the work in a task of your own whose `references` name the notice.
 
 **A decision task closes on the decision.** A task phrased as a decision, such as *decide whether
 to X*, is complete when the decision is made. Its `verify_result` is the decision and its
@@ -629,7 +634,7 @@ explicit disposition. None may be left `pending` in a closed phase.**
 |---|---|---|
 | **Finished** | It's done | Normal completion + `verify_result`. |
 | **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work); where sessions are told apart by theme, a new phase of your theme (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
-| **Re-homed** into an existing open task | The same, and an open task in another phase already serves that work's goal; where sessions are told apart by theme, a phase of your theme, estate notices excepted | Amend that task first, as § When Task Scope Changes During Work says, then mark the original `superseded` with `superseded_by` naming it. An open task in another theme's phase is not amended: the work goes to that theme's session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
+| **Re-homed** into an existing open task | The same, and an open task in another phase already serves that work's goal; where sessions are told apart by theme, a phase of your theme; never an estate notice | Amend that task first, as § When Task Scope Changes During Work says, then mark the original `superseded` with `superseded_by` naming it. An open task in another theme's phase is not amended: the work goes to that theme's session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). An estate notice is not amended either, in any phase: any session may act on it and close it, but no session amends its name, `verify` or `detail`, because the centre corrects those in place and `estate-align` would revert such an edit; the work goes to a task of your own that references it. |
 | **Handed to another theme** | Where sessions are told apart by theme: the work serves the goal of a phase another theme owns | No task in its phase: a message to that theme's session while it is live, otherwise a note under `### For the <theme> session` (Step 5). Mark the original `superseded`, its reason naming that theme and where the note is (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). |
 | **Dropped** | Speculative, overtaken, or no longer justified | `superseded` with a **reason someone can disagree with**. "Not needed" is not a reason. "No measured problem; re-raise with a benchmark" is. |
 

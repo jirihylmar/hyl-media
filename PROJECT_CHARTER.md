@@ -206,16 +206,20 @@ migration risk or resource quota. Complexity alone is not a reason to serialise 
 
 ### Sessions are told apart by theme
 
-Work on a managed group runs from its manager's sessions, and where a member's checkout lies
-decides who works in it, whatever its relation word. A nested member (§ 14), one whose checkout lies
-inside the manager's checkout, gets no session of its own: its work runs from the manager's sessions
-by theme, and a task may touch any nested member. A nested member that keeps a record of its own
-still owns it (§ 11): the manager's sessions keep it, in the member's checkout, by the member's
-procedures. A member whose checkout is not inside the manager's, whether beside it or on another
-host, keeps its own sessions: the manager directs it through notices and requests, and its own
-sessions do the work. That changes only when the operator rules that the manager's sessions do that
-member's work. The manager's session then works in the member's checkout, by the member's procedures
-and under the safeguards the ruling names, and keeps the member's record there.
+Work on a managed group runs from its manager's sessions, except in a member that keeps a record
+of its own and whose checkout lies outside the manager's: such a member keeps its own sessions unless
+the operator rules otherwise. Whether a member keeps a record and where its checkout lies decide who
+works in it, whatever its relation word. A member checkout with no
+record of its own (§ 8, *One working checkout*), wherever it lies, and a nested member (§ 14), one
+whose checkout lies inside the manager's checkout, get no session of their own: their work runs from
+the manager's sessions by theme, and a task may touch any of them. A nested member that keeps a
+record of its own still owns it (§ 11): the manager's sessions keep it, in the member's checkout, by
+the member's procedures. A member that keeps a record of its own and whose checkout is not inside the
+manager's, whether beside it or on another host, keeps its own sessions: the manager directs it
+through notices and requests, and its own sessions do the work. That changes only when the operator
+rules that the manager's sessions do that member's work. The manager's session then works in the
+member's checkout, by the member's procedures and under the safeguards the ruling names, and keeps
+the member's record there.
 
 Sessions working on one project at once are told apart by theme: a stable topic such as *web tech*,
 *web ux* or *booking*, never a session's full name. The operator names each session, its theme is
@@ -231,8 +235,9 @@ own theme.
 
 A phase without `theme` belongs to whichever session the operator names, until a theme is set.
 Existing phases are not back-filled, and a terminal task stays in the phase that closed it.
-Whichever phase an estate notice lands in, any session may act on it and close it. A project with
-one session at a time needs no theme.
+Whichever phase an estate notice lands in, any session may act on it and close it. No session
+amends a notice's name, verify or detail: the centre corrects those in place, and its next
+correction would revert such an edit. A project with one session at a time needs no theme.
 
 Measured 2026-11-03 in orchestrator-classic: the *web ux* session added 13.77-13.83 to phase 13,
 which the *web tech* session drives, while a *booking* session ran as well. The operator: *"i dont
@@ -240,14 +245,18 @@ like that the session web ux writter into you phase"*; asked whether that holds 
 *"yes its one. we dont open sessions in managed repos directly anymore. task can come accross them,
 here and there. but we need to distinguish sessions under orchestrator , ussually by theme, topic
 eg"*. Asked whether that reaches every declared member, the operator left it to the engine (*"you
-have to know what the bast for management and sustainability"*), which ruled the same day that it
-binds nested members only: a session works in a checkout, and a member whose checkout lies outside
-the manager's, often on another host, is worked on there. The first ruling that a manager's sessions
-do such a member's work came the next day: mitt-sparks-orchestrator's session does the work of
-mitt-sparks-gateway, whose checkout lies beside the orchestrator's on the same host, with the
-gateway's own guard running too and each change to its tunnel tool read by hyl-resources-manager
-before use (the operator in hyl-resources-manager's session, 2026-11-04: *"Yes, with safeguards
-(Recommended)"*; hyl-resources-manager's task 53.2, answering request 70eee574).
+have to know what the bast for management and sustainability"*), which ruled that it binds every
+member with no session to keep: a nested member, and a member checkout with no record of its own
+(§ 8), wherever it lies. mitt-sparks-build, beside mitt-sparks-orchestrator on vsb-rss, is one: the
+operator had put it under the orchestrator on 2026-10-30 (*"everybody who needs somethig on sparks
+will need to go through them"*). A session works in a checkout and keeps a record, so a member that
+keeps a record of its own and whose checkout lies outside the manager's, often on another host, is
+worked on there. On 2026-11-04 the operator ruled that a manager's sessions do the work of one such
+member: mitt-sparks-orchestrator's session does the work of mitt-sparks-gateway, whose checkout lies
+beside the orchestrator's on the same host, with the gateway's own guard running too and each change
+to its tunnel tool read by hyl-resources-manager before use (the operator in hyl-resources-manager's
+session: *"Yes, with safeguards (Recommended)"*; hyl-resources-manager's task 53.2, answering request
+hrm-70eee574).
 
 ## 7. Prefer one product repository
 
@@ -758,11 +767,12 @@ the member lives.
 
 Declare downward only. A manager names its members; a member never names its manager. Exactly one
 repository writes each edge, so two repositories cannot contradict each other about who directs
-whom, and a correction has exactly one place to be made. A nested member, whose checkout lies
-inside the manager's, is worked on from its manager's sessions and gets none of its own; a member
-whose checkout is not inside the manager's keeps its own sessions and is directed through notices
-and requests, unless the operator rules that the manager's sessions do its work (§ 6, *Sessions are
-told apart by theme*).
+whom, and a correction has exactly one place to be made. A member checkout with no record of its
+own (§ 8), wherever it lies, and a nested member, whose checkout lies inside the manager's, are
+worked on from the manager's sessions and get none of their own; a member that keeps a record of its
+own and whose checkout is not inside the manager's keeps its own sessions and is directed through
+notices and requests, unless the operator rules that the manager's sessions do its work (§ 6,
+*Sessions are told apart by theme*).
 
 The relation word is the operator's own. `nested`, `governed` and `metadata-governed` are already in
 use, a better word for a real relationship is legal, and what you write is carried through as

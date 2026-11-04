@@ -115,19 +115,21 @@ A repository this one declares as a member in its `relations` block (`PROJECT_CH
 directed from here, in one of two ways (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
 theme*):
 
-- **A nested member**, whose checkout lies inside this one, is not another owner: change its files
-  as this project's procedures say. It gets no session of its own. A `progress.json` it keeps is
-  still its own (`PROJECT_CHARTER.md` § 11, *The record of identity and current work*): this
-  project's sessions keep it, in the member's checkout, by the member's procedures.
-- **A member whose checkout is not inside this one**, beside it or on another host, keeps its own
-  sessions, whatever its relation word. Direct it through notices and requests, by the steps
-  above: its own sessions change its files and its record.
+- **A nested member**, whose checkout lies inside this one, **or a member checkout with no record
+  of its own** (`PROJECT_CHARTER.md` § 8, *One working checkout*), wherever it lies, is not another
+  owner: change its files as this project's procedures say. It gets no session of its own. A
+  `progress.json` a nested member keeps is still its own (`PROJECT_CHARTER.md` § 11, *The record of
+  identity and current work*): this project's sessions keep it, in the member's checkout, by the
+  member's procedures.
+- **A member that keeps a record of its own and whose checkout is not inside this one**, beside it
+  or on another host, keeps its own sessions, whatever its relation word. Direct it through notices
+  and requests, by the steps above: its own sessions change its files and its record.
 - **Unless the operator has ruled that this project's sessions do that member's work.** Then this
   project's session works in the member's checkout, by the member's procedures and under the
   safeguards the ruling names, and keeps the member's record there. Only a ruling that names the
-  member does this; none is assumed from the relation word or from where the checkout lies. The
-  first: mitt-sparks-gateway's work by mitt-sparks-orchestrator's sessions (the operator,
-  2026-11-04, hyl-resources-manager's task 53.2).
+  member does this; none is assumed from the relation word or from where the checkout lies. One
+  such ruling: mitt-sparks-gateway's work by mitt-sparks-orchestrator's sessions (the operator,
+  2026-11-04, hyl-resources-manager's task 53.2, request hrm-70eee574).
 
 ---
 

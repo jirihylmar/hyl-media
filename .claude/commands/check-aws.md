@@ -313,14 +313,30 @@ what the connection sees, so do not follow one.
 >
 > ```bash
 > python3 -I - <<'PY'
-> import calendar, json, os, subprocess, time
+> import calendar, json, os, subprocess, sys, time
 > def stat(pid):
 >     s = open("/proc/%d/stat" % pid).read()
 >     f = s[s.rindex(")") + 2:].split()
 >     return s[s.index("(") + 1:s.rindex(")")], int(f[1]), int(f[19])
+> def not_checked(why):                    # could not look: never a count, never "none"
+>     print("NOT CHECKED: %s; this session's containers are unknown, not none" % why)
+>     sys.exit(3)
+> def docker(args):
+>     try:
+>         r = subprocess.run(["docker"] + args, capture_output=True, text=True, timeout=60)
+>     except (OSError, subprocess.SubprocessError) as e:
+>         not_checked("docker %s did not run (%s)" % (args[0], type(e).__name__))
+>     if r.returncode != 0:
+>         not_checked("docker %s exited %d (%s)" % (args[0], r.returncode, (r.stderr.strip().splitlines() or [""])[0][:120]))
+>     return r.stdout
 > agent = os.getppid()                     # climb to this session's own claude or codex process
-> while agent > 1 and stat(agent)[0] not in ("claude", "codex"):
->     agent = stat(agent)[1]
+> try:
+>     while agent > 0 and stat(agent)[0] not in ("claude", "codex"):
+>         agent = stat(agent)[1]
+> except (OSError, ValueError, IndexError):
+>     agent = 0
+> if agent <= 0:
+>     not_checked("no claude or codex process above this command, so no container can be told to be this session's")
 > kids, procs = {}, {}
 > for d in filter(str.isdigit, os.listdir("/proc")):
 >     try:
@@ -335,9 +351,9 @@ what the connection sees, so do not follow one.
 >         todo.append(c)
 >         if procs[c][0] == "docker":
 >             clients.append(boot + procs[c][1] / os.sysconf("SC_CLK_TCK"))
-> ids = subprocess.run(["docker", "ps", "-q"], capture_output=True, text=True).stdout.split()
+> ids = docker(["ps", "-q"]).split()
 > fmt = "{{json .Name}}\t{{json .State.StartedAt}}\t{{json .Mounts}}"
-> out = subprocess.run(["docker", "inspect", "--format", fmt] + ids, capture_output=True, text=True).stdout if ids else ""
+> out = docker(["inspect", "--format", fmt] + ids) if ids else ""
 > home, mine = os.path.expanduser("~"), 0
 > for line in out.splitlines():
 >     name, started, mounts = (json.loads(x) for x in line.split("\t"))
@@ -357,7 +373,12 @@ what the connection sees, so do not follow one.
 > container's start. A line marked `MOUNTS A HOME FOLDER` is a server that can read the whole home
 > until this session restarts, whatever its definition says now; say so in the report rather than
 > concluding from the definition. `0 running container(s)` means none of this session's servers runs
-> in a container (an HTTP server, or none started).
+> in a container (an HTTP server, or none started), and it is printed only after `docker ps` and
+> `docker inspect` both succeeded. `NOT CHECKED` (exit 3) means the command could not look: `docker`
+> did not run or exited with an error, or no `claude` or `codex` process sits above the command, so
+> no container can be told to be this session's. Then this session's containers are unknown: report
+> them as not checked, never as none or as a count, and never take every container on the host as
+> this session's.
 
 > **This command is the only way this step touches either file.** Do not view, page, print, parse or
 > copy them any other way — not with Read, `cat`, `less`, `head`, `tail`, `sed`, `awk`, `rg`, `nl`, a
