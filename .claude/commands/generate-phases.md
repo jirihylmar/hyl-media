@@ -118,7 +118,9 @@ To add work to existing phases, use `/add-work` instead.
 Before creating phases or tasks, render all existing planned, ongoing and deferred work. Reuse or
 reshape non-terminal entries when they already represent the outcome; where sessions are told apart
 by theme, only those in this session's theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told
-apart by theme*). Build a dependency graph and mark every independent safe lane for parallel
+apart by theme*). Any session may act on an estate notice in any phase and close it, but no session
+amends its name, `verify` or `detail`, because the centre corrects those in place and `estate-align`
+would revert such an edit. Build a dependency graph and mark every independent safe lane for parallel
 execution; do not manufacture sequential tasks from work that can run concurrently.
 
 ---

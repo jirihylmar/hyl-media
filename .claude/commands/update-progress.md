@@ -65,8 +65,10 @@ The next ready task is an open task whose `depends_on` names no task that is sti
 - Add or update `notes` on a task (any stage)
 - Refine, combine, divide, reassign, re-scope or relocate any **non-terminal** task so planned,
   ongoing and deferred work accurately describe what is now required; where sessions are told
-  apart by theme, only in your theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6,
-  *Sessions are told apart by theme*)
+  apart by theme, only in your theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told apart
+  by theme*). Any session may act on an estate notice in any phase and close it, but no session
+  amends its name, `verify` or `detail`, because the centre corrects those in place and
+  `estate-align` would revert such an edit
 - Add `verify_result` field
 - Add NEW tasks with NEW IDs
 - Update `current_task` pointer
@@ -101,8 +103,10 @@ Nothing in `progress.json` is a place to park a concern that has none of those.
   in-progress, blocked and deferred alike. Refine, combine, divide, reassign, re-scope or relocate
   it when new evidence makes the plan more accurate or executable. Before adding a task, inspect
   all open work and reuse or reshape an existing item when it can represent the issue coherently.
-  Where sessions are told apart by theme, that reaches only your theme's phases, estate notices
-  excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*).
+  Where sessions are told apart by theme, that reaches only your theme's phases
+  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Any session may act on an estate
+  notice in any phase and close it, but no session amends its name, `verify` or `detail`, because
+  the centre corrects those in place and `estate-align` would revert such an edit.
 - `/repo-hygiene` compaction may file a terminal task's long prose into its committed sidecar while
   preserving the semantic fields verbatim. That is archival, not a rewrite.
 - `progress-check` blocks vanished ids and warns when a task already terminal in the previous
@@ -238,12 +242,16 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
   every delegated task once the results are in, by this procedure, not only a task of its own. The
   coordinating executor may reconcile any non-terminal task after re-reading the whole open-work
   landscape; never rewrite terminal history. Where sessions are told apart by theme, that reaches
-  only its own theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are
-  told apart by theme*)
+  only its own theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Any
+  session may act on an estate notice in any phase and close it, but no session amends its name,
+  `verify` or `detail`, because the centre corrects those in place and `estate-align` would revert
+  such an edit
 - **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
 - **Add, edit or close tasks only in a phase of your session's theme** where phases carry one
-  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*); an estate notice is the exception,
-  and the commit guard warns about any other
+  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Any session may act on an estate
+  notice in any phase and close it, but no session amends its name, `verify` or `detail`, because
+  the centre corrects those in place and `estate-align` would revert such an edit. The commit guard
+  warns about a write to any other task in another theme's phase
 - **One Edit call per field change** — smaller edits reduce the collision window
 
 ### session_notes.md: Append-Only
@@ -1725,8 +1733,10 @@ Total: 8/20 tasks complete (40%)
 - ALWAYS verify completed tasks
 - NEVER remove or re-id tasks. Every non-terminal task is editable planning state and may be
   refined, combined, divided, reassigned, re-scoped or relocated after reconciling the whole open-
-  work landscape; where sessions are told apart by theme, only in your theme's phases, estate
-  notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). A task already
+  work landscape; where sessions are told apart by theme, only in your theme's phases
+  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Any session may act on an estate
+  notice in any phase and close it, but no session amends its name, `verify` or `detail`, because
+  the centre corrects those in place and `estate-align` would revert such an edit. A task already
   terminal in the previous commit is immutable reference history; `progress-check` warns if its
   semantic fields drift.
 - Add new tasks with sub-IDs (2.3a, 2.3b)

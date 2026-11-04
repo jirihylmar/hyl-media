@@ -277,9 +277,11 @@ bootstrap and both example playbooks staying silent, and the DATE-ONLY and FUTUR
 Every **non-terminal** task is editable planning state, including work that is planned, ongoing,
 blocked or deferred. Findings may refine, combine, divide, reassign, re-scope or relocate it so the
 open-work landscape remains coherent and phases can close; where sessions are told apart by theme,
-only in the session's own theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6,
-*Sessions are told apart by theme*). The checker deliberately says nothing when semantic fields
-change on such work, except in a phase another theme owns (§ *A task written into another theme's
+only in the session's own theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*). Any session may act on an estate notice in any phase and close it, but no session amends
+its name, `verify` or `detail`, because the centre corrects those in place and `estate-align` would
+revert such an edit. The checker deliberately says nothing when semantic fields change on
+non-terminal work, except in a phase another theme owns (§ *A task written into another theme's
 phase* below).
 
 Closure is the immutability boundary. When a task was already terminal in the previous commit —

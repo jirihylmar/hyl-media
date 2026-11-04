@@ -169,8 +169,9 @@ Planned, pending, ongoing, in-progress, blocked and deferred tasks are editable 
 When evidence changes, refine, combine, divide, reassign, re-scope or relocate them so they describe
 the work now required. Before creating work, inspect all open tasks and phases; reuse or reshape an
 existing item when it can represent the issue coherently. Where sessions are told apart by theme,
-these licences reach only the phases of the session's own theme, estate notices excepted (§ 6,
-*Sessions are told apart by theme*).
+these licences reach only the phases of the session's own theme. Any session may act on an estate
+notice in any phase and close it, but no session amends its name, verify or detail, because the
+centre corrects those in place (§ 6, *Sessions are told apart by theme*).
 
 Terminal tasks — complete, closed, superseded, dropped or cancelled — are immutable historical
 references. Do not rewrite their scope, outcome, verification or evidence. Create or modify open

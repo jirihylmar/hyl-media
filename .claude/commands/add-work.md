@@ -92,10 +92,13 @@ Render and inspect every planned, ongoing and deferred task and phase. If a non-
 coherently represent the requested outcome, refine, combine, divide, reassign, re-scope or relocate
 it instead of creating a duplicate. Related work that serves the same outcome and is closable
 belongs in the same phase. Terminal tasks are references only and are never rewritten.
-Where sessions are told apart by theme, this reaches only the phases of this session's theme,
-estate notices excepted: an open task that fits but sits in another theme's phase is that theme's
-session's to reshape, and the work goes to that session (`PROJECT_CHARTER.md` § 6, *Sessions are
-told apart by theme*).
+Where sessions are told apart by theme, this reaches only the phases of this session's theme: an
+open task that fits but sits in another theme's phase is that theme's session's to reshape, and the
+work goes to that session (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). Any
+session may act on an estate notice in any phase and close it, but no session amends its name,
+`verify` or `detail`, because the centre corrects those in place and `estate-align` would revert
+such an edit: work that fits a notice goes into a task of this session's own whose `references`
+name the notice.
 Before planning work that extends an existing design, read what the operator has ruled about it:
 building more inside one they ruled wrong does not answer that ruling.
 

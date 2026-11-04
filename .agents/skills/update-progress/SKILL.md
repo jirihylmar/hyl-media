@@ -47,8 +47,10 @@ Preserve these boundaries:
 - Never delete tasks. Follow the established started/unstarted mutability rule.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
 - Where phases carry a `theme`, add, edit, reshape or close tasks only in this session's theme's
-  phases, estate notices excepted; work for another theme's goal goes to that theme's session
-  (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*).
+  phases; work for another theme's goal goes to that theme's session (`PROJECT_CHARTER.md` § 6,
+  *Sessions are told apart by theme*). Any session may act on an estate notice in any phase and
+  close it, but no session amends its name, `verify` or `detail`, because the centre corrects those
+  in place and `estate-align` would revert such an edit.
 - Stage and commit only work in scope; the shipped Git hook is the mechanical integrity backstop.
 - Push only at the project's defined boundary and never force a remote branch.
 - Task 0.5 cannot complete without explicit operator approval of the implementation specification.
