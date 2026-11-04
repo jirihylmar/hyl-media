@@ -266,17 +266,20 @@ either launch below; a shell variable such as `AWS_CONFIG_FILE` in this session 
 what the connection sees, so do not follow one.
 
 > **What the connection sees of this host depends on how it was launched, so read the launch rather
-> than assume one.** This estate's AWS servers are containers launched in one of two ways:
+> than assume one.** This estate's AWS servers are containers, none of which mounts a home folder
+> (since 2026-11-03), launched in one of two ways:
 >
-> - **`~/.aws` mounted alone** (`-v <home>/.aws:/aws:ro`, no `--user`): the server runs as the
->   image's root and sees only that directory, at `/aws`. A file the listing cannot read may still
->   be readable to it, a symlink pointing outside `~/.aws` does not resolve, and its errors name
->   `/aws/config`.
-> - **the home mounted at its own path** (`--user <uid>:<gid>` and `-v <home>:<home>`, the shape
->   of the box's bindings and of a member host's tooling servers): the server runs as this
->   session's user and sees the whole home at the host's paths. A file the listing cannot read
->   is unreadable to it too, a symlink to elsewhere under the home resolves, and its errors name the
->   host's own path.
+> - **`~/.aws` mounted alone at `/aws`** (`-v <home>/.aws:/aws:ro`, no `--user`, the workstation's
+>   shape): the server runs as the image's root and sees only that directory, at `/aws`. A file
+>   the listing cannot read may still be readable to it, a symlink pointing outside `~/.aws` does
+>   not resolve, and its errors name `/aws/config`.
+> - **`~/.aws` mounted alone in an empty home** (`--user <uid>:<gid>`, `--tmpfs /tmp`,
+>   `-e HOME=/tmp` and `-v <home>/.aws:/tmp/.aws:ro`, the shape of the box's bindings and of a
+>   member host's tooling servers): the server runs as this session's user and sees only that
+>   directory, at `/tmp/.aws`. A file the listing cannot read is unreadable to it too, a symlink
+>   pointing outside `~/.aws` does not resolve, and its errors name `/tmp/.aws/config`. The box's
+>   Codex `aws_api` also mounts one working folder, `<home>/aws-mcp-work`, at its own path, for the
+>   local files a call reads; nothing else of the home.
 >
 > Before concluding from an error that depends on which, print that server's two flags from its
 > entry in `~/.claude.json` (`mcpServers`, at the top level or under this project) and nothing else
@@ -383,8 +386,8 @@ report, because their remedy differs.
 
 *Could not look* — the listing was refused or could not run, a file was not listed (error lines
 above), or every profile listed from one file comes back *could not be found* through the connection
-(it cannot see that file — for example a symlink pointing outside what its container mounts:
-outside `~/.aws` where that is mounted alone, outside the home where the home is):
+(it cannot see that file — for example a symlink pointing outside `~/.aws`, the one host folder
+its container mounts for credentials):
 
 ```
 Could not determine whether {aws_account} is reachable from this host.
@@ -397,8 +400,8 @@ Allow the listing command (or make the file readable) and re-run /check-aws.
 ```
 
 *Malformed* — a probe returned `Unable to parse config file: <path>`. The path is the
-connection's own view: `/aws/config` where `~/.aws` is mounted alone, the host's own path where the
-home is mounted at it. Either way it is this host's `~/.aws/<same file>`:
+connection's own view: `/aws/config` where `~/.aws` is mounted at `/aws`, `/tmp/.aws/config` where
+it is mounted in an empty home. Either way it is this host's `~/.aws/<same file>`:
 
 ```
 {file} cannot be parsed by the AWS connection, so no profile can be resolved on this host.

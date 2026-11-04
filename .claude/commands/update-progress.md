@@ -64,7 +64,9 @@ The next ready task is an open task whose `depends_on` names no task that is sti
 - Add entries to `artifacts` array
 - Add or update `notes` on a task (any stage)
 - Refine, combine, divide, reassign, re-scope or relocate any **non-terminal** task so planned,
-  ongoing and deferred work accurately describe what is now required
+  ongoing and deferred work accurately describe what is now required; where sessions are told
+  apart by theme, only in your theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6,
+  *Sessions are told apart by theme*)
 - Add `verify_result` field
 - Add NEW tasks with NEW IDs
 - Update `current_task` pointer
@@ -99,10 +101,13 @@ Nothing in `progress.json` is a place to park a concern that has none of those.
   in-progress, blocked and deferred alike. Refine, combine, divide, reassign, re-scope or relocate
   it when new evidence makes the plan more accurate or executable. Before adding a task, inspect
   all open work and reuse or reshape an existing item when it can represent the issue coherently.
+  Where sessions are told apart by theme, that reaches only your theme's phases, estate notices
+  excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*).
 - `/repo-hygiene` compaction may file a terminal task's long prose into its committed sidecar while
   preserving the semantic fields verbatim. That is archival, not a rewrite.
 - `progress-check` blocks vanished ids and warns when a task already terminal in the previous
-  commit changes its semantic fields. It deliberately stays silent for every non-terminal edit.
+  commit changes its semantic fields. It deliberately stays silent for every non-terminal edit,
+  except one in a phase another theme owns, which it warns about and still commits.
 - ❌ Change task IDs
 - ❌ Delete from `artifacts` array
 - ❌ Remove the `estate_notice` key from a task (see below)
@@ -221,7 +226,9 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
   nothing (`PROJECT_CHARTER.md` § 11, *Recording progress and documents*). The recorder records
   every delegated task once the results are in, by this procedure, not only a task of its own. The
   coordinating executor may reconcile any non-terminal task after re-reading the whole open-work
-  landscape; never rewrite terminal history
+  landscape; never rewrite terminal history. Where sessions are told apart by theme, that reaches
+  only its own theme's phases, estate notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are
+  told apart by theme*)
 - **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
 - **Add, edit or close tasks only in a phase of your session's theme** where phases carry one
   (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*); an estate notice is the exception,
@@ -701,10 +708,11 @@ This is the incremental half of repo hygiene; the periodic full pass is `/repo-h
 
 ### 3c. Review the project's one sentence when it is due (`SESSION_CLOSE`, after 3b and 3a)
 
-`PROJECT_CHARTER.md` § 11: *"The sentence is the project's own, and its own sessions keep it true.
-It is written from the tracked record: the approved specification, the entry document's opening
-and the last phase closed. When the project is closed, archived or parked, the sentence says so.
-The operator's word overrides it."* And: *"The session that closes such work reviews the sentence,
+`PROJECT_CHARTER.md` § 11: *"The sentence is the project's own, and its own sessions keep it true;
+a nested member's is kept by its manager's sessions"* (§ 6). *"It is written from the tracked
+record: the approved specification, the entry document's opening and the last phase closed. When
+the project is closed, archived or parked, the sentence says so. The operator's word overrides
+it."* And: *"The session that closes such work reviews the sentence,
 rewrites or confirms it, and sets the date."* This step is that session. It runs after 3b and 3a,
 so a phase this close completed already counts. Whether a review is due is read from this
 project's own checker, never judged here:
@@ -744,7 +752,7 @@ When it says `due`, `unfilled` or `absent`, the coordinating executor (never a l
    with the line below and add the file to Step 10's pathspec:
 
    ```
-   What this project is for: `description` in `progress.json` (kept true by its own sessions — PROJECT_CHARTER.md § 11).
+   What this project is for: `description` in `progress.json` (kept true by its own sessions, or by its manager's for a nested member — PROJECT_CHARTER.md § 11).
    ```
 5. **Never invent a purpose the record does not support.** If it cannot support a sentence, leave
    both fields as they are and say so in the Step 12 report, for the operator.
@@ -1705,8 +1713,10 @@ Total: 8/20 tasks complete (40%)
 - ALWAYS verify completed tasks
 - NEVER remove or re-id tasks. Every non-terminal task is editable planning state and may be
   refined, combined, divided, reassigned, re-scoped or relocated after reconciling the whole open-
-  work landscape. A task already terminal in the previous commit is immutable reference history;
-  `progress-check` warns if its semantic fields drift.
+  work landscape; where sessions are told apart by theme, only in your theme's phases, estate
+  notices excepted (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by theme*). A task already
+  terminal in the previous commit is immutable reference history; `progress-check` warns if its
+  semantic fields drift.
 - Add new tasks with sub-IDs (2.3a, 2.3b)
 - Document everything in session_notes.md
 - Knowledge extraction is best-effort (skip if no learnings)

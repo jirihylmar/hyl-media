@@ -112,11 +112,17 @@ implemented*). Ask the owner instead:
 4. **Then continue with other work.** Waiting on another owner is not a checkpoint.
 
 A repository this one declares as a member in its `relations` block (`PROJECT_CHARTER.md` § 14) is
-not another owner: it is directed from here, so change its files as this project's procedures say.
-It gets no session of its own. A `progress.json` it keeps is still its own (`PROJECT_CHARTER.md`
-§ 11, *The record of identity and current work*): this project's sessions keep it, in the member's
-checkout, by the member's procedures (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
-theme*).
+directed from here, in one of two ways (`PROJECT_CHARTER.md` § 6, *Sessions are told apart by
+theme*):
+
+- **A nested member**, whose checkout sits inside this one on this host, is not another owner:
+  change its files as this project's procedures say. It gets no session of its own. A
+  `progress.json` it keeps is still its own (`PROJECT_CHARTER.md` § 11, *The record of identity and
+  current work*): this project's sessions keep it, in the member's checkout, by the member's
+  procedures.
+- **A member with a working checkout of its own**, beside this one or on another host, keeps its
+  own sessions, whatever its relation word. Direct it through notices and requests, by the steps
+  above: its own sessions change its files and its record.
 
 ---
 
@@ -280,12 +286,13 @@ are in its callout above, so neither column below is a member host):
 > account on every call meanwhile (`/check-aws` Step 2 finds the value that reaches it).
 
 > **What the AWS connection can read of this machine depends on how its server is launched, so read
-> the launch before concluding.** Launches differ by host. A container that mounts only `~/.aws`
-> (the workstation's shape) sees no local path. A container run as the session's own uid with the
-> whole home bind-mounted at the same path (the box's container bindings, measured 2026-10-21, and a
-> member host's tooling containers, measured 2026-10-24) sees every file under the home, at the
-> host's own paths. A server that runs your code in AWS's own sandbox sees none. So before passing
-> a local path, or explaining an error by what the connection can or cannot see, read this
+> the launch before concluding.** Launches differ by host, and since 2026-11-03 none mounts a home
+> folder. A container that mounts only `~/.aws` sees no local path: the workstation's at `/aws`, the
+> box's and a member host's at `/tmp/.aws`, run as the session's own uid with an empty home
+> (measured 2026-11-04). There `aws-docs` and `aws-iac` mount nothing at all, and the box's Codex
+> `aws_api` also mounts one working folder, `~/aws-mcp-work`, at its own path, and reads local files
+> there and nowhere else. A server that runs your code in AWS's own sandbox sees none. So before
+> passing a local path, or explaining an error by what the connection can or cannot see, read this
 > session's own server's launch, its `command` and `args` only: in `~/.claude.json` under
 > `mcpServers` (top level, or this project's entry) or in this project's `.mcp.json`, and for Codex
 > under `[mcp_servers.<name>]` in `~/.codex/config.toml`. Where it sees no local path, a `file://`
@@ -1680,10 +1687,12 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  (omit ONLY if there are no non-current-phase pending tasks). Do not summarise them into prose,
  and do not drop rows.]
 
-### This session's theme  (omit when § 4.0 printed no "Open phases by theme" line)
+### This session's theme  (omit only when § 4.0 printed no "Open phases by theme" line and the operator's words named no theme)
 [One line: the theme, where it came from, and its open phases, e.g. "Theme: web ux, from the
- session's name 'orch classic web ux'; its open phases: 13". From `--show-theme` (below). A
- phase without a theme is this session's only when the operator names it.]
+ session's name 'orch classic web ux'; its open phases: 13". From `--show-theme` (below). A theme
+ the operator's words named is shown the same way, from the operator's words, with "no open phase
+ yet" where none carries it. A phase without a theme is this session's only when the operator
+ names it.]
 
 ### ⚠ Unattended operations  (omit ONLY if § 4.0b found none)
 

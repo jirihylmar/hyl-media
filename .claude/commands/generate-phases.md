@@ -116,9 +116,10 @@ To add work to existing phases, use `/add-work` instead.
 **If any answer is NO → break it down further**
 
 Before creating phases or tasks, render all existing planned, ongoing and deferred work. Reuse or
-reshape non-terminal entries when they already represent the outcome. Build a dependency graph and
-mark every independent safe lane for parallel execution; do not manufacture sequential tasks from
-work that can run concurrently.
+reshape non-terminal entries when they already represent the outcome; where sessions are told apart
+by theme, only those in this session's theme's phases (`PROJECT_CHARTER.md` § 6, *Sessions are told
+apart by theme*). Build a dependency graph and mark every independent safe lane for parallel
+execution; do not manufacture sequential tasks from work that can run concurrently.
 
 ---
 

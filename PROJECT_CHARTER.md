@@ -168,7 +168,9 @@ Task completion does not prove phase completion; verify the outcome independentl
 Planned, pending, ongoing, in-progress, blocked and deferred tasks are editable planning state.
 When evidence changes, refine, combine, divide, reassign, re-scope or relocate them so they describe
 the work now required. Before creating work, inspect all open tasks and phases; reuse or reshape an
-existing item when it can represent the issue coherently.
+existing item when it can represent the issue coherently. Where sessions are told apart by theme,
+these licences reach only the phases of the session's own theme, estate notices excepted (§ 6,
+*Sessions are told apart by theme*).
 
 Terminal tasks — complete, closed, superseded, dropped or cancelled — are immutable historical
 references. Do not rewrite their scope, outcome, verification or evidence. Create or modify open
@@ -204,10 +206,12 @@ migration risk or resource quota. Complexity alone is not a reason to serialise 
 
 ### Sessions are told apart by theme
 
-Work on a managed group runs from its manager's sessions. A repository the manager declares as a
-member (§ 14) gets no session of its own, and a task may touch any member. A member that keeps a
-record of its own still owns it (§ 11): the manager's sessions keep it, in the member's checkout,
-by the member's procedures.
+Work on a managed group runs from its manager's sessions. A nested member (§ 14), one whose checkout
+sits inside the manager's on the manager's host, gets no session of its own, and a task may touch
+any nested member. A nested member that keeps a record of its own still owns it (§ 11): the
+manager's sessions keep it, in the member's checkout, by the member's procedures. A member with a
+working checkout of its own (§ 8), whatever its relation word, keeps its own sessions: the manager
+directs it through notices and requests, and its own sessions do the work.
 
 Sessions working on one project at once are told apart by theme: a stable topic such as *web tech*,
 *web ux* or *booking*, never a session's full name. The operator names each session, its theme is
@@ -231,7 +235,10 @@ which the *web tech* session drives, while a *booking* session ran as well. The 
 like that the session web ux writter into you phase"*; asked whether that holds for every project:
 *"yes its one. we dont open sessions in managed repos directly anymore. task can come accross them,
 here and there. but we need to distinguish sessions under orchestrator , ussually by theme, topic
-eg"*.
+eg"*. Asked whether that reaches every declared member, the operator left it to the engine (*"you
+have to know what the bast for management and sustainability"*), which ruled the same day that it
+binds nested members only: a session works in a checkout, and a member with a working checkout of
+its own, often on another host, is worked on there.
 
 ## 7. Prefer one product repository
 
@@ -396,7 +403,8 @@ appears to a reader. Where there is no origin, the display name is the only thin
 the project from another checkout, and the record states that condition deliberately rather than
 leaving it to be inferred.
 
-The sentence is the project's own, and its own sessions keep it true. It is written from the
+The sentence is the project's own, and its own sessions keep it true; a nested member's is kept by
+its manager's sessions (§ 6, *Sessions are told apart by theme*). It is written from the
 tracked record: the approved specification, the entry document's opening and the last phase
 closed. When the project is closed, archived or parked, the sentence says so. The operator's word
 overrides it. Beside it, the record carries the date the sentence was last reviewed,
@@ -741,8 +749,9 @@ the member lives.
 
 Declare downward only. A manager names its members; a member never names its manager. Exactly one
 repository writes each edge, so two repositories cannot contradict each other about who directs
-whom, and a correction has exactly one place to be made. A member is worked on from its manager's
-sessions and gets none of its own (§ 6, *Sessions are told apart by theme*).
+whom, and a correction has exactly one place to be made. A nested member is worked on from its
+manager's sessions and gets none of its own; a member with a working checkout of its own keeps its
+sessions and is directed through notices and requests (§ 6, *Sessions are told apart by theme*).
 
 The relation word is the operator's own. `nested`, `governed` and `metadata-governed` are already in
 use, a better word for a real relationship is legal, and what you write is carried through as
