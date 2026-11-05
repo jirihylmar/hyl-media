@@ -1,9 +1,9 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-11-04T16:01:31Z",
-  "canonical_commit": "1c9149c884418e8dbfbebc97653dd5596321a423",
+  "written_at": "2026-11-05T15:57:49Z",
+  "canonical_commit": "6d357c4102c3529ce3b8c37238112ef23202ae05",
   "files": {
-    ".claude/commands/add-work.md": { "sha256": "30d35f0771cb65e659c5da619d53ff77cc52c61c2675c9313231bf7b579506ab", "source": "canonical" },
+    ".claude/commands/add-work.md": { "sha256": "08a436115f4b8ddafbca10448ee57dc558110114404be9d463cf318d82c6c8cc", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "995e08edeb24e667da70f4964657cb7d493de367cc6c5f6319ca406fb52c7498", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "dc72506c6f7ab9c22cc1a503f88011cefcbf201c36954b4445940130a9e2b870", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "a1c5a929330391197d88b3faefeaaa89c48b7c757c6630a8f953cef9905ebaed", "source": "canonical" },
@@ -12,7 +12,7 @@
     ".claude/commands/setup-workflow-only.md": { "sha256": "e7aff7b5163a77189e8fe9c2d23f539bede298e167cfab0a02cca3d4f9082233", "source": "canonical" },
     ".claude/commands/setup.md": { "sha256": "a5f6bbe347007d88c6728d9357c62e87a5a6f705f7b9b668f856044af511d5f3", "source": "canonical" },
     ".claude/commands/start-session.md": { "sha256": "2cf6700b3a8332b2578582380629580344172e8639244fe251fbd3eb452519be", "source": "canonical" },
-    ".claude/commands/update-progress.md": { "sha256": "4755b5af794d737a44e2c828106d520a7ebe45e50237a156a71d107d92bdff20", "source": "canonical" },
+    ".claude/commands/update-progress.md": { "sha256": "5c8105ce6ba0d2c68ec51cda0e81e59d11865a7e455c79726f05617a18c85559", "source": "canonical" },
     ".claude/skills/refs-check/SKILL.md": { "sha256": "211992a7fc96456b6fdfc85d3ee21fe744694ae2a1ae6da8595b8316474dfa7f", "source": "canonical" },
     ".claude/skills/refs-check/refs_check.py": { "sha256": "46faf7e3c78512cb83c9bf8fabcbe41fe875d52c41184a2c4aa7f94c0664de94", "source": "canonical" },
     ".claude/skills/server-report/report.py": { "sha256": "1556b3bb39dcd168462dea6c7acf5b60a356153bb316e6f631fff64101912bb4", "source": "canonical" },

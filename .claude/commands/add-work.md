@@ -242,7 +242,8 @@ If you cannot restate it for a cold reader, that is evidence it should not be tr
 
 Then ask one question in the charter § 3 form, *"Add these N items to progress.json?"*:
 
-- **Add them (Recommended)** — appended under [phase] and committed (Steps 6-8)
+- **Add them (Recommended)** — appended under [phase] and committed (Steps 6-8), then the next
+  ready task starts in the same turn (Step 9)
 - **Change them first** — you say what; the table comes back before anything is written
 - **Don't add them** — nothing enters `progress.json`; they stay an untracked observation
   (destination 4)
@@ -334,7 +335,7 @@ Source: [source]
 🤖 Generated with Claude Code"
 ```
 
-### 9. Report
+### 9. Report, then continue
 
 ```
 ## Work Added
@@ -348,8 +349,25 @@ Source: [source]
 | X.Ya | [name] | small | pending |
 | ... | ... | ... | ... |
 
-Ready to continue with current task or start new work.
+Continuing with X.Y: [plain-language outcome].
 ```
+
+Then start X.Y in the same response. The approval in Step 5 was the checkpoint; starting approved
+work is not another one (`PROJECT_CHARTER.md` § 3, *Checkpoints*). X.Y is the next ready task as
+`/update-progress` defines it: the current task while it is still in progress, otherwise the
+first of the items just added that waits on nothing.
+
+**The operator's own words in this session override that default.** When they said the work waits
+for them (*"file tasks which start on my go"*, *"make it a phase, don't start"*), end with
+`Added; X.Ya waits for your go.` and yield. End the same way, naming the reason in place of the
+go, when the next task is a declared checkpoint, is blocked, or is assigned to someone else.
+
+<!-- `Continuing with X.Y: [plain-language outcome].` is the EXPECT_PHRASE of
+     scripts/lenses/themes/add-then-start.theme in the engine repository. Until 2026-11-05 this
+     report ended "Ready to continue with current task or start new work.", an offer, so a yield
+     after work the operator had just approved; the operator then answered "add them and start
+     ... don't stop" (2026-10 practice review § 2.1). Reword that line and the lens stops seeing
+     it. -->
 
 ---
 

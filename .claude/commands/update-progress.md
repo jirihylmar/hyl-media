@@ -910,10 +910,11 @@ project-owned mechanism (6 projects already use it for other steps), as a splice
 A project that registered nothing still has documentation that this session may have falsified:
 
 ```bash
-# The last commit plus uncommitted work, so the sweep is bounded by the work, not by the tree.
-# Files only in earlier commits are not listed: add them from `git log --stat` when they count.
+# Changed since the branch last matched its upstream (the last commit when nothing is unpushed),
+# plus uncommitted work, so the sweep is bounded by the work, not by the tree.
 # Past 50 files the rest is counted, not listed: "(+N more)" says the list was cut.
-git diff --name-only HEAD~1 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
+b=$(git merge-base @{u} HEAD 2>/dev/null); [ -n "$b" ] && [ "$b" != "$(git rev-parse HEAD)" ] || b=HEAD~1
+git diff --name-only "$b" 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
 ```
 Then: for each **canonical surface** (`README.md`, `CLAUDE.md`, `docs/**` outside `_archive/`,
 `handoff/` and the dated records, which say in their first lines that they are records and are never
@@ -1633,9 +1634,11 @@ Steps whose omission is visible — the commit, the push, this report — are no
 an artifact.
 
 ```bash
-# The last commit plus uncommitted work; past 50 files the rest is counted as "(+N more)".
-# A session that made several commits changed more: add the earlier ones from `git log --stat`.
-git diff --name-only HEAD~1 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
+# Changed since the branch last matched its upstream (the last commit when nothing is unpushed),
+# plus uncommitted work; past 50 files the rest is counted as "(+N more)". Once Step 10 has pushed
+# that is the last commit: earlier ones this session pushed are in `git log --stat`.
+b=$(git merge-base @{u} HEAD 2>/dev/null); [ -n "$b" ] && [ "$b" != "$(git rev-parse HEAD)" ] || b=HEAD~1
+git diff --name-only "$b" 2>/dev/null | awk 'NR<=50; END {if (NR>50) printf "(+%d more)\n", NR-50}'
 ```
 
 | Files this session changed | Canonical surfaces checked | Brought into line |
