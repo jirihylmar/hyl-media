@@ -1593,6 +1593,11 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 ```
 ## Progress Summary
 
+### The project in plain words
+[First, before any table: `PROJECT_CHARTER.md` § 3 *A status for a newcomer* — what the project
+ is for, what exists to point at, where it stands now and what comes next, and what only the
+ operator can give, each with the short answer wanted. No id carries meaning alone.]
+
 ### Completed This Session
 - Task 2.3: Add API endpoint (backend) ✓
   - Verify: PASSED

@@ -27,6 +27,8 @@ Preserve these boundaries:
   `SESSION_CLOSE`.
 - Run session-only consolidation, knowledge extraction, handoff notes, and the final summary only
   for `SESSION_CLOSE` (or when closing a phase explicitly requires its hygiene gate).
+- The Step 12 summary opens, before any task table, with the plain summary `PROJECT_CHARTER.md`
+  § 3 *A status for a newcomer* asks for.
 - Every progress update is this procedure, whoever writes it, a lane, a subagent or a workflow
   step included, and in delegated work one executor records: you, or the one step you name as its
   recorder; every other lane, subagent or workflow step returns its result, evidence and changed

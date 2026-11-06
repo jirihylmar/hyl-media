@@ -17,6 +17,10 @@ per deferred phase — comes from `progress.json`. The one column a script canno
 plain words"*, is emitted as a `<FILL: …>` token that **must** be replaced before the operator
 sees it. A surviving `<FILL:` in a report means output was pasted and never read.
 
+**The plain-words column is required in every row.** It says what the task or phase is for, in
+words a reader new to the project can act on (`PROJECT_CHARTER.md` § 3 *A status for a newcomer*),
+and never just restates the id, the task's name or another internal label.
+
 ## Why it is a script and not a paragraph
 
 The three tables were specified in prose, inside a fenced template block, ~180 lines into a
@@ -106,7 +110,7 @@ old ones, which are exactly where work goes invisible.
 ## What it will not do
 
 - **Judge the quality of the plain-words column.** A lazy restatement of the task name still
-  passes. The script removes *invisibility*, not carelessness.
+  passes the script, never the rule above. The script removes *invisibility*, not carelessness.
 - **Fix a stale pointer.** It names it. Editing `progress.json` is `/update-progress`'s job and
   the operator's decision.
 - **Decide what "stuck" means for your project.** `in_progress`/`blocked` outside the current

@@ -167,6 +167,7 @@ every proposal — the operator has to be able to follow it *as it happens*, wit
 your reasoning first. A report they have to decode is a report that has not been delivered.
 A question that puts a decision to the operator takes the form `PROJECT_CHARTER.md` § 3
 *Putting a decision to the operator* gives.
+A status, summary or report takes the form § 3 *A status for a newcomer* gives.
 
 > **The test, before you send anything:** could someone who has not read this project's
 > `progress.json` today act on this sentence? If not, rewrite it. Information the reader cannot use
@@ -1674,6 +1675,11 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 ```
 ## Session Handoff
+
+### The project in plain words
+[First, before any table: `PROJECT_CHARTER.md` § 3 *A status for a newcomer* — what the project
+ is for, what exists to point at, where it stands and what comes next, and what only the operator
+ can give, each with the short answer wanted. No id carries meaning alone.]
 
 ### Previous Session Summary
 [Summarize from session_notes.md last entry:]

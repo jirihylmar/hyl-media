@@ -159,6 +159,29 @@ options of one question, where the tool takes at most four questions of at most 
 Codex's own instructions, read in one of its sessions on the workstation on 2026-10-24, tell it to
 continue with its best judgment when its question tool returns no answer.
 
+### A status for a newcomer
+
+The operator runs many projects at once and holds none of this one's vocabulary. So every status,
+summary or report for them (the session-start status, the close summary, an answer to "where are
+we?") is written for a reader new to the project, and gives:
+
+- **What it is for:** the project's purpose, in one or two sentences.
+- **What exists to point at:** its repositories, the hosts and what runs on each, its cloud
+  resources, the mail the operator receives from it. Many projects are built on remote hosts by
+  terminal only and have nothing else to look at; then it says so.
+- **Where it stands and what comes next,** in plain words.
+- **What only the operator can give:** each item with the short answer wanted (a decision in the
+  form *Putting a decision to the operator* gives), or that nothing is needed.
+
+Internal labels, such as stage codes, task ids, commit ids and the names of internal parts, never
+carry meaning alone. Say the thing in plain words; an id may follow, for traceability.
+
+The operator, 2026-11-06, of a management summary built on stage codes and task ids: *"for me s3
+says nothing. ... i have tens of projects. if i ask about project management summary, you give it
+to me as i was newcomer"*. Before it: *"dont know what s2 or clock is"* (2026-11-02) and *"i
+actually dont know where we are and whats happenign. the project is too complex."* (2026-10-30).
+The section above asked for questions in plain words; nothing asked the same of a status.
+
 ## 4. Work from outcomes and keep open work coherent
 
 Every phase has one stakeholder-verifiable outcome, explicit scope and non-goals, acceptance

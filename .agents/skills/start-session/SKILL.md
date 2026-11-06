@@ -35,6 +35,8 @@ Preserve these boundaries:
 - Synchronization is fast-forward-only. Never discard or overwrite local work to make a pull pass.
 - Verify identities and live locations rather than trusting host-specific nicknames.
 - Report the task identifier together with its plain-language meaning.
+- The session-start status opens, before any task table, with the plain summary
+  `PROJECT_CHARTER.md` § 3 *A status for a newcomer* asks for.
 - The session-start status is a checkpoint. Continue immediately only when the user's current
   request already authorized that work.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.

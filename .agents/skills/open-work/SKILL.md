@@ -14,4 +14,6 @@ python3 .claude/skills/open-work/open_work.py
 
 Pass `--file <path>` when the user names another progress file. Preserve the canonical rule:
 the script determines which rows exist; replace every emitted `<FILL: …>` token with a concise
-plain-language explanation before showing the result. This adapter contains no separate renderer.
+plain-language explanation before showing the result. That column is required in every row and
+never just restates an id, a task's name or another internal label (`PROJECT_CHARTER.md` § 3
+*A status for a newcomer*). This adapter contains no separate renderer.
